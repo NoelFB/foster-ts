@@ -11,3 +11,4 @@ and I'm only working on this slowly in my spare time
  - Scene -> Entity -> Component structure
  - Frame-based animation
  - AABB Collision system
+ - Don't care at all about being compatible with old JS as this is primarily to be used in Electron. ES6 all the waaaay
