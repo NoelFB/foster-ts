@@ -1,0 +1,17 @@
+{
+  "name": "foster",
+  "version": "0.01",
+  "description": "A simple WebGL + TypeScript Game framework with an Scene/Entity/Component model",
+  "homepage": "https://github.com/Drazzke/foster",
+  "license": "MIT",
+  "author": {
+    "name": "Noel Berry",
+    "email": "thenberry@gmail.com",
+    "url": "http://noelberry.ca/"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-typescript": "^2.13.6",
+    "merge2": "^1.0.2"
+  }
+}

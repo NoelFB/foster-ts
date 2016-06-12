@@ -1,0 +1,16 @@
+{
+	"compilerOptions": 
+	{
+		"target": "es6",
+		"sourceMap": false,
+		"outFile": "foster.js",
+		"declaration": true
+	},
+	"exclude":
+	[
+		"bin",
+		"node_modules",
+		"gulpfile.js",
+		".vscode"
+	]
+}
