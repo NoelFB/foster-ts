@@ -1,7 +1,7 @@
 # FOSTER.TS
 ###### A simple WebGL + TypeScript Game framework with an Scene/Entity/Component model.
 
-** ★ still very work in progress ★ **
+★ **still very work in progress** ★
 
 and I'm only working on this slowly in my spare time
 
