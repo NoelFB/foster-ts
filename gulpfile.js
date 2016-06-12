@@ -1,6 +1,6 @@
-var gulp 	= require("gulp"),
-	ts		= require("gulp-typescript")
-	merge 	= require("merge2");
+var gulp = require("gulp"),
+    ts = require("gulp-typescript")
+    merge = require("merge2");
 
 var tsProject = ts.createProject('./tsconfig.json');
 
