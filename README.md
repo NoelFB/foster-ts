@@ -3,7 +3,7 @@
 
 ★ **still very work in progress** ★
 
-and I'm only working on this slowly in my spare time
+and am only working on this in my spare time!
 
 ## Goals
  - Simple framework I can use to make gamejam games with
@@ -12,3 +12,7 @@ and I'm only working on this slowly in my spare time
  - Frame-based animation
  - AABB Collision system
  - Don't care at all about being compatible with old JS as this is primarily to be used in Electron. ES6 all the waaaay
+ 
+## Builds
+ - [foster.js](https://raw.githubusercontent.com/Drazzke/foster/master/bin/foster.js) : compiled JS file
+ - [foster.d.ts](https://raw.githubusercontent.com/Drazzke/foster/master/bin/foster.d.ts) : typescript definition file to reference from your game (ex. `/// <reference path="foster.d.ts"/>`)
