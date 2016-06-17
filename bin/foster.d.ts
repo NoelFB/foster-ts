@@ -180,6 +180,7 @@ declare class Graphics {
     private topright;
     private botleft;
     private botright;
+    private texToDraw;
     /**
      * Sets the current texture on the shader (if the shader has a sampler2d uniform)
      */
@@ -188,17 +189,12 @@ declare class Graphics {
      * Draws a texture at the given position. If the current Shader does not take a texture, this will throw an error.
      */
     texture(tex: Texture, posX: number, posY: number, crop?: Rectangle, color?: Color, origin?: Vector, scale?: Vector, rotation?: number, flipX?: boolean, flipY?: boolean): void;
-    /**
-     * Draws a subtexture at the given position. If the current Shader does not take a texture, this will throw an error.
-     */
-    private tempRect;
-    subtexture(tex: Subtexture, x: number, y: number, crop?: Rectangle, color?: Color, origin?: Vector, scale?: Vector, rotation?: number, flipX?: boolean, flipY?: boolean): void;
     private _pixel;
     private _pixelUVs;
     /**
      * Sets the current Pixel texture for drawing
      */
-    pixel: Subtexture;
+    pixel: Texture;
     /**
      * Draws a rectangle with the Graphics.Pixel texture
      */
@@ -286,17 +282,17 @@ declare class AnimationSet {
         [name: string]: AnimationTemplate;
     };
     constructor(name: string);
-    add(name: string, speed: number, frames: Subtexture[], position?: Vector, origin?: Vector): AnimationSet;
+    add(name: string, speed: number, frames: Texture[], position?: Vector, origin?: Vector): AnimationSet;
     get(name: string): AnimationTemplate;
     has(name: string): boolean;
 }
 declare class AnimationTemplate {
     name: string;
     speed: number;
-    frames: Subtexture[];
+    frames: Texture[];
     origin: Vector;
     position: Vector;
-    constructor(name: string, speed: number, frames: Subtexture[], position?: Vector, origin?: Vector);
+    constructor(name: string, speed: number, frames: Texture[], position?: Vector, origin?: Vector);
 }
 declare class Assets {
     static textures: {
@@ -325,19 +321,24 @@ declare class AssetLoader {
     load(callback?: () => void): void;
     private incrementLoader();
 }
-declare class Texture {
+declare class FosterWebGLTexture {
     path: string;
-    bounds: Rectangle;
-    texture: WebGLTexture;
+    webGLTexture: WebGLTexture;
     width: number;
     height: number;
 }
-declare class Subtexture {
-    texture: Texture;
-    crop: Rectangle;
+declare class Texture {
+    bounds: Rectangle;
+    frame: Rectangle;
+    texture: FosterWebGLTexture;
     width: number;
     height: number;
-    constructor(texture: Texture, crop?: Rectangle);
+    clippedWidth: number;
+    clippedHeight: number;
+    constructor(texture: FosterWebGLTexture, bounds?: Rectangle, frame?: Rectangle);
+    getSubtexture(clip: Rectangle, sub?: Texture): Texture;
+    clone(): Texture;
+    toString(): string;
 }
 declare abstract class Collider extends Component {
     tags: string[];
@@ -664,7 +665,7 @@ declare class Shaders {
 declare class Hitgrid extends Collider {
 }
 declare class Sprite extends Component {
-    subtexture: Subtexture;
+    texture: Texture;
     crop: Rectangle;
     scale: Vector;
     origin: Vector;
@@ -675,7 +676,7 @@ declare class Sprite extends Component {
     alpha: number;
     width: number;
     height: number;
-    constructor(texture: Texture, sub?: Rectangle);
+    constructor(texture: Texture);
     render(): void;
 }
 declare class Animation extends Sprite {

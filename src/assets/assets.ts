@@ -49,16 +49,17 @@ class AssetLoader
 		let gl = Engine.graphics.gl;
 		for (let i = 0; i < this.textures.length; i ++)
 		{
-			let texture = new Texture();
-			texture.path = this.textures[i];
+			let fglt = new FosterWebGLTexture();
+			fglt.path = this.textures[i];
 			
 			let img = new Image();
 			img.addEventListener('load', function()
 			{
-				texture.bounds = new Rectangle(0, 0, img.width, img.height);
-				texture.texture = gl.createTexture();
+				fglt.width = img.width;
+				fglt.height = img.height;
+				fglt.webGLTexture = gl.createTexture();
 				
-				gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+				gl.bindTexture(gl.TEXTURE_2D, fglt.webGLTexture);
 				gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -67,10 +68,10 @@ class AssetLoader
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                 gl.bindTexture(gl.TEXTURE_2D, null);
 				
-				Assets.textures[texture.path] = texture;
+				Assets.textures[fglt.path] = new Texture(fglt);
 				self.incrementLoader();
 			})
-			img.src = texture.path;
+			img.src = fglt.path;
 		}
 	}
 	

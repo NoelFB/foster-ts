@@ -345,10 +345,7 @@ class Graphics {
         this.topright = new Vector();
         this.botleft = new Vector();
         this.botright = new Vector();
-        /**
-         * Draws a subtexture at the given position. If the current Shader does not take a texture, this will throw an error.
-         */
-        this.tempRect = new Rectangle();
+        this.texToDraw = new Texture(null, new Rectangle(), new Rectangle());
         this.engine = engine;
         // create the screen
         this.screen = document.createElement("canvas");
@@ -498,7 +495,7 @@ class Graphics {
                     }
                     else if (uniform.type == ShaderUniformType.sampler2D) {
                         this.gl.activeTexture(this.gl["TEXTURE" + textureCounter]);
-                        this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value.texture);
+                        this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value.texture.webGLTexture);
                         this.gl.uniform1i(location, 0);
                         textureCounter += 1;
                     }
@@ -559,14 +556,21 @@ class Graphics {
      */
     texture(tex, posX, posY, crop, color, origin, scale, rotation, flipX, flipY) {
         this.setShaderTexture(tex);
+        let t = null;
+        if (crop == undefined)
+            t = tex;
+        else
+            t = tex.getSubtexture(crop, this.texToDraw);
         // size
-        let width = (crop.width || tex.width);
-        let height = (crop.height || tex.height);
+        let left = -t.frame.x;
+        let top = -t.frame.y;
+        let width = t.bounds.width;
+        let height = t.bounds.height;
         // relative positions
-        this.topleft.set(0, 0);
-        this.topright.set(width, 0);
-        this.botleft.set(0, height);
-        this.botright.set(width, height);
+        this.topleft.set(left, top);
+        this.topright.set(left + width, top);
+        this.botleft.set(left, top + height);
+        this.botright.set(left + width, top + height);
         // offset by origin
         if (origin && (origin.x != 0 || origin.y != 0)) {
             this.topleft.sub(origin);
@@ -591,10 +595,10 @@ class Graphics {
             this.botright.rotate(s, c);
         }
         // uv positions
-        let uvMinX = (crop.x || 0) / tex.width;
-        let uvMinY = (crop.y || 0) / tex.height;
-        let uvMaxX = uvMinX + (width / tex.width);
-        let uvMaxY = uvMinY + (height / tex.height);
+        let uvMinX = t.bounds.x / t.texture.width;
+        let uvMinY = t.bounds.y / t.texture.height;
+        let uvMaxX = uvMinX + (width / t.texture.width);
+        let uvMaxY = uvMinY + (height / t.texture.height);
         // flip UVs on X
         if (flipX) {
             let a = uvMinX;
@@ -617,26 +621,15 @@ class Graphics {
         this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, color);
         this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, color);
     }
-    subtexture(tex, x, y, crop, color, origin, scale, rotation, flipX, flipY) {
-        if (crop && (crop.x != 0 || crop.y != 0 || crop.width != tex.width || crop.height != tex.height)) {
-            crop.copyTo(this.tempRect);
-            this.tempRect.x += tex.crop.x;
-            this.tempRect.y += tex.crop.y;
-            tex.crop.cropRect(this.tempRect);
-            this.texture(tex.texture, x, y, this.tempRect, color, origin, scale, rotation, flipX, flipY);
-        }
-        else
-            this.texture(tex.texture, x, y, tex.crop, color, origin, scale, rotation, flipX, flipY);
-    }
     /**
      * Sets the current Pixel texture for drawing
      */
     set pixel(p) {
-        let minX = p.crop.left / p.texture.width;
-        let minY = p.crop.top / p.texture.height;
-        let maxX = p.crop.right / p.texture.width;
-        let maxY = p.crop.bottom / p.texture.height;
-        this._pixel = new Subtexture(p.texture, new Rectangle(p.crop.x, p.crop.y, p.crop.width, p.crop.height));
+        let minX = p.bounds.left / p.texture.width;
+        let minY = p.bounds.top / p.texture.height;
+        let maxX = p.bounds.right / p.texture.width;
+        let maxY = p.bounds.bottom / p.texture.height;
+        this._pixel = p;
         this._pixelUVs =
             [
                 new Vector(minX, minY),
@@ -650,7 +643,7 @@ class Graphics {
      */
     pixelRect(bounds, color) {
         Engine.assert(this._pixel != null, "pixelRect requires the Graphics.pixel Subtexture be set");
-        this.setShaderTexture(this._pixel.texture);
+        this.setShaderTexture(this._pixel);
         let uv = this._pixelUVs;
         this.push(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
         this.push(bounds.right, bounds.top, uv[1].x, uv[1].y, color);
@@ -664,7 +657,7 @@ class Graphics {
      */
     pixelTriangle(a, b, c, colA, colB, colC) {
         Engine.assert(this._pixel != null, "pixelTriangle requires the Graphics.pixel Subtexture be set");
-        this.setShaderTexture(this._pixel.texture);
+        this.setShaderTexture(this._pixel);
         if (colB == undefined)
             colB = colA;
         if (colC == undefined)
@@ -679,7 +672,7 @@ class Graphics {
      */
     pixelCircle(pos, rad, steps, colorA, colorB) {
         Engine.assert(this._pixel != null, "pixelCircle requires the Graphics.pixel Subtexture be set");
-        this.setShaderTexture(this._pixel.texture);
+        this.setShaderTexture(this._pixel);
         if (colorB == undefined)
             colorB = colorA;
         let uv = this._pixelUVs;
@@ -1060,13 +1053,14 @@ class AssetLoader {
         var self = this;
         let gl = Engine.graphics.gl;
         for (let i = 0; i < this.textures.length; i++) {
-            let texture = new Texture();
-            texture.path = this.textures[i];
+            let fglt = new FosterWebGLTexture();
+            fglt.path = this.textures[i];
             let img = new Image();
             img.addEventListener('load', function () {
-                texture.bounds = new Rectangle(0, 0, img.width, img.height);
-                texture.texture = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+                fglt.width = img.width;
+                fglt.height = img.height;
+                fglt.webGLTexture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, fglt.webGLTexture);
                 gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -1074,10 +1068,10 @@ class AssetLoader {
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                 gl.bindTexture(gl.TEXTURE_2D, null);
-                Assets.textures[texture.path] = texture;
+                Assets.textures[fglt.path] = new Texture(fglt);
                 self.incrementLoader();
             });
-            img.src = texture.path;
+            img.src = fglt.path;
         }
     }
     incrementLoader() {
@@ -1090,24 +1084,44 @@ class AssetLoader {
         }
     }
 }
-class Texture {
-    constructor() {
-        this.bounds = null;
-        this.texture = null;
-    }
-    get width() { return this.bounds.width; }
-    get height() { return this.bounds.height; }
+class FosterWebGLTexture {
 }
-class Subtexture {
-    constructor(texture, crop) {
+class Texture {
+    constructor(texture, bounds, frame) {
+        this.bounds = null;
+        this.frame = null;
+        this.texture = null;
         this.texture = texture;
-        if (crop)
-            this.crop = this.texture.bounds.cropRect(crop.clone());
-        else
-            this.crop = new Rectangle(0, 0, texture.width, texture.height);
+        this.bounds = bounds || new Rectangle(0, 0, texture.width, texture.height);
+        this.frame = frame || new Rectangle(0, 0, this.bounds.width, this.bounds.height);
     }
-    get width() { return this.crop.width; }
-    get height() { return this.crop.height; }
+    get width() { return this.frame.width; }
+    get height() { return this.frame.height; }
+    get clippedWidth() { return this.bounds.width; }
+    get clippedHeight() { return this.bounds.height; }
+    getSubtexture(clip, sub) {
+        if (sub == undefined)
+            sub = new Texture(this.texture);
+        else
+            sub.texture = this.texture;
+        sub.bounds.x = this.bounds.x + Math.max(0, Math.min(this.bounds.width, clip.x + this.frame.x));
+        sub.bounds.y = this.bounds.y + Math.max(0, Math.min(this.bounds.height, clip.y + this.frame.y));
+        sub.bounds.width = Math.max(0, this.bounds.x + Math.min(this.bounds.width, clip.x + this.frame.x + clip.width) - sub.bounds.x);
+        sub.bounds.height = Math.max(0, this.bounds.y + Math.min(this.bounds.height, clip.y + this.frame.y + clip.height) - sub.bounds.y);
+        sub.frame.x = Math.min(0, this.frame.x + clip.x);
+        sub.frame.y = Math.min(0, this.frame.y + clip.y);
+        sub.frame.width = clip.width;
+        sub.frame.height = clip.height;
+        return sub;
+    }
+    clone() {
+        return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
+    }
+    toString() {
+        return (this.texture.path +
+            ": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
+            "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
+    }
 }
 /// <reference path="./../../component.ts"/>
 class Collider extends Component {
@@ -2069,7 +2083,7 @@ class Hitgrid extends Collider {
 }
 /// <reference path="./../../component.ts"/>
 class Sprite extends Component {
-    constructor(texture, sub) {
+    constructor(texture) {
         super();
         this.scale = new Vector(1, 1);
         this.origin = new Vector(0, 0);
@@ -2078,15 +2092,15 @@ class Sprite extends Component {
         this.flipY = false;
         this.color = Color.white;
         this.alpha = 1;
-        this.subtexture = new Subtexture(texture, sub);
-        this.crop = new Rectangle(0, 0, this.subtexture.width, this.subtexture.height);
+        this.texture = texture;
+        this.crop = new Rectangle(0, 0, texture.width, texture.height);
     }
     get width() { return this.crop.width; }
     get height() { return this.crop.height; }
     render() {
         // only draw if the current shader actually takes a texture
         if (Engine.graphics.shader.sampler2d != null)
-            Engine.graphics.subtexture(this.subtexture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
+            Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
 }
 /// <reference path="./sprite.ts"/>

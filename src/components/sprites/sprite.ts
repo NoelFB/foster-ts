@@ -2,7 +2,7 @@
 class Sprite extends Component
 {
 
-	public subtexture:Subtexture;	
+	public texture:Texture;	
 	public crop:Rectangle;
 	public scale:Vector = new Vector(1, 1);
 	public origin:Vector = new Vector(0, 0);
@@ -15,21 +15,21 @@ class Sprite extends Component
 	public get width() { return this.crop.width; }
 	public get height() { return this.crop.height; }
 	
-	constructor(texture:Texture, sub?:Rectangle)
+	constructor(texture:Texture)
 	{
 		super();
 		
-		this.subtexture = new Subtexture(texture, sub);
-		this.crop = new Rectangle(0, 0, this.subtexture.width, this.subtexture.height);
+		this.texture = texture;
+		this.crop = new Rectangle(0, 0, texture.width, texture.height);
 	}
 	
 	public render()
 	{
 		// only draw if the current shader actually takes a texture
 		if (Engine.graphics.shader.sampler2d != null)
-			Engine.graphics.subtexture
+			Engine.graphics.texture
 			(
-				this.subtexture, 
+				this.texture, 
 				this.scenePosition.x,
 				this.scenePosition.y, 
 				this.crop, 

@@ -6,6 +6,11 @@ class Game {
             loader.addTexture("assets/sprite.png");
             loader.addTexture("assets/pixel.png");
             loader.load(function () {
+                let t = Assets.textures["assets/sprite.png"].clone();
+                t.bounds = new Rectangle(4, 4, t.width - 8, t.height - 4);
+                t.frame = new Rectangle(-4, -4, t.bounds.width + 8, t.bounds.height + 4);
+                console.log(t.toString());
+                console.log(t.getSubtexture(new Rectangle(8, 8, 32, 32)).toString());
                 Engine.scene = new GameScene();
             });
         });
@@ -14,7 +19,7 @@ class Game {
 class GameScene extends Scene {
     begin() {
         super.begin();
-        Engine.graphics.pixel = new Subtexture(Assets.textures["assets/pixel.png"]);
+        Engine.graphics.pixel = Assets.textures["assets/pixel.png"];
         Engine.debugMode = true;
         Keys.map("left", [Key.left]);
         Keys.map("right", [Key.right]);
@@ -24,7 +29,7 @@ class GameScene extends Scene {
         this.camera.position = new Vector(Engine.width / 2, Engine.height / 2);
         this.entity = new Entity();
         this.add(this.entity);
-        let sprite = new Sprite(Assets.textures["assets/sprite.png"], new Rectangle(35, 30, 20, 30));
+        let sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(35, 30, 20, 30)));
         sprite.origin = new Vector(10, 30);
         sprite.position = new Vector(0, 0);
         sprite.flipX = true;
@@ -47,7 +52,7 @@ class Player extends Entity {
         this.x = 200;
         this.y = 200;
         this.add(this.physics = new Physics(-4, -4, 8, 8));
-        this.add(this.sprite = new Sprite(Assets.textures["assets/sprite.png"], new Rectangle(30, 40, 30, 80)));
+        this.add(this.sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(30, 40, 30, 80))));
         this.sprite.crop.height -= 4;
         this.sprite.origin.x = this.sprite.width / 2;
         this.sprite.origin.y = this.sprite.height;

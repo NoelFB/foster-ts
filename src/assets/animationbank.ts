@@ -30,7 +30,7 @@ class AnimationSet
 		this.name = name;
 	}
 	
-	public add(name:string, speed:number, frames:Subtexture[], position?:Vector, origin?:Vector):AnimationSet
+	public add(name:string, speed:number, frames:Texture[], position?:Vector, origin?:Vector):AnimationSet
 	{
 		let anim = new AnimationTemplate(name, speed, frames, position, origin);
 		this.animations[name] = anim;
@@ -52,11 +52,11 @@ class AnimationTemplate
 {
 	public name:string;
 	public speed:number;
-	public frames:Subtexture[];
+	public frames:Texture[];
 	public origin:Vector;
 	public position:Vector;
 	
-	constructor(name:string, speed:number, frames:Subtexture[], position?:Vector, origin?:Vector)
+	constructor(name:string, speed:number, frames:Texture[], position?:Vector, origin?:Vector)
 	{
 		this.name = name;
 		this.speed = speed;

@@ -25,7 +25,7 @@ class GameScene extends Scene
 	{
 		super.begin();
 		
-		Engine.graphics.pixel = new Subtexture(Assets.textures["assets/pixel.png"]);
+		Engine.graphics.pixel = Assets.textures["assets/pixel.png"];
 		Engine.debugMode = true;
 		
 		Keys.map("left", [Key.left]);
@@ -39,7 +39,7 @@ class GameScene extends Scene
 		this.entity = new Entity();
 		this.add(this.entity);
 		
-		let sprite = new Sprite(Assets.textures["assets/sprite.png"], new Rectangle(35, 30, 20, 30));
+		let sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(35, 30, 20, 30)));
 		sprite.origin = new Vector(10, 30);
 		sprite.position = new Vector(0, 0);
 		sprite.flipX = true;
@@ -77,7 +77,7 @@ class Player extends Entity
 		this.y = 200;
 		
 		this.add(this.physics = new Physics(-4, -4, 8, 8));
-		this.add(this.sprite = new Sprite(Assets.textures["assets/sprite.png"], new Rectangle(30, 40, 30, 80)));
+		this.add(this.sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(30, 40, 30, 80))));
 		this.sprite.crop.height -= 4;
 		this.sprite.origin.x = this.sprite.width / 2;
 		this.sprite.origin.y = this.sprite.height;

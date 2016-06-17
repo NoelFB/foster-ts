@@ -221,7 +221,7 @@ class Graphics
 					else if (uniform.type == ShaderUniformType.sampler2D)
 					{
 						this.gl.activeTexture((<any>this.gl)["TEXTURE" + textureCounter]);
-						this.gl.bindTexture(this.gl.TEXTURE_2D, (uniform.value as Texture).texture);
+						this.gl.bindTexture(this.gl.TEXTURE_2D, (uniform.value as Texture).texture.webGLTexture);
 						this.gl.uniform1i(location, 0);
 						textureCounter += 1;
 					}
@@ -287,6 +287,7 @@ class Graphics
 	private topright:Vector = new Vector();
 	private botleft:Vector = new Vector();
 	private botright:Vector = new Vector();
+	private texToDraw:Texture = new Texture(null, new Rectangle(), new Rectangle());
 	
 	/**
 	 * Sets the current texture on the shader (if the shader has a sampler2d uniform)
@@ -303,16 +304,24 @@ class Graphics
 	public texture(tex:Texture, posX:number, posY:number, crop?:Rectangle, color?:Color, origin?:Vector, scale?:Vector, rotation?:number, flipX?:boolean, flipY?:boolean)
 	{
 		this.setShaderTexture(tex);
+
+		let t:Texture = null;
+		if (crop == undefined)
+			t = tex;
+		else
+			t = tex.getSubtexture(crop, this.texToDraw);
 		
 		// size
-		let width = (crop.width || tex.width);
-		let height = (crop.height || tex.height);
-		
+		let left = -t.frame.x;
+		let top = -t.frame.y;
+		let width = t.bounds.width;
+		let height = t.bounds.height;
+
 		// relative positions
-		this.topleft.set(0, 0);
-		this.topright.set(width, 0);
-		this.botleft.set(0, height);
-		this.botright.set(width, height);
+		this.topleft.set(left, top);
+		this.topright.set(left + width, top);
+		this.botleft.set(left, top + height);
+		this.botright.set(left + width, top + height);
 		
 		// offset by origin
 		if (origin && (origin.x != 0 || origin.y != 0))
@@ -344,10 +353,10 @@ class Graphics
 		}
 	
 		// uv positions
-		let uvMinX = (crop.x || 0) / tex.width;
-		let uvMinY = (crop.y || 0) / tex.height;
-		let uvMaxX = uvMinX + (width / tex.width);
-		let uvMaxY = uvMinY + (height / tex.height);
+		let uvMinX = t.bounds.x / t.texture.width;
+		let uvMinY = t.bounds.y / t.texture.height;
+		let uvMaxX = uvMinX + (width / t.texture.width);
+		let uvMaxY = uvMinY + (height / t.texture.height);
 		
 		// flip UVs on X
 		if (flipX)
@@ -377,39 +386,21 @@ class Graphics
 		this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, color);
 	}
 	
-	/**
-	 * Draws a subtexture at the given position. If the current Shader does not take a texture, this will throw an error.
-	 */
-	private tempRect:Rectangle = new Rectangle();
-	public subtexture(tex:Subtexture, x:number, y:number, crop?:Rectangle, color?:Color, origin?:Vector, scale?:Vector, rotation?:number, flipX?:boolean, flipY?:boolean)
-	{
-		if (crop && (crop.x != 0 || crop.y != 0 || crop.width != tex.width || crop.height != tex.height))
-		{
-			crop.copyTo(this.tempRect);
-			this.tempRect.x += tex.crop.x;
-			this.tempRect.y  += tex.crop.y;
-			tex.crop.cropRect(this.tempRect);
-			this.texture(tex.texture, x, y, this.tempRect, color, origin, scale, rotation, flipX, flipY);
-		}
-		else
-			this.texture(tex.texture, x, y, tex.crop, color, origin, scale, rotation, flipX, flipY);
-	}
-	
 	// pixel drawing
-	private _pixel:Subtexture;
+	private _pixel:Texture;
 	private _pixelUVs:Vector[];
 	
 	/**
 	 * Sets the current Pixel texture for drawing
 	 */
-	public set pixel(p:Subtexture) 
+	public set pixel(p:Texture) 
 	{ 
-		let minX = p.crop.left / p.texture.width;
-		let minY = p.crop.top / p.texture.height;
-		let maxX = p.crop.right / p.texture.width;
-		let maxY = p.crop.bottom / p.texture.height;
+		let minX = p.bounds.left / p.texture.width;
+		let minY = p.bounds.top / p.texture.height;
+		let maxX = p.bounds.right / p.texture.width;
+		let maxY = p.bounds.bottom / p.texture.height;
 		
-		this._pixel = new Subtexture(p.texture, new Rectangle(p.crop.x, p.crop.y, p.crop.width, p.crop.height));
+		this._pixel = p;
 		this._pixelUVs = 
 		[
 			new Vector(minX, minY),
@@ -425,7 +416,7 @@ class Graphics
 	public pixelRect(bounds:Rectangle, color:Color)
 	{
 		Engine.assert(this._pixel != null, "pixelRect requires the Graphics.pixel Subtexture be set");
-		this.setShaderTexture(this._pixel.texture);
+		this.setShaderTexture(this._pixel);
 			
 		let uv = this._pixelUVs;
 		this.push(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
@@ -442,7 +433,7 @@ class Graphics
 	public pixelTriangle(a:Vector, b:Vector, c:Vector, colA:Color, colB?:Color, colC?:Color)
 	{
 		Engine.assert(this._pixel != null, "pixelTriangle requires the Graphics.pixel Subtexture be set");
-		this.setShaderTexture(this._pixel.texture);
+		this.setShaderTexture(this._pixel);
 		
 		if (colB == undefined) colB = colA;
 		if (colC == undefined) colC = colA;
@@ -459,7 +450,7 @@ class Graphics
 	public pixelCircle(pos:Vector, rad:number, steps:number, colorA:Color, colorB?:Color)
 	{
 		Engine.assert(this._pixel != null, "pixelCircle requires the Graphics.pixel Subtexture be set");
-		this.setShaderTexture(this._pixel.texture);
+		this.setShaderTexture(this._pixel);
 			
 		if (colorB == undefined)
 			colorB = colorA;
