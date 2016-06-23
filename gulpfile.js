@@ -26,18 +26,22 @@ var gulp = require("gulp"),
 
 // compiling sample_game
 {
+
+	// copies the game assets to the bin folder
 	gulp.task("sg_assets", function()
 	{
 		return gulp.src("./sample_game/assets/*")
 		.pipe(gulp.dest("./sample_game/bin/assets"));
 	});
 
-	gulp.task("sg_core", function()
+	// copies the default app setup for Electron to the bin folder
+	gulp.task("sg_app", function()
 	{
-		return gulp.src(["./sample_game/core/*", "./bin/foster.js"])
+		return gulp.src(["./app/*", "./bin/foster.js"])
 		.pipe(gulp.dest("./sample_game/bin"));
 	});
 
+	// compiles the sample game typescript
 	gulp.task("sg_ts", function()
 	{
 		return gulp.src("./sample_game/src/**/*.ts")
@@ -45,13 +49,15 @@ var gulp = require("gulp"),
 		.pipe(gulp.dest("./sample_game/bin"));
 	});
 
+	// cleans the bin folder
 	gulp.task("sg_clean", function()
 	{
 		return del(['./sample_game/bin']);
 	});
 
+	// compiles the sample game
 	gulp.task("sample_game", ["sg_clean"], function()
 	{
-		gulp.start(["sg_assets", "sg_core", "sg_ts"]);
+		gulp.start(["sg_assets", "sg_app", "sg_ts"]);
 	});
 }

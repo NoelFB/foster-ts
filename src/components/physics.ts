@@ -40,22 +40,29 @@ class Physics extends Hitbox
 	
 	public moveXAbsolute(amount:number):boolean
 	{
-		let sign = Math.sign(amount);
-		amount = Math.abs(Math.round(amount));
-		
-		while (amount > 0)
+		if (this.solids.length <= 0)
 		{
-			if (this.checks(this.solids, sign, 0))
+			this.entity.x += Math.round(amount);
+		}
+		else
+		{
+			let sign = Math.sign(amount);
+			amount = Math.abs(Math.round(amount));
+			
+			while (amount > 0)
 			{
-				this.remainder.x = 0;
-				if (this.onCollideX != null)
-					this.onCollideX();
-				return false;
-			}
-			else
-			{
-				this.entity.x += sign;
-				amount -= 1;
+				if (this.checks(this.solids, sign, 0))
+				{
+					this.remainder.x = 0;
+					if (this.onCollideX != null)
+						this.onCollideX();
+					return false;
+				}
+				else
+				{
+					this.entity.x += sign;
+					amount -= 1;
+				}
 			}
 		}
 		
@@ -72,29 +79,36 @@ class Physics extends Hitbox
 	
 	public moveYAbsolute(amount:number):boolean
 	{
-		let sign = Math.sign(amount);
-		amount = Math.abs(Math.round(amount));
-		
-		while (amount > 0)
+		if (this.solids.length <= 0)
 		{
-			if (this.checks(this.solids, 0, sign))
+			this.entity.y += Math.round(amount);
+		}
+		else
+		{
+			let sign = Math.sign(amount);
+			amount = Math.abs(Math.round(amount));
+			
+			while (amount > 0)
 			{
-				this.remainder.y = 0;
-				if (this.onCollideY != null)
-					this.onCollideX();
-				return false;
-			}
-			else
-			{
-				this.entity.y += sign;
-				amount -= 1;
+				if (this.checks(this.solids, 0, sign))
+				{
+					this.remainder.y = 0;
+					if (this.onCollideY != null)
+						this.onCollideX();
+					return false;
+				}
+				else
+				{
+					this.entity.y += sign;
+					amount -= 1;
+				}
 			}
 		}
 		
 		return true;
 	}
 	
-	public friction(fx:number, fy:number):void
+	public friction(fx:number, fy:number):Physics
 	{
 		if (this.speed.x < 0)
 			this.speed.x = Math.min(0, this.speed.x + fx * Engine.delta);
@@ -104,5 +118,28 @@ class Physics extends Hitbox
 			this.speed.y = Math.min(0, this.speed.y + fy * Engine.delta);
 		else if (this.speed.y > 0)
 			this.speed.y = Math.max(0, this.speed.y - fy * Engine.delta);
+		return this;
+	}
+
+	public maxspeed(mx?:number, my?:number):Physics
+	{
+		if (mx != undefined && mx != null)
+			this.speed.x = Math.max(-mx, Math.min(mx, this.speed.x));
+		if (my != undefined && my != null)
+			this.speed.y = Math.max(-my, Math.min(my, this.speed.y));
+		return this;
+	}
+
+	public circularMaxspeed(length:number):Physics
+	{
+		if (this.speed.length > length)
+			this.speed.normalize().scale(length);
+		return this;
+	}
+
+	public stop():void
+	{
+		this.speed.x = this.speed.y = 0;
+		this.remainder.x = this.remainder.y = 0;
 	}
 }

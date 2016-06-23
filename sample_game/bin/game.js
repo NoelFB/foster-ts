@@ -54,17 +54,18 @@ class Player extends Entity {
     }
     update() {
         if (Keys.mapDown("up"))
-            this.physics.speed.y -= 32 * Engine.delta;
+            this.physics.speed.y -= 12 * Engine.delta;
         else if (Keys.down(Key.down))
-            this.physics.speed.y += 32 * Engine.delta;
+            this.physics.speed.y += 12 * Engine.delta;
         else
-            this.physics.friction(0, 32);
+            this.physics.friction(0, 8);
         if (Keys.mapDown("left"))
-            this.physics.speed.x -= 32 * Engine.delta;
+            this.physics.speed.x -= 12 * Engine.delta;
         else if (Keys.mapDown("right"))
-            this.physics.speed.x += 32 * Engine.delta;
+            this.physics.speed.x += 12 * Engine.delta;
         else
-            this.physics.friction(32, 0);
+            this.physics.friction(8, 0);
+        this.physics.circularMaxspeed(8);
         super.update();
     }
 }

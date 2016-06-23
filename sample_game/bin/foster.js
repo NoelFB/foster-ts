@@ -1291,18 +1291,23 @@ class Physics extends Hitbox {
         return this.moveXAbsolute(moveBy);
     }
     moveXAbsolute(amount) {
-        let sign = Math.sign(amount);
-        amount = Math.abs(Math.round(amount));
-        while (amount > 0) {
-            if (this.checks(this.solids, sign, 0)) {
-                this.remainder.x = 0;
-                if (this.onCollideX != null)
-                    this.onCollideX();
-                return false;
-            }
-            else {
-                this.entity.x += sign;
-                amount -= 1;
+        if (this.solids.length <= 0) {
+            this.entity.x += Math.round(amount);
+        }
+        else {
+            let sign = Math.sign(amount);
+            amount = Math.abs(Math.round(amount));
+            while (amount > 0) {
+                if (this.checks(this.solids, sign, 0)) {
+                    this.remainder.x = 0;
+                    if (this.onCollideX != null)
+                        this.onCollideX();
+                    return false;
+                }
+                else {
+                    this.entity.x += sign;
+                    amount -= 1;
+                }
             }
         }
         return true;
@@ -1314,18 +1319,23 @@ class Physics extends Hitbox {
         return this.moveYAbsolute(moveBy);
     }
     moveYAbsolute(amount) {
-        let sign = Math.sign(amount);
-        amount = Math.abs(Math.round(amount));
-        while (amount > 0) {
-            if (this.checks(this.solids, 0, sign)) {
-                this.remainder.y = 0;
-                if (this.onCollideY != null)
-                    this.onCollideX();
-                return false;
-            }
-            else {
-                this.entity.y += sign;
-                amount -= 1;
+        if (this.solids.length <= 0) {
+            this.entity.y += Math.round(amount);
+        }
+        else {
+            let sign = Math.sign(amount);
+            amount = Math.abs(Math.round(amount));
+            while (amount > 0) {
+                if (this.checks(this.solids, 0, sign)) {
+                    this.remainder.y = 0;
+                    if (this.onCollideY != null)
+                        this.onCollideX();
+                    return false;
+                }
+                else {
+                    this.entity.y += sign;
+                    amount -= 1;
+                }
             }
         }
         return true;
@@ -1339,6 +1349,23 @@ class Physics extends Hitbox {
             this.speed.y = Math.min(0, this.speed.y + fy * Engine.delta);
         else if (this.speed.y > 0)
             this.speed.y = Math.max(0, this.speed.y - fy * Engine.delta);
+        return this;
+    }
+    maxspeed(mx, my) {
+        if (mx != undefined && mx != null)
+            this.speed.x = Math.max(-mx, Math.min(mx, this.speed.x));
+        if (my != undefined && my != null)
+            this.speed.y = Math.max(-my, Math.min(my, this.speed.y));
+        return this;
+    }
+    circularMaxspeed(length) {
+        if (this.speed.length > length)
+            this.speed.normalize().scale(length);
+        return this;
+    }
+    stop() {
+        this.speed.x = this.speed.y = 0;
+        this.remainder.x = this.remainder.y = 0;
     }
 }
 class Keys {
@@ -1548,6 +1575,12 @@ class Vector {
     get normal() {
         let dist = this.length;
         return new Vector(this.x / dist, this.y / dist);
+    }
+    normalize() {
+        let dist = this.length;
+        this.x /= dist;
+        this.y /= dist;
+        return this;
     }
     static add(a, b) {
         return new Vector(a.x + b.x, a.y + b.y);

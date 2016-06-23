@@ -69,6 +69,14 @@ class Vector
 		let dist = this.length;
 		return new Vector(this.x / dist, this.y / dist);
 	}
+
+	public normalize():Vector
+	{
+		let dist = this.length;
+		this.x /= dist;
+		this.y /= dist;
+		return this;
+	}
 	
 	public static add(a:Vector, b:Vector):Vector
 	{

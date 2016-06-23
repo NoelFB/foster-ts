@@ -414,7 +414,10 @@ declare class Physics extends Hitbox {
     moveXAbsolute(amount: number): boolean;
     moveY(amount: number): boolean;
     moveYAbsolute(amount: number): boolean;
-    friction(fx: number, fy: number): void;
+    friction(fx: number, fy: number): Physics;
+    maxspeed(mx?: number, my?: number): Physics;
+    circularMaxspeed(length: number): Physics;
+    stop(): void;
 }
 declare class Keys {
     private static _down;
@@ -545,6 +548,7 @@ declare class Vector {
     clone(): Vector;
     length: number;
     normal: Vector;
+    normalize(): Vector;
     static add(a: Vector, b: Vector): Vector;
     static sub(a: Vector, b: Vector): Vector;
     static mult(a: Vector, b: Vector): Vector;
