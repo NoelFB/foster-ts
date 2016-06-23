@@ -90,14 +90,16 @@ class Player extends Entity
 		else if (Keys.down(Key.down))
 			this.physics.speed.y += 32 * Engine.delta;
 		else
-			this.physics.friction(0, 300);
+			this.physics.friction(0, 32);
 			
 		if (Keys.mapDown("left"))
 			this.physics.speed.x -= 32 * Engine.delta;
 		else if (Keys.mapDown("right"))
 			this.physics.speed.x += 32 * Engine.delta;
 		else
-			this.physics.friction(300, 0);
+			this.physics.friction(32, 0);
+
+		super.update();
 	}
 }
 

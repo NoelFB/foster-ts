@@ -186,26 +186,55 @@ class Entity {
         else
             this._depth = val;
     }
+    /**
+     * Called the first time the entity is created (after constructor)
+     */
     created() {
     }
+    /**
+     * Called when the entity is added to a Scene
+     */
     added() {
     }
-    update() {
+    /**
+     * Called when the entity is removed from a Scene
+     */
+    removed() {
     }
+    /**
+     * Called when the entity is recycled in a Scene
+     */
+    recycled() {
+    }
+    /**
+     * Called when an entity is perminantely destroyed
+     */
+    destroy() {
+    }
+    /**
+     * Called every game-step, if this entity is in a Scene and Active
+     */
+    update() {
+        for (let i = 0; i < this.components.length; i++)
+            if (this.components[i].active)
+                this.components[i].update();
+    }
+    /**
+     * Called via a Renderer, if Visible
+     */
     render() {
         for (let i = 0; i < this.components.length; i++)
             if (this.components[i].visible)
                 this.components[i].render();
     }
+    /**
+     * Called via the Debug Renderer
+     */
     debugRender() {
         Engine.graphics.hollowRect(new Rectangle(this.x - 5, this.y - 5, 10, 10), 1, Color.white);
         for (let i = 0; i < this.components.length; i++)
             if (this.components[i].visible)
                 this.components[i].debugRender();
-    }
-    removed() {
-    }
-    destroy() {
     }
     add(component) {
         this.components.push(component);
@@ -760,6 +789,7 @@ class Scene {
         this.sorting = [];
         this.colliders = {};
         this.groups = {};
+        this.cache = {};
         this.camera = new Camera();
         this.addRenderer(new SpriteRenderer());
     }
@@ -833,6 +863,31 @@ class Scene {
             this._trackComponent(entity.components[i]);
         // add entity
         entity.added();
+        return entity;
+    }
+    /**
+     * Recreates and adds an Entity from the cache in the given bucket. If there are no entities cache'd in that bucket, NULL is returned
+     * @param bucket	The bucket to pull from
+     */
+    recreate(bucket) {
+        if (Array.isArray(this.cache[bucket]) && this.cache[bucket].length > 0) {
+            var entity = this.cache[bucket][0];
+            this.cache[bucket].splice(0, 1);
+            return this.add(entity);
+        }
+        return null;
+    }
+    /**
+     * Recycles an entity into the given bucket & removes it from the Scene
+     * @param bucket	The bucket to recycle the entity into
+     * @param entity	The entity to recycle & remove
+     */
+    recycle(bucket, entity) {
+        this.remove(entity);
+        if (this.cache[bucket] == undefined)
+            this.cache[bucket] = [];
+        this.cache[bucket].push(entity);
+        entity.recycled();
     }
     remove(entity) {
         let index = this.entities.indexOf(entity);

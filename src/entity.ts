@@ -86,7 +86,9 @@ class Entity
 	 */
 	update()
 	{
-
+		for (let i = 0; i < this.components.length; i ++)
+			if (this.components[i].active)
+				this.components[i].update();
 	}
 
 	/**

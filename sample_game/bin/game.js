@@ -6,11 +6,6 @@ class Game {
             loader.addTexture("assets/sprite.png");
             loader.addTexture("assets/pixel.png");
             loader.load(function () {
-                let t = Assets.textures["assets/sprite.png"].clone();
-                t.bounds = new Rectangle(4, 4, t.width - 8, t.height - 4);
-                t.frame = new Rectangle(-4, -4, t.bounds.width + 8, t.bounds.height + 4);
-                console.log(t.toString());
-                console.log(t.getSubtexture(new Rectangle(8, 8, 32, 32)).toString());
                 Engine.scene = new GameScene();
             });
         });
@@ -63,13 +58,14 @@ class Player extends Entity {
         else if (Keys.down(Key.down))
             this.physics.speed.y += 32 * Engine.delta;
         else
-            this.physics.friction(0, 300);
+            this.physics.friction(0, 32);
         if (Keys.mapDown("left"))
             this.physics.speed.x -= 32 * Engine.delta;
         else if (Keys.mapDown("right"))
             this.physics.speed.x += 32 * Engine.delta;
         else
-            this.physics.friction(300, 0);
+            this.physics.friction(32, 0);
+        super.update();
     }
 }
 Game.main();

@@ -215,6 +215,9 @@ class Entity {
      * Called every game-step, if this entity is in a Scene and Active
      */
     update() {
+        for (let i = 0; i < this.components.length; i++)
+            if (this.components[i].active)
+                this.components[i].update();
     }
     /**
      * Called via a Renderer, if Visible
