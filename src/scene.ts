@@ -7,6 +7,7 @@ class Scene
 	public sorting:Entity[] = [];
 	private colliders:any = {};
 	private groups:any = {};
+	private cache:any = {};
 	
 	constructor()
 	{
@@ -90,7 +91,7 @@ class Scene
 		}
 	}
 
-	public add(entity:Entity)
+	public add(entity:Entity):Entity
 	{
 		entity.scene = this;
 		this._insertEntityInto(entity, this.entities, false);
@@ -112,16 +113,46 @@ class Scene
 
 		// add entity
 		entity.added();
+		return entity;
 	}
 
-	public remove(entity:Entity)
+	/**
+	 * Recreates and adds an Entity from the cache in the given bucket. If there are no entities cache'd in that bucket, NULL is returned
+	 * @param bucket	The bucket to pull from
+	 */
+	public recreate(bucket:string):Entity
+	{
+		if (Array.isArray(this.cache[bucket]) && this.cache[bucket].length > 0)
+		{
+			var entity = this.cache[bucket][0];
+			this.cache[bucket].splice(0, 1);
+			return this.add(<Entity>entity);
+		}
+		return null;
+	}
+
+	/**
+	 * Recycles an entity into the given bucket & removes it from the Scene
+	 * @param bucket	The bucket to recycle the entity into
+	 * @param entity	The entity to recycle & remove
+	 */
+	public recycle(bucket:string, entity:Entity):void
+	{
+		this.remove(entity);
+		if (this.cache[bucket] == undefined)
+			this.cache[bucket] = [];
+		this.cache[bucket].push(entity);
+		entity.recycled();
+	}
+
+	public remove(entity:Entity):void
 	{
 		let index = this.entities.indexOf(entity);
 		if (index >= 0)
 			this.removeAt(index);
 	}
 
-	public removeAt(index:number)
+	public removeAt(index:number):void
 	{
 		let entity = this.entities[index];
 		entity.removed();
@@ -139,13 +170,13 @@ class Scene
 		this.entities.splice(index, 1);
 	}
 
-	public removeAll()
+	public removeAll():void
 	{
 		for (let i = this.entities.length - 1; i >= 0; i --)
 			this.entities.splice(i, 1);
 	}
 
-	public destroy(entity:Entity)
+	public destroy(entity:Entity):void
 	{
 		if (entity.scene != null)
 			this.remove(entity);
@@ -153,7 +184,7 @@ class Scene
 		entity.instantiated = false;
 	}
 
-	public firstEntityInGroup(group:string)
+	public firstEntityInGroup(group:string):Entity
 	{
 		if (this.groups[group] != undefined && this.groups[group].length > 0)
 			return this.groups[group][0];

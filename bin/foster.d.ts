@@ -77,15 +77,40 @@ declare class Entity {
     groups: string[];
     _depth: number;
     _nextDepth: number;
-    constructor();
     depth: number;
+    constructor();
+    /**
+     * Called the first time the entity is created (after constructor)
+     */
     created(): void;
+    /**
+     * Called when the entity is added to a Scene
+     */
     added(): void;
-    update(): void;
-    render(): void;
-    debugRender(): void;
+    /**
+     * Called when the entity is removed from a Scene
+     */
     removed(): void;
+    /**
+     * Called when the entity is recycled in a Scene
+     */
+    recycled(): void;
+    /**
+     * Called when an entity is perminantely destroyed
+     */
     destroy(): void;
+    /**
+     * Called every game-step, if this entity is in a Scene and Active
+     */
+    update(): void;
+    /**
+     * Called via a Renderer, if Visible
+     */
+    render(): void;
+    /**
+     * Called via the Debug Renderer
+     */
+    debugRender(): void;
     add(component: Component): void;
     remove(component: Component): void;
     removeAll(): void;
@@ -241,17 +266,29 @@ declare class Scene {
     sorting: Entity[];
     private colliders;
     private groups;
+    private cache;
     constructor();
     begin(): void;
     ended(): void;
     update(): void;
     render(): void;
-    add(entity: Entity): void;
+    add(entity: Entity): Entity;
+    /**
+     * Recreates and adds an Entity from the cache in the given bucket. If there are no entities cache'd in that bucket, NULL is returned
+     * @param bucket	The bucket to pull from
+     */
+    recreate(bucket: string): Entity;
+    /**
+     * Recycles an entity into the given bucket & removes it from the Scene
+     * @param bucket	The bucket to recycle the entity into
+     * @param entity	The entity to recycle & remove
+     */
+    recycle(bucket: string, entity: Entity): void;
     remove(entity: Entity): void;
     removeAt(index: number): void;
     removeAll(): void;
     destroy(entity: Entity): void;
-    firstEntityInGroup(group: string): any;
+    firstEntityInGroup(group: string): Entity;
     firstEntityOfClass(classType: any): Entity;
     allEntitiesInGroup(group: string): Entity[];
     allEntitiesInGroups(groups: string[]): Entity[];

@@ -17,11 +17,6 @@ class Entity
 	public _depth:number = 0;
 	public _nextDepth:number = null;
 	
-	constructor()
-	{
-
-	}
-
 	get depth() 
 	{
 		if (this._nextDepth != null)
@@ -41,21 +36,62 @@ class Entity
 			this._depth = val;
 	}
 
+	constructor()
+	{
+
+	}
+
+	/**
+	 * Called the first time the entity is created (after constructor)
+	 */
 	created()
 	{
 
 	}
 
+	/**
+	 * Called when the entity is added to a Scene
+	 */
 	added()
 	{
 
 	}
 
+	/**
+	 * Called when the entity is removed from a Scene
+	 */
+	removed()
+	{
+
+	}
+
+	/**
+	 * Called when the entity is recycled in a Scene
+	 */
+	recycled()
+	{
+
+	}
+
+	/**
+	 * Called when an entity is perminantely destroyed
+	 */
+	destroy()
+	{
+
+	}
+
+	/**
+	 * Called every game-step, if this entity is in a Scene and Active
+	 */
 	update()
 	{
 
 	}
 
+	/**
+	 * Called via a Renderer, if Visible
+	 */
 	render()
 	{
 		for (let i = 0; i < this.components.length; i ++)
@@ -63,6 +99,9 @@ class Entity
 				this.components[i].render();
 	}
 
+	/**
+	 * Called via the Debug Renderer
+	 */
 	debugRender()
 	{
 		Engine.graphics.hollowRect(new Rectangle(this.x - 5, this.y - 5, 10, 10), 1, Color.white);
@@ -70,16 +109,6 @@ class Entity
 		for (let i = 0; i < this.components.length; i ++)
 			if (this.components[i].visible)
 				this.components[i].debugRender();
-	}
-
-	removed()
-	{
-
-	}
-
-	destroy()
-	{
-
 	}
 
 	add(component:Component):void
