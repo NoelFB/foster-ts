@@ -34,10 +34,10 @@ var gulp = require("gulp"),
 		.pipe(gulp.dest("./sample_game/bin/assets"));
 	});
 
-	// copies the default app setup for Electron to the bin folder
+	// copies the default app setup for Electron to the bin folder along with foster.js
 	gulp.task("sg_app", function()
 	{
-		return gulp.src(["./app/*", "./bin/foster.js"])
+		return gulp.src(["./electron/*", "./bin/foster.js", "!./electron/**/*.md"])
 		.pipe(gulp.dest("./sample_game/bin"));
 	});
 
