@@ -12,6 +12,7 @@
 		"node_modules",
 		"gulpfile.js",
 		"sample_game",
+		"app",
 		".vscode"
 	]
 }
