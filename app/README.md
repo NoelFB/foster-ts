@@ -10,4 +10,4 @@ Using this template, what you need to do:
  - Drop in `foster.js`
  - Drop in any assets your game requires
 
-For an example, check out the compiled sample game in (https://github.com/Drazzke/foster/tree/master/sample_game/bin)[sample_game/bin/]
+For an example, check out the compiled sample game in [sample_game/bin/](https://github.com/Drazzke/foster/tree/master/sample_game/bin)
