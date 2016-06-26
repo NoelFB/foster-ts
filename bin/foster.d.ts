@@ -214,6 +214,7 @@ declare class Graphics {
      * Draws a texture at the given position. If the current Shader does not take a texture, this will throw an error.
      */
     texture(tex: Texture, posX: number, posY: number, crop?: Rectangle, color?: Color, origin?: Vector, scale?: Vector, rotation?: number, flipX?: boolean, flipY?: boolean): void;
+    quad(posX: number, posY: number, width: number, height: number, color?: Color, origin?: Vector, scale?: Vector, rotation?: number): void;
     private _pixel;
     private _pixelUVs;
     /**
@@ -247,13 +248,12 @@ declare class Graphics {
     circle(pos: Vector, rad: number, steps: number, colorA: Color, colorB?: Color): void;
 }
 declare abstract class Renderer {
-    scene: Scene;
     visible: boolean;
-    shader: Shader;
-    shaderMatrixUniformName: string;
+    scene: Scene;
     camera: Camera;
     groupsMask: string[];
-    useGroupMask: boolean;
+    shader: Shader;
+    shaderMatrixUniformName: string;
     update(): void;
     preRender(): void;
     render(): void;
@@ -272,7 +272,7 @@ declare class Scene {
     ended(): void;
     update(): void;
     render(): void;
-    add(entity: Entity): Entity;
+    add(entity: Entity, position?: Vector): Entity;
     /**
      * Recreates and adds an Entity from the cache in the given bucket. If there are no entities cache'd in that bucket, NULL is returned
      * @param bucket	The bucket to pull from
@@ -722,6 +722,18 @@ declare class Sprite extends Component {
 }
 declare class Animation extends Sprite {
     constructor();
+}
+declare class Rectsprite extends Component {
+    size: Vector;
+    scale: Vector;
+    origin: Vector;
+    rotation: number;
+    color: Color;
+    alpha: number;
+    width: number;
+    height: number;
+    constructor(width: number, height: number, color?: Color);
+    render(): void;
 }
 declare class Tilemap extends Component {
 }

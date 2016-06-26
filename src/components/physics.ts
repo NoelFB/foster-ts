@@ -94,7 +94,7 @@ class Physics extends Hitbox
 				{
 					this.remainder.y = 0;
 					if (this.onCollideY != null)
-						this.onCollideX();
+						this.onCollideY();
 					return false;
 				}
 				else

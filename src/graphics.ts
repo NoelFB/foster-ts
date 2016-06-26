@@ -306,7 +306,7 @@ class Graphics
 		this.setShaderTexture(tex);
 
 		let t:Texture = null;
-		if (crop == undefined)
+		if (crop == undefined || crop == null)
 			t = tex;
 		else
 			t = tex.getSubtexture(crop, this.texToDraw);
@@ -386,8 +386,60 @@ class Graphics
 		this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, color);
 	}
 	
+	public quad(posX:number, posY:number, width:number, height:number, color?:Color, origin?:Vector, scale?:Vector, rotation?:number)
+	{	
+		let left = 0;
+		let top = 0;
+
+		// relative positions
+		this.topleft.set(left, top);
+		this.topright.set(left + width, top);
+		this.botleft.set(left, top + height);
+		this.botright.set(left + width, top + height);
+		
+		// offset by origin
+		if (origin && (origin.x != 0 || origin.y != 0))
+		{
+			this.topleft.sub(origin);
+			this.topright.sub(origin);
+			this.botleft.sub(origin);
+			this.botright.sub(origin);
+		}
+		
+		// scale
+		if (scale && (scale.x != 1 || scale.y != 1))
+		{
+			this.topleft.mult(scale);
+			this.topright.mult(scale);
+			this.botleft.mult(scale);
+			this.botright.mult(scale);
+		}
+		
+		// rotate
+		if (rotation && rotation != 0)
+		{
+			let s = Math.sin(rotation);
+			let c = Math.cos(rotation);
+			this.topleft.rotate(s, c);
+			this.topright.rotate(s, c);
+			this.botleft.rotate(s, c);
+			this.botright.rotate(s, c);
+		}
+
+		// color
+		let col = (color || Color.white);
+		
+		// push vertices
+		this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
+		this.push(posX + this.topright.x, posY + this.topright.y, 0, 0, color);
+		this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
+		this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
+		this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
+		this.push(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
+	}
+
 	// pixel drawing
-	private _pixel:Texture;
+	private _pixel:Texture = null;
 	private _pixelUVs:Vector[];
 	
 	/**
@@ -409,6 +461,7 @@ class Graphics
 			new Vector(minX, maxY)
 		];
 	}
+	public get pixel():Texture { return this._pixel; }
 	
 	/**
 	 * Draws a rectangle with the Graphics.Pixel texture

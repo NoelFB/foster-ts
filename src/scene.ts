@@ -91,10 +91,13 @@ class Scene
 		}
 	}
 
-	public add(entity:Entity):Entity
+	public add(entity:Entity, position?:Vector):Entity
 	{
 		entity.scene = this;
 		this._insertEntityInto(entity, this.entities, false);
+
+		if (position != undefined)
+			entity.position = position;
 
 		// first time for this entity
 		if (!entity.instantiated)

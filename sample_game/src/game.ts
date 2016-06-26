@@ -36,19 +36,26 @@ class GameScene extends Scene
 		this.camera.origin = new Vector(Engine.width / 2, Engine.height / 2);
 		this.camera.position = new Vector(Engine.width / 2, Engine.height / 2);
 		
-		this.entity = new Entity();
-		this.add(this.entity);
-		
-		let sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(35, 30, 20, 30)));
-		sprite.origin = new Vector(10, 30);
-		sprite.position = new Vector(0, 0);
-		sprite.flipX = true;
-		sprite.rotation = 1.2;
-		
-		let hitbox = new Hitbox(-8, -16, 16, 16);
-		this.entity.add(hitbox);
-		
-		this.entity.add(sprite);
+		// some entity
+		{
+			let hitbox = new Hitbox(-8, -16, 16, 16);
+			let sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(35, 30, 20, 30)));
+			sprite.origin = new Vector(10, 30);
+			sprite.position = new Vector(0, 0);
+			sprite.flipX = true;
+			sprite.rotation = 1.2;
+			
+			this.entity = this.add(new Entity());
+			this.entity.add(hitbox);
+			this.entity.add(sprite);
+		}
+
+		// another entity
+		{
+			let another = this.add(new Entity(), new Vector(64, 64));
+			another.add(new Rectsprite(128, 16, Color.green));
+			another.add(new Hitbox(0, 0, 128, 16, ["solid"]));
+		}
 		
 		this.add(new Player());
 	}
@@ -56,8 +63,7 @@ class GameScene extends Scene
 	public update():void
 	{
 		super.update();
-		//this.camera.rotation += Engine.delta;
-		
+
 		this.entity.position = this.camera.mouse;
 		this.entity.find(Sprite).rotation = (this.camera.mouse.x / 32) % (Math.PI * 2);
 	}
@@ -73,10 +79,16 @@ class Player extends Entity
 	{
 		super();
 		
+		this.depth = -10;
 		this.x = 200;
 		this.y = 200;
 		
-		this.add(this.physics = new Physics(-4, -4, 8, 8));
+		// physics!
+		this.add(this.physics = new Physics(-4, -4, 8, 8, null, ["solid"]));
+		this.physics.onCollideX = () => { this.physics.speed.x = 0; }
+		this.physics.onCollideY = () => { this.physics.speed.y = 0; }
+
+		// sprite!
 		this.add(this.sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(30, 40, 30, 80))));
 		this.sprite.crop.height -= 4;
 		this.sprite.origin.x = this.sprite.width / 2;

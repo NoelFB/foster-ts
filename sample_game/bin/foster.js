@@ -375,6 +375,8 @@ class Graphics {
         this.botleft = new Vector();
         this.botright = new Vector();
         this.texToDraw = new Texture(null, new Rectangle(), new Rectangle());
+        // pixel drawing
+        this._pixel = null;
         this.engine = engine;
         // create the screen
         this.screen = document.createElement("canvas");
@@ -586,7 +588,7 @@ class Graphics {
     texture(tex, posX, posY, crop, color, origin, scale, rotation, flipX, flipY) {
         this.setShaderTexture(tex);
         let t = null;
-        if (crop == undefined)
+        if (crop == undefined || crop == null)
             t = tex;
         else
             t = tex.getSubtexture(crop, this.texToDraw);
@@ -650,6 +652,47 @@ class Graphics {
         this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, color);
         this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, color);
     }
+    quad(posX, posY, width, height, color, origin, scale, rotation) {
+        let left = 0;
+        let top = 0;
+        // relative positions
+        this.topleft.set(left, top);
+        this.topright.set(left + width, top);
+        this.botleft.set(left, top + height);
+        this.botright.set(left + width, top + height);
+        // offset by origin
+        if (origin && (origin.x != 0 || origin.y != 0)) {
+            this.topleft.sub(origin);
+            this.topright.sub(origin);
+            this.botleft.sub(origin);
+            this.botright.sub(origin);
+        }
+        // scale
+        if (scale && (scale.x != 1 || scale.y != 1)) {
+            this.topleft.mult(scale);
+            this.topright.mult(scale);
+            this.botleft.mult(scale);
+            this.botright.mult(scale);
+        }
+        // rotate
+        if (rotation && rotation != 0) {
+            let s = Math.sin(rotation);
+            let c = Math.cos(rotation);
+            this.topleft.rotate(s, c);
+            this.topright.rotate(s, c);
+            this.botleft.rotate(s, c);
+            this.botright.rotate(s, c);
+        }
+        // color
+        let col = (color || Color.white);
+        // push vertices
+        this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
+        this.push(posX + this.topright.x, posY + this.topright.y, 0, 0, color);
+        this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
+        this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
+        this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
+        this.push(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
+    }
     /**
      * Sets the current Pixel texture for drawing
      */
@@ -667,6 +710,7 @@ class Graphics {
                 new Vector(minX, maxY)
             ];
     }
+    get pixel() { return this._pixel; }
     /**
      * Draws a rectangle with the Graphics.Pixel texture
      */
@@ -760,24 +804,21 @@ class Graphics {
 }
 class Renderer {
     constructor() {
-        this.scene = null;
         this.visible = true;
+        this.scene = null;
         this.groupsMask = [];
-        this.useGroupMask = false;
     }
     update() { }
     preRender() { }
     render() {
-        // set to texture shader
+        // set to our shader, and set main Matrix to the camera with fallback to Scene camera
         Engine.graphics.shader = this.shader;
         Engine.graphics.shader.set(this.shaderMatrixUniformName, (this.camera || this.scene.camera).matrix);
         // draw each entity
-        let list = (this.useGroupMask ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
-        for (let i = 0; i < this.scene.entities.length; i++) {
-            let entity = this.scene.entities[i];
-            if (entity.visible)
-                entity.render();
-        }
+        let list = (this.groupsMask.length > 0 ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
+        for (let i = list.length - 1; i >= 0; i--)
+            if (list[i].visible)
+                list[i].render();
     }
     postRender() { }
 }
@@ -847,9 +888,11 @@ class Scene {
                     this.entities[i].debugRender();
         }
     }
-    add(entity) {
+    add(entity, position) {
         entity.scene = this;
         this._insertEntityInto(entity, this.entities, false);
+        if (position != undefined)
+            entity.position = position;
         // first time for this entity
         if (!entity.instantiated) {
             entity.instantiated = true;
@@ -1329,7 +1372,7 @@ class Physics extends Hitbox {
                 if (this.checks(this.solids, 0, sign)) {
                     this.remainder.y = 0;
                     if (this.onCollideY != null)
-                        this.onCollideX();
+                        this.onCollideY();
                     return false;
                 }
                 else {
@@ -2195,6 +2238,34 @@ class Sprite extends Component {
 class Animation extends Sprite {
     constructor() {
         super(null);
+    }
+}
+/// <reference path="./../../component.ts"/>
+class Rectsprite extends Component {
+    constructor(width, height, color) {
+        super();
+        this.size = new Vector(0, 0);
+        this.scale = new Vector(1, 1);
+        this.origin = new Vector(0, 0);
+        this.rotation = 0;
+        this.color = Color.white;
+        this.alpha = 1;
+        this.size.x = width;
+        this.size.y = height;
+        this.color = color || Color.white;
+    }
+    get width() { return this.size.x; }
+    set width(val) { this.size.x = val; }
+    get height() { return this.size.y; }
+    set height(val) { this.size.y = val; }
+    render() {
+        // draw with a pixel texture (shader is using textures)
+        if (Engine.graphics.shader.sampler2d != null && Engine.graphics.pixel != null) {
+            Engine.graphics.texture(Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, this.color.mult(this.alpha), new Vector(this.origin.x / this.size.x, this.origin.y / this.size.y), Vector.mult(this.size, this.scale), this.rotation);
+        }
+        else {
+            Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, this.color.mult(this.alpha), this.origin, this.scale, this.rotation);
+        }
     }
 }
 /// <reference path="./../../component.ts"/>

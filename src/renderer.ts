@@ -1,30 +1,27 @@
 abstract class Renderer
 {
-	public scene:Scene = null;
 	public visible:boolean = true;
+
+	public scene:Scene = null;
+	public camera:Camera;
+	public groupsMask:string[] = [];
 	
 	public shader:Shader;
 	public shaderMatrixUniformName:string;
-	public camera:Camera;
-	public groupsMask:string[] = [];
-	public useGroupMask:boolean = false;
 	
 	public update() {}
 	public preRender() {}
 	public render()
 	{
-		// set to texture shader
+		// set to our shader, and set main Matrix to the camera with fallback to Scene camera
 		Engine.graphics.shader = this.shader;
 		Engine.graphics.shader.set(this.shaderMatrixUniformName, (this.camera || this.scene.camera).matrix);
 		
 		// draw each entity
-		let list = (this.useGroupMask ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
-		for (let i = 0; i < this.scene.entities.length; i ++)
-		{
-			let entity = this.scene.entities[i];
-			if (entity.visible)
-				entity.render();
-		}
+		let list = (this.groupsMask.length > 0 ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
+		for (let i = list.length - 1; i >= 0; i --)
+			if (list[i].visible)
+				list[i].render();
 	}
 	public postRender() {}
 }
