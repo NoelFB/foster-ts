@@ -13,15 +13,17 @@ abstract class Renderer
 	public preRender() {}
 	public render()
 	{
+		let currentCamera = (this.camera || this.scene.camera);
+
 		// set to our shader, and set main Matrix to the camera with fallback to Scene camera
 		Engine.graphics.shader = this.shader;
-		Engine.graphics.shader.set(this.shaderMatrixUniformName, (this.camera || this.scene.camera).matrix);
+		Engine.graphics.shader.set(this.shaderMatrixUniformName, currentCamera.matrix);
 		
 		// draw each entity
 		let list = (this.groupsMask.length > 0 ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
 		for (let i = list.length - 1; i >= 0; i --)
 			if (list[i].visible)
-				list[i].render();
+				list[i].render(currentCamera);
 	}
 	public postRender() {}
 }

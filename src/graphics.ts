@@ -236,6 +236,7 @@ class Graphics
 					uniform.dirty = false;
 				}
 			}
+
 			
 			this.currentShader.dirty = false;
 		}
@@ -324,7 +325,7 @@ class Graphics
 		this.botright.set(left + width, top + height);
 		
 		// offset by origin
-		if (origin && (origin.x != 0 || origin.y != 0))
+		if (origin != undefined && (origin.x != 0 || origin.y != 0))
 		{
 			this.topleft.sub(origin);
 			this.topright.sub(origin);
@@ -333,7 +334,7 @@ class Graphics
 		}
 		
 		// scale
-		if (scale && (scale.x != 1 || scale.y != 1))
+		if (scale != undefined && (scale.x != 1 || scale.y != 1))
 		{
 			this.topleft.mult(scale);
 			this.topright.mult(scale);
@@ -342,7 +343,7 @@ class Graphics
 		}
 		
 		// rotate
-		if (rotation && rotation != 0)
+		if (rotation != undefined && rotation != 0)
 		{
 			let s = Math.sin(rotation);
 			let c = Math.cos(rotation);
@@ -376,14 +377,14 @@ class Graphics
 		
 		// color
 		let col = (color || Color.white);
-		
+
 		// push vertices
-		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, color);
-		this.push(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, color);
-		this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, color);
-		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, color);
-		this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, color);
-		this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, color);
+		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
+		this.push(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, col);
+		this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
+		this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+		this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col);
 	}
 	
 	public quad(posX:number, posY:number, width:number, height:number, color?:Color, origin?:Vector, scale?:Vector, rotation?:number)

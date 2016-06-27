@@ -44,7 +44,7 @@ class Entity
 	/**
 	 * Called the first time the entity is created (after constructor)
 	 */
-	created()
+	created():void
 	{
 
 	}
@@ -52,7 +52,7 @@ class Entity
 	/**
 	 * Called when the entity is added to a Scene
 	 */
-	added()
+	added():void
 	{
 
 	}
@@ -60,7 +60,7 @@ class Entity
 	/**
 	 * Called when the entity is removed from a Scene
 	 */
-	removed()
+	removed():void
 	{
 
 	}
@@ -68,7 +68,7 @@ class Entity
 	/**
 	 * Called when the entity is recycled in a Scene
 	 */
-	recycled()
+	recycled():void
 	{
 
 	}
@@ -76,7 +76,7 @@ class Entity
 	/**
 	 * Called when an entity is perminantely destroyed
 	 */
-	destroy()
+	destroy():void
 	{
 
 	}
@@ -84,7 +84,7 @@ class Entity
 	/**
 	 * Called every game-step, if this entity is in a Scene and Active
 	 */
-	update()
+	update():void
 	{
 		for (let i = 0; i < this.components.length; i ++)
 			if (this.components[i].active)
@@ -94,23 +94,23 @@ class Entity
 	/**
 	 * Called via a Renderer, if Visible
 	 */
-	render()
+	render(camera:Camera):void
 	{
 		for (let i = 0; i < this.components.length; i ++)
 			if (this.components[i].visible)
-				this.components[i].render();
+				this.components[i].render(camera);
 	}
 
 	/**
 	 * Called via the Debug Renderer
 	 */
-	debugRender()
+	debugRender(camera:Camera):void
 	{
 		Engine.graphics.hollowRect(new Rectangle(this.x - 5, this.y - 5, 10, 10), 1, Color.white);
 		
 		for (let i = 0; i < this.components.length; i ++)
 			if (this.components[i].visible)
-				this.components[i].debugRender();
+				this.components[i].debugRender(camera);
 	}
 
 	add(component:Component):void

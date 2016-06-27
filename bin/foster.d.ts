@@ -14,8 +14,8 @@ declare abstract class Component {
     removedFromEntity(): void;
     removedFromScene(): void;
     update(): void;
-    render(): void;
-    debugRender(): void;
+    render(camera?: Camera): void;
+    debugRender(camera?: Camera): void;
 }
 declare enum Client {
     Desktop = 0,
@@ -106,11 +106,11 @@ declare class Entity {
     /**
      * Called via a Renderer, if Visible
      */
-    render(): void;
+    render(camera: Camera): void;
     /**
      * Called via the Debug Renderer
      */
-    debugRender(): void;
+    debugRender(camera: Camera): void;
     add(component: Component): void;
     remove(component: Component): void;
     removeAll(): void;
@@ -545,6 +545,7 @@ declare class Vector {
     mult(v: Vector): Vector;
     scale(s: number): Vector;
     rotate(sin: number, cos: number): Vector;
+    transform(m: Matrix): Vector;
     clone(): Vector;
     length: number;
     normal: Vector;
@@ -552,6 +553,7 @@ declare class Vector {
     static add(a: Vector, b: Vector): Vector;
     static sub(a: Vector, b: Vector): Vector;
     static mult(a: Vector, b: Vector): Vector;
+    static transform(a: Vector, m: Matrix): Vector;
 }
 declare class Mouse {
     private static _left;
@@ -588,8 +590,18 @@ declare class Camera {
     scale: Vector;
     rotation: number;
     private _matrix;
+    private _internal;
+    private _mouse;
+    private internal;
     matrix: Matrix;
     mouse: Vector;
+    private extentsA;
+    private extentsB;
+    private extentsC;
+    private extentsD;
+    private extentsRect;
+    private getExtents();
+    extents: Rectangle;
 }
 declare class Color {
     private color;
@@ -611,21 +623,20 @@ declare class Color {
 declare class Matrix {
     mat: Float32Array;
     constructor();
-    copy(other: Matrix): Matrix;
-    set(m00: number, m01: number, m02: number, m10: number, m11: number, m12: number, m20: number, m21: number, m22: number): Matrix;
     identity(): Matrix;
-    transpose(other: Matrix): Matrix;
+    copy(o: Matrix): Matrix;
+    set(a: number, b: number, c: number, d: number, tx: number, ty: number): Matrix;
+    add(o: Matrix): Matrix;
+    sub(o: Matrix): Matrix;
+    scaler(s: number): Matrix;
     invert(): Matrix;
-    adjugate(): Matrix;
-    detriment(): number;
-    multiply(other: Matrix): Matrix;
-    translate(x: number, y: number): Matrix;
+    multiply(o: Matrix): Matrix;
     rotate(rad: number): Matrix;
     scale(x: number, y: number): Matrix;
-    add(other: Matrix): Matrix;
-    subtract(other: Matrix): Matrix;
-    toString(): string;
-    static fromTranslation(x: number, y: number): Matrix;
+    translate(x: number, y: number): Matrix;
+    static fromRotation(rad: number, ref?: Matrix): Matrix;
+    static fromScale(x: number, y: number, ref?: Matrix): Matrix;
+    static fromTranslation(x: number, y: number, ref?: Matrix): Matrix;
 }
 declare class Rectangle {
     x: number;
@@ -736,4 +747,16 @@ declare class Rectsprite extends Component {
     render(): void;
 }
 declare class Tilemap extends Component {
+    texture: Texture;
+    tileWidth: number;
+    tileHeight: number;
+    private map;
+    private tileColumns;
+    private crop;
+    constructor(texture: Texture, tileWidth: number, tileHeight: number);
+    set(tileX: number, tileY: number, mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): void;
+    has(mapX: number, mapY: number): boolean;
+    get(mapX: number, mapY: number): Vector;
+    clear(mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): void;
+    render(camera: Camera): void;
 }

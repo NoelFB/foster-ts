@@ -52,9 +52,13 @@ class GameScene extends Scene
 
 		// another entity
 		{
-			let another = this.add(new Entity(), new Vector(64, 64));
+			let another = this.add(new Entity(), new Vector(Engine.width / 2 - 64, Engine.height / 2 - 8));
 			another.add(new Rectsprite(128, 16, Color.green));
 			another.add(new Hitbox(0, 0, 128, 16, ["solid"]));
+
+			let tilemap = new Tilemap(Assets.textures["assets/sprite.png"], 16, 16);
+			tilemap.set(3, 3, 0, 0, 128, 4);
+			another.add(tilemap);
 		}
 		
 		this.add(new Player());
@@ -66,6 +70,9 @@ class GameScene extends Scene
 
 		this.entity.position = this.camera.mouse;
 		this.entity.find(Sprite).rotation = (this.camera.mouse.x / 32) % (Math.PI * 2);
+
+		if(Keys.down(Key.r))
+			this.camera.rotation += Engine.delta;
 	}
 	
 }

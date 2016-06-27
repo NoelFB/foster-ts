@@ -53,6 +53,14 @@ class Vector
 		this.y = ox * sin + oy * cos;
 		return this;
 	}
+
+	public transform(m:Matrix):Vector
+	{
+		let ax = this.x, ay = this.y;
+		this.x = m.mat[0] * ax + m.mat[3] * ay + m.mat[6];
+		this.y = m.mat[1] * ax + m.mat[4] * ay + m.mat[7];
+		return this;
+	}
 	
 	public clone():Vector
 	{
@@ -92,4 +100,13 @@ class Vector
 	{
 		return new Vector(a.x * b.x, a.y * b.y);
 	}
+
+	public static transform(a:Vector, m:Matrix):Vector
+	{
+		let result:Vector = new Vector();
+		result.x = m.mat[0] * a.x + m.mat[3] * a.y + m.mat[6];
+		result.y = m.mat[1] * a.x + m.mat[4] * a.y + m.mat[7];
+		return result;
+	}
+
 }

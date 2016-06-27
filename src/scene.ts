@@ -87,7 +87,7 @@ class Scene
 			
 			for (let i = 0; i < this.entities.length; i ++)
 				if (this.entities[i].active)
-					this.entities[i].debugRender();
+					this.entities[i].debugRender(this.camera);
 		}
 	}
 

@@ -30,8 +30,8 @@ class Component {
     removedFromEntity() { }
     removedFromScene() { }
     update() { }
-    render() { }
-    debugRender() { }
+    render(camera) { }
+    debugRender(camera) { }
 }
 var Client;
 (function (Client) {
@@ -222,19 +222,19 @@ class Entity {
     /**
      * Called via a Renderer, if Visible
      */
-    render() {
+    render(camera) {
         for (let i = 0; i < this.components.length; i++)
             if (this.components[i].visible)
-                this.components[i].render();
+                this.components[i].render(camera);
     }
     /**
      * Called via the Debug Renderer
      */
-    debugRender() {
+    debugRender(camera) {
         Engine.graphics.hollowRect(new Rectangle(this.x - 5, this.y - 5, 10, 10), 1, Color.white);
         for (let i = 0; i < this.components.length; i++)
             if (this.components[i].visible)
-                this.components[i].debugRender();
+                this.components[i].debugRender(camera);
     }
     add(component) {
         this.components.push(component);
@@ -603,21 +603,21 @@ class Graphics {
         this.botleft.set(left, top + height);
         this.botright.set(left + width, top + height);
         // offset by origin
-        if (origin && (origin.x != 0 || origin.y != 0)) {
+        if (origin != undefined && (origin.x != 0 || origin.y != 0)) {
             this.topleft.sub(origin);
             this.topright.sub(origin);
             this.botleft.sub(origin);
             this.botright.sub(origin);
         }
         // scale
-        if (scale && (scale.x != 1 || scale.y != 1)) {
+        if (scale != undefined && (scale.x != 1 || scale.y != 1)) {
             this.topleft.mult(scale);
             this.topright.mult(scale);
             this.botleft.mult(scale);
             this.botright.mult(scale);
         }
         // rotate
-        if (rotation && rotation != 0) {
+        if (rotation != undefined && rotation != 0) {
             let s = Math.sin(rotation);
             let c = Math.cos(rotation);
             this.topleft.rotate(s, c);
@@ -645,12 +645,12 @@ class Graphics {
         // color
         let col = (color || Color.white);
         // push vertices
-        this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, color);
-        this.push(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, color);
-        this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, color);
-        this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, color);
-        this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, color);
-        this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, color);
+        this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
+        this.push(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, col);
+        this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+        this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
+        this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+        this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col);
     }
     quad(posX, posY, width, height, color, origin, scale, rotation) {
         let left = 0;
@@ -811,14 +811,15 @@ class Renderer {
     update() { }
     preRender() { }
     render() {
+        let currentCamera = (this.camera || this.scene.camera);
         // set to our shader, and set main Matrix to the camera with fallback to Scene camera
         Engine.graphics.shader = this.shader;
-        Engine.graphics.shader.set(this.shaderMatrixUniformName, (this.camera || this.scene.camera).matrix);
+        Engine.graphics.shader.set(this.shaderMatrixUniformName, currentCamera.matrix);
         // draw each entity
         let list = (this.groupsMask.length > 0 ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
         for (let i = list.length - 1; i >= 0; i--)
             if (list[i].visible)
-                list[i].render();
+                list[i].render(currentCamera);
     }
     postRender() { }
 }
@@ -885,7 +886,7 @@ class Scene {
             Engine.graphics.shader.set("matrix", this.camera.matrix);
             for (let i = 0; i < this.entities.length; i++)
                 if (this.entities[i].active)
-                    this.entities[i].debugRender();
+                    this.entities[i].debugRender(this.camera);
         }
     }
     add(entity, position) {
@@ -1609,6 +1610,12 @@ class Vector {
         this.y = ox * sin + oy * cos;
         return this;
     }
+    transform(m) {
+        let ax = this.x, ay = this.y;
+        this.x = m.mat[0] * ax + m.mat[3] * ay + m.mat[6];
+        this.y = m.mat[1] * ax + m.mat[4] * ay + m.mat[7];
+        return this;
+    }
     clone() {
         return new Vector(this.x, this.y);
     }
@@ -1633,6 +1640,12 @@ class Vector {
     }
     static mult(a, b) {
         return new Vector(a.x * b.x, a.y * b.y);
+    }
+    static transform(a, m) {
+        let result = new Vector();
+        result.x = m.mat[0] * a.x + m.mat[3] * a.y + m.mat[6];
+        result.y = m.mat[1] * a.x + m.mat[4] * a.y + m.mat[7];
+        return result;
     }
 }
 /// <reference path="./../util/vector.ts"/>
@@ -1721,19 +1734,44 @@ class Camera {
         this.scale = new Vector(1, 1);
         this.rotation = 0;
         this._matrix = new Matrix();
+        this._internal = new Matrix();
+        this._mouse = new Vector();
+        this.extentsA = new Vector();
+        this.extentsB = new Vector();
+        this.extentsC = new Vector();
+        this.extentsD = new Vector();
+        this.extentsRect = new Rectangle();
+    }
+    get internal() {
+        return this._internal.identity()
+            .translate(this.origin.x, this.origin.y)
+            .rotate(this.rotation)
+            .scale(this.scale.x, this.scale.y)
+            .translate(-this.position.x, -this.position.y);
     }
     get matrix() {
-        this._matrix.identity();
-        this._matrix.copy(Engine.graphics.orthographic);
-        this._matrix.translate(this.origin.x, this.origin.y);
-        this._matrix.rotate(this.rotation);
-        this._matrix.scale(this.scale.x, this.scale.y);
-        this._matrix.translate(-this.position.x, -this.position.y);
-        return this._matrix;
+        return this._matrix
+            .copy(Engine.graphics.orthographic)
+            .multiply(this.internal);
     }
     get mouse() {
-        // TODO: make this use the Matrix transformation so this still works after rotation / scale
-        return new Vector(Mouse.x + this.position.x - this.origin.x, Mouse.y + this.position.y - this.origin.y);
+        return this._mouse.set(Mouse.x + this.position.x - this.origin.x, Mouse.y + this.position.y - this.origin.y).transform(this.internal.invert());
+    }
+    getExtents() {
+        let inverse = this.internal.invert();
+        this.extentsA.set(0, 0).transform(inverse);
+        this.extentsB.set(Engine.width, 0).transform(inverse);
+        this.extentsC.set(0, Engine.height).transform(inverse);
+        this.extentsD.set(Engine.width, Engine.height).transform(inverse);
+    }
+    get extents() {
+        this.getExtents();
+        let r = this.extentsRect;
+        r.x = Math.min(this.extentsA.x, this.extentsB.x, this.extentsC.x, this.extentsD.x);
+        r.y = Math.min(this.extentsA.y, this.extentsB.y, this.extentsC.y, this.extentsD.y);
+        r.width = Math.max(this.extentsA.x, this.extentsB.x, this.extentsC.x, this.extentsD.x) - r.x;
+        r.height = Math.max(this.extentsA.y, this.extentsB.y, this.extentsC.y, this.extentsD.y) - r.y;
+        return r;
     }
 }
 class Color {
@@ -1772,36 +1810,10 @@ Color.black = new Color(0, 0, 0, 1);
 Color.red = new Color(1, 0, 0, 1);
 Color.green = new Color(0, 1, 0, 1);
 Color.blue = new Color(0, 0, 1, 1);
-// this is a typescript implementation of the Matrix here:
-// https://github.com/toji/gl-matrix/blob/master/src/gl-matrix/mat3.js
 class Matrix {
     constructor() {
         this.mat = new Float32Array(9);
         this.identity();
-    }
-    copy(other) {
-        this.mat[0] = other.mat[0];
-        this.mat[1] = other.mat[1];
-        this.mat[2] = other.mat[2];
-        this.mat[3] = other.mat[3];
-        this.mat[4] = other.mat[4];
-        this.mat[5] = other.mat[5];
-        this.mat[6] = other.mat[6];
-        this.mat[7] = other.mat[7];
-        this.mat[8] = other.mat[8];
-        return this;
-    }
-    set(m00, m01, m02, m10, m11, m12, m20, m21, m22) {
-        this.mat[0] = m00;
-        this.mat[1] = m01;
-        this.mat[2] = m02;
-        this.mat[3] = m10;
-        this.mat[4] = m11;
-        this.mat[5] = m12;
-        this.mat[6] = m20;
-        this.mat[7] = m21;
-        this.mat[8] = m22;
-        return this;
     }
     identity() {
         this.mat[0] = 1;
@@ -1815,35 +1827,70 @@ class Matrix {
         this.mat[8] = 1;
         return this;
     }
-    transpose(other) {
-        if (this === other) {
-            var a01 = other.mat[1], a02 = other.mat[2], a12 = other.mat[5];
-            this.mat[1] = other.mat[3];
-            this.mat[2] = other.mat[6];
-            this.mat[3] = a01;
-            this.mat[5] = other.mat[7];
-            this.mat[6] = a02;
-            this.mat[7] = a12;
-        }
-        else {
-            this.mat[0] = other.mat[0];
-            this.mat[1] = other.mat[3];
-            this.mat[2] = other.mat[6];
-            this.mat[3] = other.mat[1];
-            this.mat[4] = other.mat[4];
-            this.mat[5] = other.mat[7];
-            this.mat[6] = other.mat[2];
-            this.mat[7] = other.mat[5];
-            this.mat[8] = other.mat[8];
-        }
+    copy(o) {
+        this.mat[0] = o.mat[0];
+        this.mat[1] = o.mat[1];
+        this.mat[2] = o.mat[2];
+        this.mat[3] = o.mat[3];
+        this.mat[4] = o.mat[4];
+        this.mat[5] = o.mat[5];
+        this.mat[6] = o.mat[6];
+        this.mat[7] = o.mat[7];
+        this.mat[8] = o.mat[8];
+        return this;
+    }
+    set(a, b, c, d, tx, ty) {
+        this.mat[0] = a;
+        this.mat[1] = d;
+        this.mat[2] = 0;
+        this.mat[3] = c;
+        this.mat[4] = b;
+        this.mat[5] = 0;
+        this.mat[6] = tx;
+        this.mat[7] = ty;
+        this.mat[8] = 1;
+        return this;
+    }
+    add(o) {
+        this.mat[0] += o.mat[0];
+        this.mat[1] += o.mat[1];
+        this.mat[2] += o.mat[2];
+        this.mat[3] += o.mat[3];
+        this.mat[4] += o.mat[4];
+        this.mat[5] += o.mat[5];
+        this.mat[6] += o.mat[6];
+        this.mat[7] += o.mat[7];
+        this.mat[8] += o.mat[8];
+        return this;
+    }
+    sub(o) {
+        this.mat[0] -= o.mat[0];
+        this.mat[1] -= o.mat[1];
+        this.mat[2] -= o.mat[2];
+        this.mat[3] -= o.mat[3];
+        this.mat[4] -= o.mat[4];
+        this.mat[5] -= o.mat[5];
+        this.mat[6] -= o.mat[6];
+        this.mat[7] -= o.mat[7];
+        this.mat[8] -= o.mat[8];
+        return this;
+    }
+    scaler(s) {
+        this.mat[0] *= s;
+        this.mat[1] *= s;
+        this.mat[2] *= s;
+        this.mat[3] *= s;
+        this.mat[4] *= s;
+        this.mat[5] *= s;
+        this.mat[6] *= s;
+        this.mat[7] *= s;
+        this.mat[8] *= s;
         return this;
     }
     invert() {
-        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8], b01 = a22 * a11 - a12 * a21, b11 = -a22 * a10 + a12 * a20, b21 = a21 * a10 - a11 * a20, 
-        // Calculate the determinant
-        det = a00 * b01 + a01 * b11 + a02 * b21;
+        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8], b01 = a22 * a11 - a12 * a21, b11 = -a22 * a10 + a12 * a20, b21 = a21 * a10 - a11 * a20, det = a00 * b01 + a01 * b11 + a02 * b21;
         if (!det)
-            return null;
+            return this;
         det = 1.0 / det;
         this.mat[0] = b01 * det;
         this.mat[1] = (-a22 * a01 + a02 * a21) * det;
@@ -1856,25 +1903,8 @@ class Matrix {
         this.mat[8] = (a11 * a00 - a01 * a10) * det;
         return this;
     }
-    adjugate() {
-        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8];
-        this.mat[0] = (a11 * a22 - a12 * a21);
-        this.mat[1] = (a02 * a21 - a01 * a22);
-        this.mat[2] = (a01 * a12 - a02 * a11);
-        this.mat[3] = (a12 * a20 - a10 * a22);
-        this.mat[4] = (a00 * a22 - a02 * a20);
-        this.mat[5] = (a02 * a10 - a00 * a12);
-        this.mat[6] = (a10 * a21 - a11 * a20);
-        this.mat[7] = (a01 * a20 - a00 * a21);
-        this.mat[8] = (a00 * a11 - a01 * a10);
-        return this;
-    }
-    detriment() {
-        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8];
-        return a00 * (a22 * a11 - a12 * a21) + a01 * (-a22 * a10 + a12 * a20) + a02 * (a21 * a10 - a11 * a20);
-    }
-    multiply(other) {
-        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8], b00 = other.mat[0], b01 = other.mat[1], b02 = other.mat[2], b10 = other.mat[3], b11 = other.mat[4], b12 = other.mat[5], b20 = other.mat[6], b21 = other.mat[7], b22 = other.mat[8];
+    multiply(o) {
+        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8], b00 = o.mat[0], b01 = o.mat[1], b02 = o.mat[2], b10 = o.mat[3], b11 = o.mat[4], b12 = o.mat[5], b20 = o.mat[6], b21 = o.mat[7], b22 = o.mat[8];
         this.mat[0] = b00 * a00 + b01 * a10 + b02 * a20;
         this.mat[1] = b00 * a01 + b01 * a11 + b02 * a21;
         this.mat[2] = b00 * a02 + b01 * a12 + b02 * a22;
@@ -1886,30 +1916,14 @@ class Matrix {
         this.mat[8] = b20 * a02 + b21 * a12 + b22 * a22;
         return this;
     }
-    translate(x, y) {
-        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8];
-        this.mat[0] = a00;
-        this.mat[1] = a01;
-        this.mat[2] = a02;
-        this.mat[3] = a10;
-        this.mat[4] = a11;
-        this.mat[5] = a12;
-        this.mat[6] = x * a00 + y * a10 + a20;
-        this.mat[7] = x * a01 + y * a11 + a21;
-        this.mat[8] = x * a02 + y * a12 + a22;
-        return this;
-    }
     rotate(rad) {
-        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8], s = Math.sin(rad), c = Math.cos(rad);
+        var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], s = Math.sin(rad), c = Math.cos(rad);
         this.mat[0] = c * a00 + s * a10;
         this.mat[1] = c * a01 + s * a11;
         this.mat[2] = c * a02 + s * a12;
         this.mat[3] = c * a10 - s * a00;
         this.mat[4] = c * a11 - s * a01;
         this.mat[5] = c * a12 - s * a02;
-        this.mat[6] = a20;
-        this.mat[7] = a21;
-        this.mat[8] = a22;
         return this;
     }
     scale(x, y) {
@@ -1921,47 +1935,42 @@ class Matrix {
         this.mat[5] = y * this.mat[5];
         return this;
     }
-    add(other) {
-        this.mat[0] += other.mat[0];
-        this.mat[1] += other.mat[1];
-        this.mat[2] += other.mat[2];
-        this.mat[3] += other.mat[3];
-        this.mat[4] += other.mat[4];
-        this.mat[5] += other.mat[5];
-        this.mat[6] += other.mat[6];
-        this.mat[7] += other.mat[7];
-        this.mat[8] += other.mat[8];
+    translate(x, y) {
+        let a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2], a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8];
+        this.mat[6] = x * a00 + y * a10 + a20;
+        this.mat[7] = x * a01 + y * a11 + a21;
+        this.mat[8] = x * a02 + y * a12 + a22;
         return this;
     }
-    subtract(other) {
-        this.mat[0] -= other.mat[0];
-        this.mat[1] -= other.mat[1];
-        this.mat[2] -= other.mat[2];
-        this.mat[3] -= other.mat[3];
-        this.mat[4] -= other.mat[4];
-        this.mat[5] -= other.mat[5];
-        this.mat[6] -= other.mat[6];
-        this.mat[7] -= other.mat[7];
-        this.mat[8] -= other.mat[8];
-        return this;
+    static fromRotation(rad, ref) {
+        if (ref == undefined)
+            ref = new Matrix();
+        else
+            ref.identity();
+        var s = Math.sin(rad), c = Math.cos(rad);
+        ref.mat[0] = c;
+        ref.mat[1] = -s;
+        ref.mat[3] = s;
+        ref.mat[4] = c;
+        return ref;
     }
-    toString() {
-        return 'mat3(' + this.mat[0] + ', ' + this.mat[1] + ', ' + this.mat[2] + ', ' +
-            this.mat[3] + ', ' + this.mat[4] + ', ' + this.mat[5] + ', ' +
-            this.mat[6] + ', ' + this.mat[7] + ', ' + this.mat[8] + ')';
+    static fromScale(x, y, ref) {
+        if (ref == undefined)
+            ref = new Matrix();
+        else
+            ref.identity();
+        ref.mat[0] = x;
+        ref.mat[4] = y;
+        return ref;
     }
-    static fromTranslation(x, y) {
-        let out = new Matrix();
-        out.mat[0] = 1;
-        out.mat[1] = 0;
-        out.mat[2] = 0;
-        out.mat[3] = 0;
-        out.mat[4] = 1;
-        out.mat[5] = 0;
-        out.mat[6] = x;
-        out.mat[7] = y;
-        out.mat[8] = 1;
-        return out;
+    static fromTranslation(x, y, ref) {
+        if (ref == undefined)
+            ref = new Matrix();
+        else
+            ref.identity();
+        ref.mat[6] = x;
+        ref.mat[7] = y;
+        return ref;
     }
 }
 class Rectangle {
@@ -2087,13 +2096,19 @@ var ShaderUniformType;
 })(ShaderUniformType || (ShaderUniformType = {}));
 class ShaderUniform {
     constructor(name, type, value) {
+        this._value = null;
         this.name = name;
         this.type = type;
         this._value = value;
     }
     get value() { return this._value; }
     set value(a) {
-        if (this._value != a) {
+        let willBeDirty = (this.value != a);
+        // special case for textures
+        if (this.type == ShaderUniformType.sampler2D && this._value != null && a != null)
+            if (this._value.texture.webGLTexture == a.texture.webGLTexture)
+                willBeDirty = false;
+        if (willBeDirty) {
             this._value = a;
             this._shader.dirty = true;
             this.dirty = true;
@@ -2270,4 +2285,62 @@ class Rectsprite extends Component {
 }
 /// <reference path="./../../component.ts"/>
 class Tilemap extends Component {
+    constructor(texture, tileWidth, tileHeight) {
+        super();
+        this.map = {};
+        this.crop = new Rectangle();
+        this.texture = texture;
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
+        this.tileColumns = this.texture.width / this.tileWidth;
+    }
+    set(tileX, tileY, mapX, mapY, mapWidth, mapHeight) {
+        let tileIndex = tileX + tileY * this.tileColumns;
+        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
+            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
+                if (this.map[x] == undefined)
+                    this.map[x] = {};
+                this.map[x][y] = tileIndex;
+            }
+    }
+    has(mapX, mapY) {
+        return (this.map[mapX] != undefined && this.map[mapX][mapY] != undefined);
+    }
+    get(mapX, mapY) {
+        if (this.has(mapX, mapY)) {
+            var index = this.map[mapX][mapY];
+            return new Vector(index % this.tileColumns, Math.floor(index / this.tileColumns));
+        }
+        return null;
+    }
+    clear(mapX, mapY, mapWidth, mapHeight) {
+        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
+            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
+                if (this.map[x] != undefined && this.map[x][y] != undefined)
+                    delete this.map[x][y];
+            }
+    }
+    render(camera) {
+        // get bounds of rendering
+        let bounds = camera.extents;
+        let pos = this.scenePosition;
+        let left = Math.floor((bounds.left - pos.x) / this.tileWidth) - 1;
+        let right = Math.ceil((bounds.right - pos.x) / this.tileWidth) + 1;
+        let top = Math.floor((bounds.top - pos.y) / this.tileHeight) - 1;
+        let bottom = Math.ceil((bounds.bottom - pos.y) / this.tileHeight) + 1;
+        // tile texture cropping
+        this.crop.width = this.tileWidth;
+        this.crop.height = this.tileHeight;
+        for (let tx = left; tx < right; tx++)
+            for (let ty = top; ty < bottom; ty++) {
+                if (this.map[tx] == undefined)
+                    continue;
+                let index = this.map[tx][ty];
+                if (index != undefined) {
+                    this.crop.x = (index % this.tileColumns) * this.tileWidth;
+                    this.crop.y = Math.floor(index / this.tileColumns) * this.tileHeight;
+                    Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop);
+                }
+            }
+    }
 }

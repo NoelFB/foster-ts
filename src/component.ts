@@ -34,12 +34,12 @@ abstract class Component
 						  (this._entity ? this._entity.y : 0) + this.position.y);
 	}
 	
-	public addedToEntity() {}
-	public addedToScene() {}
-	public removedFromEntity() {}
-	public removedFromScene() {}
-	public update() {}
-	public render() {}
-	public debugRender() {}
+	public addedToEntity():void {}
+	public addedToScene():void {}
+	public removedFromEntity():void {}
+	public removedFromScene():void {}
+	public update():void {}
+	public render(camera?:Camera) {}
+	public debugRender(camera?:Camera):void {}
 
 }
