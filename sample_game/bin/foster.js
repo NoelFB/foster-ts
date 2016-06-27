@@ -53,7 +53,11 @@ class Engine {
             throw "Engine must be instantiated through static Engine.start";
         Engine.instance = this;
         this.mode = mode;
-        this.client = (typeof require === 'function' ? Client.Desktop : Client.Web);
+        this.client = Client.Web;
+        if (window && window.process && window.process.versions && window.process.versions.electron) {
+            this.client = Client.Desktop;
+            console.log("mode: Desktop");
+        }
         this.startTime = Date.now();
     }
     // properties

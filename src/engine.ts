@@ -121,7 +121,9 @@ class Engine
 
 		Engine.instance = this;
 		this.mode = mode;
-		this.client = (typeof require === 'function' ? Client.Desktop : Client.Web);
+		this.client = Client.Web;
+		if (window && (<any>window).process && (<any>window).process.versions && (<any>window).process.versions.electron)
+			this.client = Client.Desktop;
 		this.startTime = Date.now();
 	}
 
