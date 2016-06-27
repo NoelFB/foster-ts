@@ -4,10 +4,10 @@ class Game
 {
 	public static block:Texture;
 
-    public static main():void
-    {
-        Engine.start("Game Title", 480, 270, 3, EngineMode.Strict, function()
-        {
+	public static main():void
+	{
+		Engine.start("Game Title", 480, 270, 3, EngineMode.Strict, function()
+		{
 			// load assets
 			new AssetLoader()
 				.addAtlas("gfx", "assets/atlas.png", "assets/atlas.json", AtlasType.ASEPRITE)
@@ -25,8 +25,8 @@ class Game
 					// begin game
 					Engine.scene = new GameScene();
 				});
-        });
-    }
+		});
+	}
 }
 
 class GameScene extends Scene
