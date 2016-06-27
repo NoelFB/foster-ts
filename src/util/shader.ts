@@ -114,7 +114,6 @@ class ShaderUniform
 
 		if (willBeDirty)
 		{
-
 			this._value = a;
 			this._shader.dirty = true;
 			this.dirty = true;

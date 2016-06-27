@@ -29,7 +29,7 @@ class Graphics
 	}
 	public set shader(s:Shader)
 	{
-		if (this.currentShader != s && s != null)
+		if (this.shader != s && s != null)
 			this.nextShader = s;
 	}
 	

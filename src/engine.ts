@@ -134,7 +134,6 @@ class Engine
 		this.lastTime = time;
 		
 		// reset graphics
-		this.graphics.reset();
 		this.graphics.clear(this.graphics.clearColor);
 		this.graphics.update();
 		
@@ -155,6 +154,9 @@ class Engine
 		// update scene
 		if (this.scene != null)
 			this.scene.update()
+
+		// begin drawing
+		this.graphics.reset();
 		
 		// render current scene
 		if (this.scene != null)

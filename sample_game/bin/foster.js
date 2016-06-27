@@ -128,7 +128,6 @@ class Engine {
         this.dt = Math.floor(time - this.lastTime) / 1000;
         this.lastTime = time;
         // reset graphics
-        this.graphics.reset();
         this.graphics.clear(this.graphics.clearColor);
         this.graphics.update();
         // update inputs
@@ -145,6 +144,8 @@ class Engine {
         // update scene
         if (this.scene != null)
             this.scene.update();
+        // begin drawing
+        this.graphics.reset();
         // render current scene
         if (this.scene != null)
             this.scene.render();
@@ -404,7 +405,7 @@ class Graphics {
         return this.currentShader;
     }
     set shader(s) {
-        if (this.currentShader != s && s != null)
+        if (this.shader != s && s != null)
             this.nextShader = s;
     }
     get gl() { return this.bufferContext; }
