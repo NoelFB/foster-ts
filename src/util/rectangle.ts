@@ -17,6 +17,15 @@ class Rectangle
 		this.width = w || 1;
 		this.height = h || 1;
 	}
+
+	public set(x:number, y:number, w:number, h:number):Rectangle
+	{
+		this.x = x;
+		this.y = y;
+		this.width = w;
+		this.height = h;
+		return this;
+	}
 	
 	public cropRect(r:Rectangle):Rectangle
 	{

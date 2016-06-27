@@ -75,6 +75,14 @@ abstract class Collider extends Component
 		{
 			return Collider.overlap_hitbox_hitbox(a as Hitbox, b as Hitbox);
 		}
+		else if (a instanceof Hitbox && b instanceof Hitgrid)
+		{
+			return Collider.overlap_hitbox_grid(a as Hitbox, b as Hitgrid);
+		}
+		else if (a instanceof Hitgrid && b instanceof Hitbox)
+		{
+			return Collider.overlap_hitbox_grid(b as Hitbox, a as Hitgrid);
+		}
 		
 		return false;
 	}
@@ -82,5 +90,21 @@ abstract class Collider extends Component
 	public static overlap_hitbox_hitbox(a:Hitbox, b:Hitbox):boolean
 	{
 		return a.sceneRight >= b.sceneLeft && a.sceneBottom >= b.sceneTop && a.sceneLeft < b.sceneRight && a.sceneTop < b.sceneBottom;
+	}
+
+	public static overlap_hitbox_grid(a:Hitbox, b:Hitgrid):boolean
+	{
+		let gridPosition = b.scenePosition;
+
+		let left = Math.floor((a.sceneLeft - gridPosition.x) / b.tileWidth);
+		let top = Math.floor((a.sceneTop - gridPosition.y) / b.tileHeight);
+		let right = Math.ceil((a.sceneRight - gridPosition.x) / b.tileWidth);
+		let bottom = Math.ceil((a.sceneBottom - gridPosition.y) / b.tileHeight);
+
+		for (let x = left; x < right; x++)
+			for (let y = top; y < bottom; y++)
+				if (b.has(x, y))
+				return true;
+		return false;
 	}
 }

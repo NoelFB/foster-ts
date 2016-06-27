@@ -47,6 +47,10 @@ class GameScene extends Scene {
             let tilemap = new Tilemap(Assets.textures["assets/sprite.png"], 16, 16);
             tilemap.set(3, 3, 0, 0, 128, 4);
             another.add(tilemap);
+            let grid = new Hitgrid(16, 16, ["solid"]);
+            grid.set(true, -4, -4, 8, 8);
+            grid.set(false, -4, 0, 3, 2);
+            another.add(grid);
         }
         this.add(new Player());
     }

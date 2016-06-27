@@ -396,6 +396,7 @@ declare abstract class Collider extends Component {
     collideAll(tag: string, x?: number, y?: number): Collider[];
     static overlap(a: Collider, b: Collider): boolean;
     static overlap_hitbox_hitbox(a: Hitbox, b: Hitbox): boolean;
+    static overlap_hitbox_grid(a: Hitbox, b: Hitgrid): boolean;
 }
 declare class Hitbox extends Collider {
     left: number;
@@ -657,6 +658,7 @@ declare class Rectangle {
     top: number;
     bottom: number;
     constructor(x?: number, y?: number, w?: number, h?: number);
+    set(x: number, y: number, w: number, h: number): Rectangle;
     cropRect(r: Rectangle): Rectangle;
     crop(x: number, y: number, w: number, h: number): Rectangle;
     clone(): Rectangle;
@@ -724,6 +726,15 @@ declare class Shaders {
     static init(): void;
 }
 declare class Hitgrid extends Collider {
+    tileWidth: number;
+    tileHeight: number;
+    private map;
+    constructor(tileWidth: number, tileHeight: number, tags?: string[]);
+    set(solid: boolean, tx: number, ty: number, columns?: number, rows?: number): void;
+    has(tx: number, ty: number, columns?: number, rows?: number): boolean;
+    private debugRect;
+    private debugSub;
+    debugRender(camera: Camera): void;
 }
 declare class Graphic extends Component {
     texture: Texture;

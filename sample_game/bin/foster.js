@@ -1308,10 +1308,28 @@ class Collider extends Component {
         if (a instanceof Hitbox && b instanceof Hitbox) {
             return Collider.overlap_hitbox_hitbox(a, b);
         }
+        else if (a instanceof Hitbox && b instanceof Hitgrid) {
+            return Collider.overlap_hitbox_grid(a, b);
+        }
+        else if (a instanceof Hitgrid && b instanceof Hitbox) {
+            return Collider.overlap_hitbox_grid(b, a);
+        }
         return false;
     }
     static overlap_hitbox_hitbox(a, b) {
         return a.sceneRight >= b.sceneLeft && a.sceneBottom >= b.sceneTop && a.sceneLeft < b.sceneRight && a.sceneTop < b.sceneBottom;
+    }
+    static overlap_hitbox_grid(a, b) {
+        let gridPosition = b.scenePosition;
+        let left = Math.floor((a.sceneLeft - gridPosition.x) / b.tileWidth);
+        let top = Math.floor((a.sceneTop - gridPosition.y) / b.tileHeight);
+        let right = Math.ceil((a.sceneRight - gridPosition.x) / b.tileWidth);
+        let bottom = Math.ceil((a.sceneBottom - gridPosition.y) / b.tileHeight);
+        for (let x = left; x < right; x++)
+            for (let y = top; y < bottom; y++)
+                if (b.has(x, y))
+                    return true;
+        return false;
     }
 }
 /// <reference path="./collider.ts"/>
@@ -2012,6 +2030,13 @@ class Rectangle {
     get right() { return this.x + this.width; }
     get top() { return this.y; }
     get bottom() { return this.y + this.height; }
+    set(x, y, w, h) {
+        this.x = x;
+        this.y = y;
+        this.width = w;
+        this.height = h;
+        return this;
+    }
     cropRect(r) {
         if (r.x < this.x) {
             r.width += (r.x - this.x);
@@ -2254,6 +2279,63 @@ class Shaders {
 }
 /// <reference path="./collider.ts"/>
 class Hitgrid extends Collider {
+    constructor(tileWidth, tileHeight, tags) {
+        super();
+        this.map = {};
+        this.debugRect = new Rectangle();
+        this.debugSub = new Color(200, 200, 200, 0.5);
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
+        if (tags != undefined)
+            for (let i = 0; i < tags.length; i++)
+                this.tag(tags[i]);
+    }
+    set(solid, tx, ty, columns, rows) {
+        for (let x = tx; x < tx + (columns || 1); x++) {
+            if (this.map[x] == undefined)
+                this.map[x] = {};
+            for (let y = ty; y < ty + (rows || 1); y++)
+                if (solid)
+                    this.map[x][y] = solid;
+                else
+                    delete this.map[x][y];
+        }
+    }
+    has(tx, ty, columns, rows) {
+        for (let x = tx; x < tx + (columns || 1); x++)
+            if (this.map[x] != undefined)
+                for (let y = ty; y < ty + (rows || 1); y++)
+                    if (this.map[x][y] == true)
+                        return true;
+        return false;
+    }
+    debugRender(camera) {
+        // get bounds of rendering
+        let bounds = camera.extents;
+        let pos = this.scenePosition;
+        let left = Math.floor((bounds.left - pos.x) / this.tileWidth) - 1;
+        let right = Math.ceil((bounds.right - pos.x) / this.tileWidth) + 1;
+        let top = Math.floor((bounds.top - pos.y) / this.tileHeight) - 1;
+        let bottom = Math.ceil((bounds.bottom - pos.y) / this.tileHeight) + 1;
+        for (let tx = left; tx < right; tx++) {
+            if (this.map[tx] == undefined)
+                continue;
+            for (let ty = top; ty < bottom; ty++) {
+                if (this.map[tx][ty] == true) {
+                    let l = this.has(tx - 1, ty);
+                    let r = this.has(tx + 1, ty);
+                    let u = this.has(tx, ty - 1);
+                    let d = this.has(tx, ty + 1);
+                    let px = pos.x + tx * this.tileWidth;
+                    let py = pos.y + ty * this.tileHeight;
+                    Engine.graphics.rect(this.debugRect.set(px, py, 1, this.tileHeight), l ? Color.red : this.debugSub);
+                    Engine.graphics.rect(this.debugRect.set(px, py, this.tileWidth, 1), u ? Color.red : this.debugSub);
+                    Engine.graphics.rect(this.debugRect.set(px + this.tileWidth - 1, py, 1, this.tileHeight), r ? Color.red : this.debugSub);
+                    Engine.graphics.rect(this.debugRect.set(px, py + this.tileHeight - 1, this.tileWidth, 1), d ? Color.red : this.debugSub);
+                }
+            }
+        }
+    }
 }
 /// <reference path="./../../component.ts"/>
 class Graphic extends Component {
