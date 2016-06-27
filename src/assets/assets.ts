@@ -22,9 +22,6 @@ class AssetLoader
 	private sounds:string[] = [];
 	private atlases:any[] = [];
 
-	private fs:any;
-	private ps:any;
-
 	public addTexture(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
@@ -64,13 +61,6 @@ class AssetLoader
 		var self = this;
 		this.loading = true;
 		this.callback = callback;
-
-		// setup for loading
-		if (Engine.client == Client.Desktop)
-		{
-			this.fs = require("fs");
-			this.ps = require("path");
-		}
 		
 		// textures
 		for (let i = 0; i < this.textures.length; i ++)
@@ -122,20 +112,15 @@ class AssetLoader
 	private loadJson(path:string, callback?:(json:Object)=>void):void
 	{
 		var self = this;
-		if (Engine.client == Client.Desktop)
+		FosterIO.read(path, (data) =>
 		{
-			this.fs.readFile(this.ps.join(__dirname, path), 'utf8', function (err, data)
-			{
-				if (err) 
-					throw err;
-				Assets.json[path] = JSON.parse(data);
+			Assets.json[path] = JSON.parse(data);
 
-				if (callback != undefined)
-					callback(Assets.json[path]);
-					
-				self.incrementLoader();
-			});
-		}
+			if (callback != undefined)
+				callback(Assets.json[path]);
+				
+			self.incrementLoader();
+		});
 	}
 
 	private loadAtlas(data:any):void

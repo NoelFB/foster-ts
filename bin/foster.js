@@ -1192,11 +1192,6 @@ class AssetLoader {
         var self = this;
         this.loading = true;
         this.callback = callback;
-        // setup for loading
-        if (Engine.client == Client.Desktop) {
-            this.fs = require("fs");
-            this.ps = require("path");
-        }
         // textures
         for (let i = 0; i < this.textures.length; i++)
             this.loadTexture(this.textures[i]);
@@ -1234,16 +1229,12 @@ class AssetLoader {
     }
     loadJson(path, callback) {
         var self = this;
-        if (Engine.client == Client.Desktop) {
-            this.fs.readFile(this.ps.join(__dirname, path), 'utf8', function (err, data) {
-                if (err)
-                    throw err;
-                Assets.json[path] = JSON.parse(data);
-                if (callback != undefined)
-                    callback(Assets.json[path]);
-                self.incrementLoader();
-            });
-        }
+        FosterIO.read(path, (data) => {
+            Assets.json[path] = JSON.parse(data);
+            if (callback != undefined)
+                callback(Assets.json[path]);
+            self.incrementLoader();
+        });
     }
     loadAtlas(data) {
         var self = this;
@@ -1483,7 +1474,7 @@ class Physics extends Hitbox {
             this.entity.x += Math.round(amount);
         }
         else {
-            let sign = Math.sign(amount);
+            let sign = Calc.sign(amount);
             amount = Math.abs(Math.round(amount));
             while (amount > 0) {
                 if (this.checks(this.solids, sign, 0)) {
@@ -1511,7 +1502,7 @@ class Physics extends Hitbox {
             this.entity.y += Math.round(amount);
         }
         else {
-            let sign = Math.sign(amount);
+            let sign = Calc.sign(amount);
             amount = Math.abs(Math.round(amount));
             while (amount > 0) {
                 if (this.checks(this.solids, 0, sign)) {
@@ -1870,6 +1861,11 @@ class SpriteRenderer extends Renderer {
         this.shaderMatrixUniformName = "matrix";
     }
 }
+class Calc {
+    static sign(n) {
+        return (n < 0 ? -1 : (n > 0 ? 1 : 0));
+    }
+}
 /// <reference path="./vector.ts"/>
 class Camera {
     constructor() {
@@ -1954,6 +1950,36 @@ Color.black = new Color(0, 0, 0, 1);
 Color.red = new Color(1, 0, 0, 1);
 Color.green = new Color(0, 1, 0, 1);
 Color.blue = new Color(0, 0, 1, 1);
+class FosterIO {
+    static read(path, callback) {
+        if (Engine.client == Client.Desktop) {
+            if (FosterIO.fs == null) {
+                FosterIO.fs = require("fs");
+                FosterIO.path = require("path");
+            }
+            FosterIO.fs.readFile(FosterIO.path.join(__dirname, path), 'utf8', function (err, data) {
+                if (err)
+                    throw err;
+                callback(data);
+            });
+        }
+        else {
+            let httpRequest = new XMLHttpRequest();
+            httpRequest.onreadystatechange = (e) => {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200)
+                        callback(httpRequest.responseText);
+                    else
+                        throw "Unable to read file " + path;
+                }
+            };
+            httpRequest.open('GET', path);
+            httpRequest.send();
+        }
+    }
+}
+FosterIO.fs = null;
+FosterIO.path = null;
 class Matrix {
     constructor() {
         this.mat = new Float32Array(9);

@@ -46,7 +46,7 @@ class Physics extends Hitbox
 		}
 		else
 		{
-			let sign = Math.sign(amount);
+			let sign = Calc.sign(amount);
 			amount = Math.abs(Math.round(amount));
 			
 			while (amount > 0)
@@ -85,7 +85,7 @@ class Physics extends Hitbox
 		}
 		else
 		{
-			let sign = Math.sign(amount);
+			let sign = Calc.sign(amount);
 			amount = Math.abs(Math.round(amount));
 			
 			while (amount > 0)

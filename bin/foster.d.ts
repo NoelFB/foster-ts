@@ -365,8 +365,6 @@ declare class AssetLoader {
     private jsons;
     private sounds;
     private atlases;
-    private fs;
-    private ps;
     addTexture(path: string): AssetLoader;
     addJson(path: string): AssetLoader;
     addAudio(path: string): AssetLoader;
@@ -620,6 +618,9 @@ declare class PrimitiveRenderer extends Renderer {
 declare class SpriteRenderer extends Renderer {
     constructor();
 }
+declare class Calc {
+    static sign(n: number): number;
+}
 declare class Camera {
     position: Vector;
     origin: Vector;
@@ -655,6 +656,11 @@ declare class Color {
     static red: Color;
     static green: Color;
     static blue: Color;
+}
+declare class FosterIO {
+    private static fs;
+    private static path;
+    static read(path: string, callback: (string) => void): void;
 }
 declare class Matrix {
     mat: Float32Array;

@@ -10,9 +10,10 @@ var gulp = require("gulp"),
 	gulp.task("ts", function()
 	{	
 		var tsStream = tsProject.src()
-		.pipe(ts(tsProject));
+			.pipe(ts(tsProject));
 
-		return merge([
+		return merge(
+		[
 			tsStream.dts.pipe(gulp.dest('./bin/')),
 			tsStream.js.pipe(gulp.dest('./bin/'))
 		]);
