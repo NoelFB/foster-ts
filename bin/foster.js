@@ -1149,6 +1149,7 @@ class Assets {
 Assets.textures = {};
 Assets.json = {};
 Assets.sounds = {};
+Assets.atlases = {};
 class AssetLoader {
     constructor() {
         this.loading = false;
@@ -1158,6 +1159,7 @@ class AssetLoader {
         this.textures = [];
         this.jsons = [];
         this.sounds = [];
+        this.atlases = [];
     }
     get percent() { return this.assetsLoaded / this.assets; }
     addTexture(path) {
@@ -1165,41 +1167,97 @@ class AssetLoader {
             throw "Cannot add more assets when already loaded";
         this.textures.push(path);
         this.assets++;
+        return this;
     }
     addJson(path) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
+        this.jsons.push(path);
+        this.assets++;
+        return this;
     }
     addAudio(path) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
+        return this;
+    }
+    addAtlas(name, image, data, type) {
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.atlases.push({ name: name, image: image, data: data, type: type });
+        this.assets += 3;
+        return this;
     }
     load(callback) {
+        var self = this;
         this.loading = true;
         this.callback = callback;
+        // setup for loading
+        if (Engine.client == Client.Desktop) {
+            this.fs = require("fs");
+            this.ps = require("path");
+        }
+        // textures
+        for (let i = 0; i < this.textures.length; i++)
+            this.loadTexture(this.textures[i]);
+        // jsons
+        for (let i = 0; i < this.jsons.length; i++)
+            this.loadJson(this.jsons[i]);
+        // atlases
+        for (let i = 0; i < this.atlases.length; i++)
+            this.loadAtlas(this.atlases[i]);
+    }
+    loadTexture(path, callback) {
         var self = this;
         let gl = Engine.graphics.gl;
-        for (let i = 0; i < this.textures.length; i++) {
-            let fglt = new FosterWebGLTexture();
-            fglt.path = this.textures[i];
-            let img = new Image();
-            img.addEventListener('load', function () {
-                fglt.width = img.width;
-                fglt.height = img.height;
-                fglt.webGLTexture = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, fglt.webGLTexture);
-                gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                gl.bindTexture(gl.TEXTURE_2D, null);
-                Assets.textures[fglt.path] = new Texture(fglt);
+        let fglt = new FosterWebGLTexture();
+        let img = new Image();
+        fglt.path = path;
+        img.addEventListener('load', function () {
+            fglt.width = img.width;
+            fglt.height = img.height;
+            fglt.webGLTexture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, fglt.webGLTexture);
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            Assets.textures[fglt.path] = new Texture(fglt);
+            if (callback != undefined)
+                callback(Assets.textures[fglt.path]);
+            self.incrementLoader();
+        });
+        img.src = fglt.path;
+    }
+    loadJson(path, callback) {
+        var self = this;
+        if (Engine.client == Client.Desktop) {
+            this.fs.readFile(this.ps.join(__dirname, path), 'utf8', function (err, data) {
+                if (err)
+                    throw err;
+                Assets.json[path] = JSON.parse(data);
+                if (callback != undefined)
+                    callback(Assets.json[path]);
                 self.incrementLoader();
             });
-            img.src = fglt.path;
         }
+    }
+    loadAtlas(data) {
+        var self = this;
+        var texture = null;
+        var json = null;
+        function check() {
+            if (texture == null || json == null)
+                return;
+            let atlas = new Atlas(data.name, texture, json, data.type);
+            Assets.atlases[atlas.name] = atlas;
+            self.incrementLoader();
+        }
+        this.loadTexture(data.image, (tex) => { texture = tex; check(); });
+        this.loadJson(data.data, (j) => { json = j; check(); });
     }
     incrementLoader() {
         this.assetsLoaded++;
@@ -1208,6 +1266,46 @@ class AssetLoader {
             this.loading = false;
             if (this.callback != undefined)
                 this.callback();
+        }
+    }
+}
+var AtlasType;
+(function (AtlasType) {
+    AtlasType[AtlasType["ASEPRITE"] = 0] = "ASEPRITE";
+})(AtlasType || (AtlasType = {}));
+class Atlas {
+    constructor(name, texture, json, type) {
+        this.subtextures = {};
+        this.name = name;
+        this.texture = texture;
+        this.json = json;
+        this.type = type;
+        if (type == AtlasType.ASEPRITE)
+            this.loadAsepriteAtlas();
+    }
+    get(name) {
+        return this.subtextures[name];
+    }
+    list(prefix, names) {
+        let listed = [];
+        for (let i = 0; i < names.length; i++)
+            listed.push(this.get(prefix + names[i]));
+        return listed;
+    }
+    loadAsepriteAtlas() {
+        let frames = this.json["frames"];
+        for (var path in frames) {
+            var name = path.replace(".ase", "");
+            var obj = frames[path];
+            var bounds = obj.frame;
+            if (obj.trimmed) {
+                var source = obj["spriteSourceSize"];
+                var size = obj["sourceSize"];
+                this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
+            }
+            else {
+                this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
+            }
         }
     }
 }
@@ -1365,9 +1463,9 @@ class Physics extends Hitbox {
     }
     update() {
         if (this.speed.x != 0)
-            this.moveX(this.speed.x);
+            this.moveX(this.speed.x * Engine.delta);
         if (this.speed.y != 0)
-            this.moveY(this.speed.y);
+            this.moveY(this.speed.y * Engine.delta);
     }
     move(x, y) {
         var movedX = this.moveX(x);
@@ -2339,7 +2437,7 @@ class Hitgrid extends Collider {
 }
 /// <reference path="./../../component.ts"/>
 class Graphic extends Component {
-    constructor(texture) {
+    constructor(texture, position) {
         super();
         this.scale = new Vector(1, 1);
         this.origin = new Vector(0, 0);
@@ -2352,6 +2450,8 @@ class Graphic extends Component {
             this.texture = texture;
             this.crop = new Rectangle(0, 0, texture.width, texture.height);
         }
+        if (position)
+            this.position = position;
     }
     get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
     get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }

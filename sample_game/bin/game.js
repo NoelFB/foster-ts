@@ -2,14 +2,17 @@
 class Game {
     static main() {
         Engine.start("Game Title", 480, 270, 3, EngineMode.Strict, function () {
-            // load sprites
-            let loader = new AssetLoader();
-            loader.addTexture("assets/sprite.png");
-            loader.addTexture("assets/pixel.png");
-            loader.load(function () {
-                // create animation
+            // load assets
+            new AssetLoader()
+                .addAtlas("gfx", "assets/atlas.png", "assets/atlas.json", AtlasType.ASEPRITE)
+                .load(function () {
+                var atlas = Assets.atlases["gfx"];
+                Engine.graphics.pixel = atlas.get("pixel");
+                Game.block = atlas.get("brick");
+                // player animation
                 AnimationBank.create("player")
-                    .addFrameAnimation("idle", 10, Assets.textures["assets/sprite.png"], 32, 32, [0, 2, 3, 4, 7], true);
+                    .add("idle", 0, [atlas.get("player 0")], false)
+                    .add("run", 10, atlas.list("player ", ["0", "1", "2", "3"]), true);
                 // begin game
                 Engine.scene = new GameScene();
             });
@@ -19,7 +22,6 @@ class Game {
 class GameScene extends Scene {
     begin() {
         super.begin();
-        Engine.graphics.pixel = Assets.textures["assets/pixel.png"];
         Engine.debugMode = true;
         Keys.map("left", [Key.left]);
         Keys.map("right", [Key.right]);
@@ -27,37 +29,24 @@ class GameScene extends Scene {
         Keys.map("down", [Key.down]);
         this.camera.origin = new Vector(Engine.width / 2, Engine.height / 2);
         this.camera.position = new Vector(Engine.width / 2, Engine.height / 2);
-        // some entity
-        {
-            let hitbox = new Hitbox(-8, -16, 16, 16);
-            let sprite = new Graphic(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(35, 30, 20, 30)));
-            sprite.origin = new Vector(10, 30);
-            sprite.position = new Vector(0, 0);
-            sprite.flipX = true;
-            sprite.rotation = 1.2;
-            this.entity = this.add(new Entity());
-            this.entity.add(hitbox);
-            this.entity.add(sprite);
-        }
-        // another entity
-        {
-            let another = this.add(new Entity(), new Vector(Engine.width / 2 - 64, Engine.height / 2 - 8));
-            another.add(new Rectsprite(128, 16, Color.green));
-            another.add(new Hitbox(0, 0, 128, 16, ["solid"]));
-            let tilemap = new Tilemap(Assets.textures["assets/sprite.png"], 16, 16);
-            tilemap.set(3, 3, 0, 0, 128, 4);
-            another.add(tilemap);
-            let grid = new Hitgrid(16, 16, ["solid"]);
-            grid.set(true, -4, -4, 8, 8);
-            grid.set(false, -4, 0, 3, 2);
-            another.add(grid);
-        }
+        this.add(this.blockEntity = new Entity());
+        this.blockEntity.add(new Hitgrid(16, 16, ["solid"]));
+        this.block(0, 0, 24, 1);
+        this.block(0, 1, 1, 12);
+        this.block(0, 13, 24, 1);
+        this.block(24, 0, 1, 14);
+        this.block(4, 5, 2, 3);
         this.add(new Player());
+    }
+    block(tx, ty, columns, rows) {
+        for (let x = tx; x < tx + columns; x++)
+            for (let y = ty; y < ty + rows; y++) {
+                this.blockEntity.add(new Graphic(Game.block, new Vector(x * 16, y * 16)));
+                this.blockEntity.find(Hitgrid).set(true, x, y);
+            }
     }
     update() {
         super.update();
-        this.entity.position = this.camera.mouse;
-        this.entity.find(Graphic).rotation = (this.camera.mouse.x / 32) % (Math.PI * 2);
         if (Keys.down(Key.r))
             this.camera.rotation += Engine.delta;
     }
@@ -69,7 +58,7 @@ class Player extends Entity {
         this.x = 200;
         this.y = 200;
         // physics!
-        this.add(this.physics = new Physics(-4, -4, 8, 8, null, ["solid"]));
+        this.add(this.physics = new Physics(-4, -8, 8, 8, null, ["solid"]));
         this.physics.onCollideX = () => { this.physics.speed.x = 0; };
         this.physics.onCollideY = () => { this.physics.speed.y = 0; };
         // sprite!
@@ -80,18 +69,26 @@ class Player extends Entity {
     }
     update() {
         if (Keys.mapDown("up"))
-            this.physics.speed.y -= 12 * Engine.delta;
+            this.physics.speed.y -= 240 * Engine.delta;
         else if (Keys.down(Key.down))
-            this.physics.speed.y += 12 * Engine.delta;
+            this.physics.speed.y += 240 * Engine.delta;
         else
-            this.physics.friction(0, 8);
+            this.physics.friction(0, 180);
         if (Keys.mapDown("left"))
-            this.physics.speed.x -= 12 * Engine.delta;
+            this.physics.speed.x -= 240 * Engine.delta;
         else if (Keys.mapDown("right"))
-            this.physics.speed.x += 12 * Engine.delta;
+            this.physics.speed.x += 240 * Engine.delta;
         else
-            this.physics.friction(8, 0);
-        this.physics.circularMaxspeed(8);
+            this.physics.friction(180, 0);
+        this.physics.circularMaxspeed(100);
+        // current animation
+        if (this.physics.speed.length > 0.1)
+            this.sprite.play("run");
+        else
+            this.sprite.play("idle");
+        // facing
+        if (this.physics.speed.x != 0)
+            this.sprite.scale.x = (this.physics.speed.x < 0 ? -1 : 1);
         super.update();
     }
 }

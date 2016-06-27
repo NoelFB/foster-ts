@@ -15,7 +15,7 @@ class Graphic extends Component
 	public get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
 	public get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
 	
-	constructor(texture:Texture)
+	constructor(texture:Texture, position?:Vector)
 	{
 		super();
 		
@@ -24,6 +24,9 @@ class Graphic extends Component
 			this.texture = texture;
 			this.crop = new Rectangle(0, 0, texture.width, texture.height);
 		}
+
+		if (position)
+			this.position = position;
 	}
 	
 	public render(camera:Camera):void

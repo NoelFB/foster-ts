@@ -350,6 +350,9 @@ declare class Assets {
     static sounds: {
         [path: string]: HTMLAudioElement;
     };
+    static atlases: {
+        [path: string]: Atlas;
+    };
 }
 declare class AssetLoader {
     loading: boolean;
@@ -361,11 +364,34 @@ declare class AssetLoader {
     private textures;
     private jsons;
     private sounds;
-    addTexture(path: string): void;
-    addJson(path: string): void;
-    addAudio(path: string): void;
+    private atlases;
+    private fs;
+    private ps;
+    addTexture(path: string): AssetLoader;
+    addJson(path: string): AssetLoader;
+    addAudio(path: string): AssetLoader;
+    addAtlas(name: string, image: string, data: string, type: AtlasType): AssetLoader;
     load(callback?: () => void): void;
+    private loadTexture(path, callback?);
+    private loadJson(path, callback?);
+    private loadAtlas(data);
     private incrementLoader();
+}
+declare enum AtlasType {
+    ASEPRITE = 0,
+}
+declare class Atlas {
+    name: string;
+    texture: Texture;
+    json: Object;
+    type: AtlasType;
+    subtextures: {
+        [path: string]: Texture;
+    };
+    constructor(name: string, texture: Texture, json: Object, type: AtlasType);
+    get(name: string): Texture;
+    list(prefix: string, names: string[]): Texture[];
+    private loadAsepriteAtlas();
 }
 declare class FosterWebGLTexture {
     path: string;
@@ -748,7 +774,7 @@ declare class Graphic extends Component {
     alpha: number;
     width: number;
     height: number;
-    constructor(texture: Texture);
+    constructor(texture: Texture, position?: Vector);
     render(camera: Camera): void;
 }
 declare class Rectsprite extends Component {

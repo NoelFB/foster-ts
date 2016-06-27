@@ -18,9 +18,9 @@ class Physics extends Hitbox
 	public update()
 	{
 		if (this.speed.x != 0)
-			this.moveX(this.speed.x);
+			this.moveX(this.speed.x * Engine.delta);
 		if (this.speed.y != 0)
-			this.moveY(this.speed.y);
+			this.moveY(this.speed.y * Engine.delta);
 	}
 	
 	public move(x:number, y:number):boolean

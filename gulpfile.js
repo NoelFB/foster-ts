@@ -30,7 +30,7 @@ var gulp = require("gulp"),
 	// copies the game assets to the bin folder
 	gulp.task("sg_assets", function()
 	{
-		return gulp.src("./sample_game/assets/*")
+		return gulp.src("./sample_game/assets/**/*.{png,json,jpg,mp3,wav}")
 		.pipe(gulp.dest("./sample_game/bin/assets"));
 	});
 
