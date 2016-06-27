@@ -187,6 +187,11 @@ declare class Graphics {
     reset(): void;
     /**
      * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
+     * @param x 	X position of the vertex
+     * @param y		Y position of the vertex
+     * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+     * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+     * @param color optional color for the vertex
      */
     push(x: number, y: number, u: number, v: number, color?: Color): void;
     /**
@@ -318,8 +323,10 @@ declare class AnimationSet {
     animations: {
         [name: string]: AnimationTemplate;
     };
+    first: AnimationTemplate;
     constructor(name: string);
-    add(name: string, speed: number, frames: Texture[], position?: Vector, origin?: Vector): AnimationSet;
+    add(name: string, speed: number, frames: Texture[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
+    addFrameAnimation(name: string, speed: number, tex: Texture, frameWidth: number, frameHeight: number, frames: number[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
     get(name: string): AnimationTemplate;
     has(name: string): boolean;
 }
@@ -329,7 +336,9 @@ declare class AnimationTemplate {
     frames: Texture[];
     origin: Vector;
     position: Vector;
-    constructor(name: string, speed: number, frames: Texture[], position?: Vector, origin?: Vector);
+    loops: boolean;
+    goto: string[];
+    constructor(name: string, speed: number, frames: Texture[], loops?: boolean, position?: Vector, origin?: Vector);
 }
 declare class Assets {
     static textures: {
@@ -716,7 +725,7 @@ declare class Shaders {
 }
 declare class Hitgrid extends Collider {
 }
-declare class Sprite extends Component {
+declare class Graphic extends Component {
     texture: Texture;
     crop: Rectangle;
     scale: Vector;
@@ -729,10 +738,7 @@ declare class Sprite extends Component {
     width: number;
     height: number;
     constructor(texture: Texture);
-    render(): void;
-}
-declare class Animation extends Sprite {
-    constructor();
+    render(camera: Camera): void;
 }
 declare class Rectsprite extends Component {
     size: Vector;
@@ -745,6 +751,20 @@ declare class Rectsprite extends Component {
     height: number;
     constructor(width: number, height: number, color?: Color);
     render(): void;
+}
+declare class Sprite extends Graphic {
+    private _animation;
+    private _playing;
+    private _frame;
+    animation: AnimationSet;
+    playing: AnimationTemplate;
+    frame: number;
+    rate: number;
+    constructor(animation: string);
+    play(name: string, restart?: boolean): void;
+    has(name: string): boolean;
+    update(): void;
+    render(camera: Camera): void;
 }
 declare class Tilemap extends Component {
     texture: Texture;

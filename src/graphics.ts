@@ -142,6 +142,11 @@ class Graphics
 	
 	/**
 	 * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
+	 * @param x 	X position of the vertex
+	 * @param y		Y position of the vertex
+	 * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+	 * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+	 * @param color optional color for the vertex
 	 */
 	public push(x:number, y:number, u:number, v:number, color?:Color)
 	{
@@ -284,6 +289,7 @@ class Graphics
 		}
 	}
 	
+	// temp. vars used for drawing
 	private topleft:Vector = new Vector();
 	private topright:Vector = new Vector();
 	private botleft:Vector = new Vector();
@@ -306,6 +312,7 @@ class Graphics
 	{
 		this.setShaderTexture(tex);
 
+		// get the texture (or subtexture if crop is passed)
 		let t:Texture = null;
 		if (crop == undefined || crop == null)
 			t = tex;
@@ -325,7 +332,7 @@ class Graphics
 		this.botright.set(left + width, top + height);
 		
 		// offset by origin
-		if (origin != undefined && (origin.x != 0 || origin.y != 0))
+		if (origin && (origin.x != 0 || origin.y != 0))
 		{
 			this.topleft.sub(origin);
 			this.topright.sub(origin);
@@ -334,7 +341,7 @@ class Graphics
 		}
 		
 		// scale
-		if (scale != undefined && (scale.x != 1 || scale.y != 1))
+		if (scale && (scale.x != 1 || scale.y != 1))
 		{
 			this.topleft.mult(scale);
 			this.topright.mult(scale);
@@ -343,7 +350,7 @@ class Graphics
 		}
 		
 		// rotate
-		if (rotation != undefined && rotation != 0)
+		if (rotation && rotation != 0)
 		{
 			let s = Math.sin(rotation);
 			let c = Math.cos(rotation);

@@ -371,6 +371,7 @@ class Graphics {
         this.nextShader = null;
         this.clearColor = new Color(0.1, 0.1, 0.3, 1);
         this.drawCalls = 0;
+        // temp. vars used for drawing
         this.topleft = new Vector();
         this.topright = new Vector();
         this.botleft = new Vector();
@@ -468,6 +469,11 @@ class Graphics {
     }
     /**
      * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
+     * @param x 	X position of the vertex
+     * @param y		Y position of the vertex
+     * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+     * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+     * @param color optional color for the vertex
      */
     push(x, y, u, v, color) {
         // shader was changed
@@ -588,6 +594,7 @@ class Graphics {
      */
     texture(tex, posX, posY, crop, color, origin, scale, rotation, flipX, flipY) {
         this.setShaderTexture(tex);
+        // get the texture (or subtexture if crop is passed)
         let t = null;
         if (crop == undefined || crop == null)
             t = tex;
@@ -604,21 +611,21 @@ class Graphics {
         this.botleft.set(left, top + height);
         this.botright.set(left + width, top + height);
         // offset by origin
-        if (origin != undefined && (origin.x != 0 || origin.y != 0)) {
+        if (origin && (origin.x != 0 || origin.y != 0)) {
             this.topleft.sub(origin);
             this.topright.sub(origin);
             this.botleft.sub(origin);
             this.botright.sub(origin);
         }
         // scale
-        if (scale != undefined && (scale.x != 1 || scale.y != 1)) {
+        if (scale && (scale.x != 1 || scale.y != 1)) {
             this.topleft.mult(scale);
             this.topright.mult(scale);
             this.botleft.mult(scale);
             this.botright.mult(scale);
         }
         // rotate
-        if (rotation != undefined && rotation != 0) {
+        if (rotation && rotation != 0) {
             let s = Math.sin(rotation);
             let c = Math.cos(rotation);
             this.topleft.rotate(s, c);
@@ -1096,9 +1103,26 @@ class AnimationSet {
         this.animations = {};
         this.name = name;
     }
-    add(name, speed, frames, position, origin) {
-        let anim = new AnimationTemplate(name, speed, frames, position, origin);
+    add(name, speed, frames, loops, position, origin) {
+        let anim = new AnimationTemplate(name, speed, frames, loops, position, origin);
         this.animations[name] = anim;
+        if (this.first == null)
+            this.first = anim;
+        return this;
+    }
+    addFrameAnimation(name, speed, tex, frameWidth, frameHeight, frames, loops, position, origin) {
+        let columns = Math.floor(tex.width / frameWidth);
+        let texFrames = [];
+        for (let i = 0; i < frames.length; i++) {
+            let index = frames[i];
+            let tx = (index % columns) * frameWidth;
+            let ty = Math.floor(index / columns) * frameWidth;
+            texFrames.push(tex.getSubtexture(new Rectangle(tx, ty, frameWidth, frameHeight)));
+        }
+        let anim = new AnimationTemplate(name, speed, texFrames, loops, position, origin);
+        this.animations[name] = anim;
+        if (this.first == null)
+            this.first = anim;
         return this;
     }
     get(name) {
@@ -1109,10 +1133,13 @@ class AnimationSet {
     }
 }
 class AnimationTemplate {
-    constructor(name, speed, frames, position, origin) {
+    constructor(name, speed, frames, loops, position, origin) {
+        this.loops = false;
+        this.goto = null;
         this.name = name;
         this.speed = speed;
         this.frames = frames;
+        this.loops = loops || false;
         this.position = (position || new Vector(0, 0));
         this.origin = (origin || new Vector(0, 0));
     }
@@ -2229,7 +2256,7 @@ class Shaders {
 class Hitgrid extends Collider {
 }
 /// <reference path="./../../component.ts"/>
-class Sprite extends Component {
+class Graphic extends Component {
     constructor(texture) {
         super();
         this.scale = new Vector(1, 1);
@@ -2239,21 +2266,15 @@ class Sprite extends Component {
         this.flipY = false;
         this.color = Color.white;
         this.alpha = 1;
-        this.texture = texture;
-        this.crop = new Rectangle(0, 0, texture.width, texture.height);
+        if (texture != null) {
+            this.texture = texture;
+            this.crop = new Rectangle(0, 0, texture.width, texture.height);
+        }
     }
-    get width() { return this.crop.width; }
-    get height() { return this.crop.height; }
-    render() {
-        // only draw if the current shader actually takes a texture
-        if (Engine.graphics.shader.sampler2d != null)
-            Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
-    }
-}
-/// <reference path="./sprite.ts"/>
-class Animation extends Sprite {
-    constructor() {
-        super(null);
+    get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
+    get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
+    render(camera) {
+        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
 }
 /// <reference path="./../../component.ts"/>
@@ -2282,6 +2303,63 @@ class Rectsprite extends Component {
         else {
             Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, this.color.mult(this.alpha), this.origin, this.scale, this.rotation);
         }
+    }
+}
+/// <reference path="./graphic.ts"/>
+class Sprite extends Graphic {
+    constructor(animation) {
+        super(null);
+        this._animation = null;
+        this._playing = null;
+        this._frame = 0;
+        this.rate = 1;
+        Engine.assert(AnimationBank.has(animation), "Missing animation '" + animation + "'!");
+        this._animation = AnimationBank.get(animation);
+        this.texture = this._animation.first.frames[0];
+    }
+    get animation() { return this._animation; }
+    get playing() { return this._playing; }
+    get frame() { return Math.floor(this._frame); }
+    play(name, restart) {
+        if (this.animation == null)
+            return;
+        let next = this.animation.get(name);
+        if (next != null && (this.playing != next || restart)) {
+            this._playing = next;
+            this._frame = 0;
+            this.active = true;
+            if (this._playing.frames.length > 0)
+                this.texture = this._playing.frames[0];
+        }
+    }
+    has(name) {
+        return this.animation != null && this.animation.has(name);
+    }
+    update() {
+        if (this.playing != null) {
+            this._frame += this.playing.speed * this.rate * Engine.delta;
+            if (this.frame >= this.playing.frames.length) {
+                // loop this animation
+                if (this.playing.loops) {
+                    while (this._frame >= this.playing.frames.length)
+                        this._frame -= this.playing.frames.length;
+                }
+                else if (this.playing.goto != null && this.playing.goto.length > 0) {
+                    let next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
+                    this.play(next, true);
+                }
+                else {
+                    this.active = false;
+                    this._frame = this.playing.frames.length - 1;
+                }
+            }
+            if (this.playing != null)
+                this.texture = this.playing.frames[this.frame];
+        }
+    }
+    render(camera) {
+        if (this.texture != null)
+            super.render(camera);
     }
 }
 /// <reference path="./../../component.ts"/>

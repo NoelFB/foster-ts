@@ -2,10 +2,15 @@
 class Game {
     static main() {
         Engine.start("Game Title", 480, 270, 3, EngineMode.Strict, function () {
+            // load sprites
             let loader = new AssetLoader();
             loader.addTexture("assets/sprite.png");
             loader.addTexture("assets/pixel.png");
             loader.load(function () {
+                // create animation
+                AnimationBank.create("player")
+                    .addFrameAnimation("idle", 10, Assets.textures["assets/sprite.png"], 32, 32, [0, 2, 3, 4, 7], true);
+                // begin game
                 Engine.scene = new GameScene();
             });
         });
@@ -25,7 +30,7 @@ class GameScene extends Scene {
         // some entity
         {
             let hitbox = new Hitbox(-8, -16, 16, 16);
-            let sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(35, 30, 20, 30)));
+            let sprite = new Graphic(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(35, 30, 20, 30)));
             sprite.origin = new Vector(10, 30);
             sprite.position = new Vector(0, 0);
             sprite.flipX = true;
@@ -48,7 +53,7 @@ class GameScene extends Scene {
     update() {
         super.update();
         this.entity.position = this.camera.mouse;
-        this.entity.find(Sprite).rotation = (this.camera.mouse.x / 32) % (Math.PI * 2);
+        this.entity.find(Graphic).rotation = (this.camera.mouse.x / 32) % (Math.PI * 2);
         if (Keys.down(Key.r))
             this.camera.rotation += Engine.delta;
     }
@@ -64,8 +69,8 @@ class Player extends Entity {
         this.physics.onCollideX = () => { this.physics.speed.x = 0; };
         this.physics.onCollideY = () => { this.physics.speed.y = 0; };
         // sprite!
-        this.add(this.sprite = new Sprite(Assets.textures["assets/sprite.png"].getSubtexture(new Rectangle(30, 40, 30, 80))));
-        this.sprite.crop.height -= 4;
+        this.add(this.sprite = new Sprite("player"));
+        this.sprite.play("idle");
         this.sprite.origin.x = this.sprite.width / 2;
         this.sprite.origin.y = this.sprite.height;
     }
