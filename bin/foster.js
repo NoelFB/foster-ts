@@ -1775,6 +1775,11 @@ class Vector {
         this.y = y;
         return this;
     }
+    copy(v) {
+        this.x = v.x;
+        this.y = v.y;
+        return this;
+    }
     add(v) {
         this.x += v.x;
         this.y += v.y;
@@ -1920,6 +1925,12 @@ class SpriteRenderer extends Renderer {
 class Calc {
     static sign(n) {
         return (n < 0 ? -1 : (n > 0 ? 1 : 0));
+    }
+    static clamp(n, min, max) {
+        return Math.max(min, Math.min(max, n));
+    }
+    static approach(n, target, step) {
+        return n > target ? Math.max(n - step, target) : Math.min(n + step, target);
     }
 }
 /// <reference path="./vector.ts"/>

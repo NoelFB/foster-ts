@@ -17,6 +17,13 @@ class Vector
 		this.y = y;
 		return this;
 	}
+
+	public copy(v:Vector):Vector
+	{
+		this.x = v.x;
+		this.y = v.y;
+		return this;
+	}
 	
 	public add(v:Vector):Vector
 	{

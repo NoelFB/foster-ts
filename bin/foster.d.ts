@@ -581,6 +581,7 @@ declare class Vector {
     y: number;
     constructor(x?: number, y?: number);
     set(x: number, y: number): Vector;
+    copy(v: Vector): Vector;
     add(v: Vector): Vector;
     sub(v: Vector): Vector;
     mult(v: Vector): Vector;
@@ -627,6 +628,8 @@ declare class SpriteRenderer extends Renderer {
 }
 declare class Calc {
     static sign(n: number): number;
+    static clamp(n: number, min: number, max: number): number;
+    static approach(n: number, target: number, step: number): number;
 }
 declare class Camera {
     position: Vector;

@@ -12,7 +12,7 @@ class Game {
                 // player animation
                 AnimationBank.create("player")
                     .add("idle", 0, [atlas.get("player 0")], false)
-                    .add("run", 10, atlas.list("player ", ["0", "1", "2", "3"]), true);
+                    .add("run", 10, atlas.list("player ", ["1", "2", "3", "0"]), true);
                 // begin game
                 Engine.scene = new GameScene();
             });
@@ -59,8 +59,16 @@ class Player extends Entity {
         this.y = 200;
         // physics!
         this.add(this.physics = new Physics(-4, -8, 8, 8, null, ["solid"]));
-        this.physics.onCollideX = () => { this.physics.speed.x = 0; };
-        this.physics.onCollideY = () => { this.physics.speed.y = 0; };
+        this.physics.onCollideX = () => {
+            if (Math.abs(this.physics.speed.x) > 50)
+                this.sprite.scale.x = Calc.sign(this.sprite.scale.x) * 0.75;
+            this.physics.speed.x = 0;
+        };
+        this.physics.onCollideY = () => {
+            if (Math.abs(this.physics.speed.y) > 50)
+                this.sprite.scale.y = Calc.sign(this.sprite.scale.y) * 0.75;
+            this.physics.speed.y = 0;
+        };
         // sprite!
         this.add(this.sprite = new Sprite("player"));
         this.sprite.play("idle");
@@ -75,22 +83,33 @@ class Player extends Entity {
             this.physics.speed.y += 240 * Engine.delta;
         else
             this.physics.friction(0, 180);
-        if (Keys.mapDown("left"))
+        if (Keys.mapDown("left")) {
             this.physics.speed.x -= 240 * Engine.delta;
-        else if (Keys.mapDown("right"))
+            this.sprite.scale.x = -Math.abs(this.sprite.scale.x);
+        }
+        else if (Keys.mapDown("right")) {
             this.physics.speed.x += 240 * Engine.delta;
+            this.sprite.scale.x = Math.abs(this.sprite.scale.x);
+        }
         else
             this.physics.friction(180, 0);
         this.physics.circularMaxspeed(100);
         // current animation
-        if (this.physics.speed.length > 0.1)
+        if (this.physics.speed.length > 0.1) {
+            this.sprite.rate = Calc.clamp(this.physics.speed.length / 100, 0.25, 1.00);
             this.sprite.play("run");
-        else
+        }
+        else {
+            this.sprite.rate = 1;
             this.sprite.play("idle");
-        // facing
-        if (this.physics.speed.x != 0)
-            this.sprite.scale.x = (this.physics.speed.x < 0 ? -1 : 1);
+        }
         super.update();
+        // ease scale back
+        this.sprite.scale.x = Calc.approach(this.sprite.scale.x, Calc.sign(this.sprite.scale.x), 2 * Engine.delta);
+        this.sprite.scale.y = Calc.approach(this.sprite.scale.y, Calc.sign(this.sprite.scale.y), 2 * Engine.delta);
+        // camera follow
+        this.scene.camera.position.x += (this.x - this.scene.camera.position.x) / 10;
+        this.scene.camera.position.y += (this.y - this.scene.camera.position.y) / 10;
     }
     *routine() {
         console.log("test");
