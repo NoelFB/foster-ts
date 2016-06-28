@@ -6,12 +6,12 @@ class Game
 
 	public static main():void
 	{
-		Engine.start("Game Title", 480, 270, 3, EngineMode.Strict, function()
+		Engine.start("Game Title", 480, 270, 3, () =>
 		{
 			// load assets
 			new AssetLoader()
 				.addAtlas("gfx", "assets/atlas.png", "assets/atlas.json", AtlasType.ASEPRITE)
-				.load(function()
+				.load(() =>
 				{
 					var atlas = Assets.atlases["gfx"];
 					Engine.graphics.pixel = atlas.get("pixel");
@@ -38,7 +38,7 @@ class GameScene extends Scene
 	{
 		super.begin();
 		
-		Engine.debugMode = true;
+		//Engine.debugMode = true;
 		
 		Keys.map("left", [Key.left]);
 		Keys.map("right", [Key.right]);

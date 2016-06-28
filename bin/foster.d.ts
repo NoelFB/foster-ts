@@ -21,15 +21,10 @@ declare enum Client {
     Desktop = 0,
     Web = 1,
 }
-declare enum EngineMode {
-    Strict = 0,
-    Normal = 1,
-}
 declare class Engine {
     private static instance;
     private static started;
     static root: HTMLElement;
-    static mode: EngineMode;
     static client: Client;
     static scene: Scene;
     static width: number;
@@ -47,9 +42,8 @@ declare class Engine {
      * @param scale 	Scales the Window (on Desktop) to width*scale and height*scale
      * @param ready 	Callback when the Engine is ready
      */
-    static start(title: string, width: number, height: number, scale: number, mode: EngineMode, ready?: () => void): void;
+    static start(title: string, width: number, height: number, scale: number, ready?: () => void): void;
     static assert(value: boolean, message: string): boolean;
-    private mode;
     private client;
     private scene;
     private nextScene;
@@ -62,7 +56,7 @@ declare class Engine {
     private root;
     private graphics;
     private debuggerEnabled;
-    constructor(mode: EngineMode);
+    constructor();
     private step();
 }
 declare class Entity {
@@ -142,6 +136,8 @@ declare class Graphics {
     private screenContext;
     private buffer;
     private bufferContext;
+    gl: WebGLRenderingContext;
+    screenCanvas: HTMLCanvasElement;
     private vertexBuffer;
     private uvBuffer;
     private colorBuffer;
@@ -150,13 +146,14 @@ declare class Graphics {
     private colors;
     private currentShader;
     private nextShader;
+    shader: Shader;
     private orthoMatrix;
+    orthographic: Matrix;
+    private _pixel;
+    private _pixelUVs;
+    pixel: Texture;
     clearColor: Color;
     drawCalls: number;
-    screenCanvas: HTMLCanvasElement;
-    shader: Shader;
-    gl: WebGLRenderingContext;
-    orthographic: Matrix;
     /**
      * Creates the Engine.Graphics
      */
@@ -220,12 +217,6 @@ declare class Graphics {
      */
     texture(tex: Texture, posX: number, posY: number, crop?: Rectangle, color?: Color, origin?: Vector, scale?: Vector, rotation?: number, flipX?: boolean, flipY?: boolean): void;
     quad(posX: number, posY: number, width: number, height: number, color?: Color, origin?: Vector, scale?: Vector, rotation?: number): void;
-    private _pixel;
-    private _pixelUVs;
-    /**
-     * Sets the current Pixel texture for drawing
-     */
-    pixel: Texture;
     /**
      * Draws a rectangle with the Graphics.Pixel texture
      */
@@ -367,11 +358,12 @@ declare class AssetLoader {
     private atlases;
     addTexture(path: string): AssetLoader;
     addJson(path: string): AssetLoader;
-    addAudio(path: string): AssetLoader;
+    addSound(path: string): AssetLoader;
     addAtlas(name: string, image: string, data: string, type: AtlasType): AssetLoader;
     load(callback?: () => void): void;
     private loadTexture(path, callback?);
     private loadJson(path, callback?);
+    private loadSound(path, callback?);
     private loadAtlas(data);
     private incrementLoader();
 }

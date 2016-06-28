@@ -1,11 +1,15 @@
 class Graphics
 {
+	// core
     private engine:Engine;
     private screen:HTMLCanvasElement;
 	private screenContext:CanvasRenderingContext2D;
     private buffer:HTMLCanvasElement;
     private bufferContext:WebGLRenderingContext;
+	public get gl():WebGLRenderingContext { return this.bufferContext; }
+	public get screenCanvas():HTMLCanvasElement { return this.screen; }
 	
+	// vertices
 	private vertexBuffer:WebGLBuffer;
 	private uvBuffer:WebGLBuffer;
 	private colorBuffer:WebGLBuffer;
@@ -13,14 +17,10 @@ class Graphics
 	private uvs:number[] = [];
 	private colors:number[] = [];
 	
+	// shader
 	private currentShader:Shader = null;
 	private nextShader:Shader = null;
-	private orthoMatrix:Matrix;
-	
-	public clearColor:Color = new Color(0.1, 0.1, 0.3, 1);
-	public drawCalls:number = 0;
-	public get screenCanvas():HTMLCanvasElement { return this.screen; }
-	
+
 	public get shader():Shader 
 	{
 		if (this.nextShader != null)
@@ -32,9 +32,36 @@ class Graphics
 		if (this.shader != s && s != null)
 			this.nextShader = s;
 	}
-	
-	public get gl():WebGLRenderingContext { return this.bufferContext; }
+
+	// orthographic matrix
+	private orthoMatrix:Matrix;
 	public get orthographic():Matrix { return this.orthoMatrix; }
+
+	// pixel drawing
+	private _pixel:Texture = null;
+	private _pixelUVs:Vector[];
+	
+	public set pixel(p:Texture) 
+	{ 
+		let minX = p.bounds.left / p.texture.width;
+		let minY = p.bounds.top / p.texture.height;
+		let maxX = p.bounds.right / p.texture.width;
+		let maxY = p.bounds.bottom / p.texture.height;
+		
+		this._pixel = p;
+		this._pixelUVs = 
+		[
+			new Vector(minX, minY),
+			new Vector(maxX, minY),
+			new Vector(maxX, maxY),
+			new Vector(minX, maxY)
+		];
+	}
+	public get pixel():Texture { return this._pixel; }
+	
+	// utils
+	public clearColor:Color = new Color(0.1, 0.1, 0.3, 1);
+	public drawCalls:number = 0;
    
     /**
 	 * Creates the Engine.Graphics
@@ -445,31 +472,6 @@ class Graphics
 		this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
 		this.push(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
 	}
-
-	// pixel drawing
-	private _pixel:Texture = null;
-	private _pixelUVs:Vector[];
-	
-	/**
-	 * Sets the current Pixel texture for drawing
-	 */
-	public set pixel(p:Texture) 
-	{ 
-		let minX = p.bounds.left / p.texture.width;
-		let minY = p.bounds.top / p.texture.height;
-		let maxX = p.bounds.right / p.texture.width;
-		let maxY = p.bounds.bottom / p.texture.height;
-		
-		this._pixel = p;
-		this._pixelUVs = 
-		[
-			new Vector(minX, minY),
-			new Vector(maxX, minY),
-			new Vector(maxX, maxY),
-			new Vector(minX, maxY)
-		];
-	}
-	public get pixel():Texture { return this._pixel; }
 	
 	/**
 	 * Draws a rectangle with the Graphics.Pixel texture

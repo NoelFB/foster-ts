@@ -16,3 +16,6 @@ and am only working on this in my spare time!
 ## Builds
  - [foster.js](https://raw.githubusercontent.com/Drazzke/foster/master/bin/foster.js) : compiled JS file
  - [foster.d.ts](https://raw.githubusercontent.com/Drazzke/foster/master/bin/foster.d.ts) : typescript definition file to reference from your game (ex. `/// <reference path="foster.d.ts"/>`)
+
+ ## Sample Games
+ - [sample_game](https://github.com/Drazzke/foster/tree/master/sample_game) - [online demo](http://noelfb.com/foster/sample_game/)

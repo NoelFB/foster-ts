@@ -1,11 +1,11 @@
 /// <reference path="./../../bin/foster.d.ts"/>
 class Game {
     static main() {
-        Engine.start("Game Title", 480, 270, 3, EngineMode.Strict, function () {
+        Engine.start("Game Title", 480, 270, 3, () => {
             // load assets
             new AssetLoader()
                 .addAtlas("gfx", "assets/atlas.png", "assets/atlas.json", AtlasType.ASEPRITE)
-                .load(function () {
+                .load(() => {
                 var atlas = Assets.atlases["gfx"];
                 Engine.graphics.pixel = atlas.get("pixel");
                 Game.block = atlas.get("brick");
@@ -22,7 +22,7 @@ class Game {
 class GameScene extends Scene {
     begin() {
         super.begin();
-        Engine.debugMode = true;
+        //Engine.debugMode = true;
         Keys.map("left", [Key.left]);
         Keys.map("right", [Key.right]);
         Keys.map("up", [Key.up]);

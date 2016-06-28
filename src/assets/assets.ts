@@ -40,11 +40,15 @@ class AssetLoader
 		return this;
 	}
 	
-	public addAudio(path:string):AssetLoader
+	public addSound(path:string):AssetLoader
 	{
+		throw "Audio not implemented yet"
+		/*
 		if (this.loading || this.loaded)
 			throw "Cannot add more assets when already loaded";
-		return this;
+		this.sounds.push(path);
+		this.assets ++;
+		return this;*/
 	}
 
 	public addAtlas(name:string, image:string, data:string, type:AtlasType):AssetLoader
@@ -58,7 +62,6 @@ class AssetLoader
 	
 	public load(callback?:()=>void):void
 	{
-		var self = this;
 		this.loading = true;
 		this.callback = callback;
 		
@@ -69,6 +72,10 @@ class AssetLoader
 		// jsons
 		for (let i = 0; i < this.jsons.length; i ++)
 			this.loadJson(this.jsons[i]);
+
+		// sounds
+		for (let i = 0; i < this.sounds.length; i ++)
+			this.loadSound(this.sounds[i]);
 
 		// atlases
 		for (let i = 0; i < this.atlases.length; i ++)
@@ -121,6 +128,13 @@ class AssetLoader
 				
 			self.incrementLoader();
 		});
+	}
+
+	private loadSound(path:string, callback?:(sound:HTMLAudioElement)=>void):void
+	{
+		var self = this;
+		// todo: LOAD SOUND
+		self.incrementLoader();
 	}
 
 	private loadAtlas(data:any):void

@@ -4,12 +4,6 @@ enum Client
 	Web
 }
 
-enum EngineMode
-{
-	Strict,
-	Normal
-}
-
 class Engine
 {
 
@@ -18,7 +12,6 @@ class Engine
 	
 	// properties
 	public static get root():HTMLElement { return Engine.instance.root; }
-	public static get mode():EngineMode { return Engine.instance.mode; }
 	public static get client():Client { return Engine.instance.client; }
 	public static get scene():Scene { return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene); }
 	public static set scene(val:Scene) { Engine.instance.nextScene = val; }
@@ -48,11 +41,11 @@ class Engine
 	 * @param scale 	Scales the Window (on Desktop) to width*scale and height*scale
 	 * @param ready 	Callback when the Engine is ready
 	 */
-	public static start(title:string, width:number, height:number, scale:number, mode:EngineMode, ready?:() => void):void
+	public static start(title:string, width:number, height:number, scale:number, ready?:() => void):void
 	{
 		// instantiate
 		Engine.started = true;
-		new Engine(mode);
+		new Engine();
 		new GameWindow();
 
 		// window
@@ -86,19 +79,10 @@ class Engine
 	public static assert(value:boolean, message:string):boolean
 	{
 		if (!value)
-		{
-			if (Engine.mode == EngineMode.Strict)
-				throw message;
-			else
-			{
-				console.warn("%c " + message, "background: #222; color: #ff1144;");
-			}
-		}
-		
+			throw message;
 		return value;
 	}
 	
-	private mode:EngineMode;
 	private client:Client;
 	private scene:Scene = null;
 	private nextScene:Scene = null;
@@ -112,7 +96,7 @@ class Engine
 	private graphics:Graphics;
 	private debuggerEnabled:boolean;
 
-	constructor(mode:EngineMode)
+	constructor()
 	{
 		if (Engine.instance != null)
 			throw "Engine has already been instantiated";
@@ -120,7 +104,6 @@ class Engine
 			throw "Engine must be instantiated through static Engine.start";
 
 		Engine.instance = this;
-		this.mode = mode;
 		this.client = Client.Web;
 		if (window && (<any>window).process && (<any>window).process.versions && (<any>window).process.versions.electron)
 			this.client = Client.Desktop;

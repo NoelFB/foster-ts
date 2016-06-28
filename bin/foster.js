@@ -38,13 +38,8 @@ var Client;
     Client[Client["Desktop"] = 0] = "Desktop";
     Client[Client["Web"] = 1] = "Web";
 })(Client || (Client = {}));
-var EngineMode;
-(function (EngineMode) {
-    EngineMode[EngineMode["Strict"] = 0] = "Strict";
-    EngineMode[EngineMode["Normal"] = 1] = "Normal";
-})(EngineMode || (EngineMode = {}));
 class Engine {
-    constructor(mode) {
+    constructor() {
         this.scene = null;
         this.nextScene = null;
         if (Engine.instance != null)
@@ -52,17 +47,13 @@ class Engine {
         if (!Engine.started)
             throw "Engine must be instantiated through static Engine.start";
         Engine.instance = this;
-        this.mode = mode;
         this.client = Client.Web;
-        if (window && window.process && window.process.versions && window.process.versions.electron) {
+        if (window && window.process && window.process.versions && window.process.versions.electron)
             this.client = Client.Desktop;
-            console.log("mode: Desktop");
-        }
         this.startTime = Date.now();
     }
     // properties
     static get root() { return Engine.instance.root; }
-    static get mode() { return Engine.instance.mode; }
     static get client() { return Engine.instance.client; }
     static get scene() { return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene); }
     static set scene(val) { Engine.instance.nextScene = val; }
@@ -88,10 +79,10 @@ class Engine {
      * @param scale 	Scales the Window (on Desktop) to width*scale and height*scale
      * @param ready 	Callback when the Engine is ready
      */
-    static start(title, width, height, scale, mode, ready) {
+    static start(title, width, height, scale, ready) {
         // instantiate
         Engine.started = true;
-        new Engine(mode);
+        new Engine();
         new GameWindow();
         // window
         GameWindow.title = title;
@@ -116,13 +107,8 @@ class Engine {
         };
     }
     static assert(value, message) {
-        if (!value) {
-            if (Engine.mode == EngineMode.Strict)
-                throw message;
-            else {
-                console.warn("%c " + message, "background: #222; color: #ff1144;");
-            }
-        }
+        if (!value)
+            throw message;
         return value;
     }
     step() {
@@ -371,8 +357,12 @@ class Graphics {
         this.vertices = [];
         this.uvs = [];
         this.colors = [];
+        // shader
         this.currentShader = null;
         this.nextShader = null;
+        // pixel drawing
+        this._pixel = null;
+        // utils
         this.clearColor = new Color(0.1, 0.1, 0.3, 1);
         this.drawCalls = 0;
         // temp. vars used for drawing
@@ -381,8 +371,6 @@ class Graphics {
         this.botleft = new Vector();
         this.botright = new Vector();
         this.texToDraw = new Texture(null, new Rectangle(), new Rectangle());
-        // pixel drawing
-        this._pixel = null;
         this.engine = engine;
         // create the screen
         this.screen = document.createElement("canvas");
@@ -403,6 +391,7 @@ class Graphics {
         this.colorBuffer = this.gl.createBuffer();
         this.resize();
     }
+    get gl() { return this.bufferContext; }
     get screenCanvas() { return this.screen; }
     get shader() {
         if (this.nextShader != null)
@@ -413,8 +402,22 @@ class Graphics {
         if (this.shader != s && s != null)
             this.nextShader = s;
     }
-    get gl() { return this.bufferContext; }
     get orthographic() { return this.orthoMatrix; }
+    set pixel(p) {
+        let minX = p.bounds.left / p.texture.width;
+        let minY = p.bounds.top / p.texture.height;
+        let maxX = p.bounds.right / p.texture.width;
+        let maxY = p.bounds.bottom / p.texture.height;
+        this._pixel = p;
+        this._pixelUVs =
+            [
+                new Vector(minX, minY),
+                new Vector(maxX, minY),
+                new Vector(maxX, maxY),
+                new Vector(minX, maxY)
+            ];
+    }
+    get pixel() { return this._pixel; }
     /**
      * Called when the Game resolution changes
      */
@@ -705,24 +708,6 @@ class Graphics {
         this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
         this.push(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
     }
-    /**
-     * Sets the current Pixel texture for drawing
-     */
-    set pixel(p) {
-        let minX = p.bounds.left / p.texture.width;
-        let minY = p.bounds.top / p.texture.height;
-        let maxX = p.bounds.right / p.texture.width;
-        let maxY = p.bounds.bottom / p.texture.height;
-        this._pixel = p;
-        this._pixelUVs =
-            [
-                new Vector(minX, minY),
-                new Vector(maxX, minY),
-                new Vector(maxX, maxY),
-                new Vector(minX, maxY)
-            ];
-    }
-    get pixel() { return this._pixel; }
     /**
      * Draws a rectangle with the Graphics.Pixel texture
      */
@@ -1180,10 +1165,14 @@ class AssetLoader {
         this.assets++;
         return this;
     }
-    addAudio(path) {
+    addSound(path) {
+        throw "Audio not implemented yet";
+        /*
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
-        return this;
+        this.sounds.push(path);
+        this.assets ++;
+        return this;*/
     }
     addAtlas(name, image, data, type) {
         if (this.loading || this.loaded)
@@ -1193,7 +1182,6 @@ class AssetLoader {
         return this;
     }
     load(callback) {
-        var self = this;
         this.loading = true;
         this.callback = callback;
         // textures
@@ -1202,6 +1190,9 @@ class AssetLoader {
         // jsons
         for (let i = 0; i < this.jsons.length; i++)
             this.loadJson(this.jsons[i]);
+        // sounds
+        for (let i = 0; i < this.sounds.length; i++)
+            this.loadSound(this.sounds[i]);
         // atlases
         for (let i = 0; i < this.atlases.length; i++)
             this.loadAtlas(this.atlases[i]);
@@ -1239,6 +1230,11 @@ class AssetLoader {
                 callback(Assets.json[path]);
             self.incrementLoader();
         });
+    }
+    loadSound(path, callback) {
+        var self = this;
+        // todo: LOAD SOUND
+        self.incrementLoader();
     }
     loadAtlas(data) {
         var self = this;
