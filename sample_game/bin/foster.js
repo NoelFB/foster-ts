@@ -1339,6 +1339,41 @@ class Texture {
             "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
     }
 }
+class Alarm extends Component {
+    constructor() {
+        super();
+        this.active = this.visible = false;
+    }
+    start(duration, callback) {
+        this.percent = 0;
+        this.duration = duration;
+        this.callback = callback;
+        return this;
+    }
+    restart() {
+        this.percent = 0;
+        return this;
+    }
+    resume() {
+        if (this.percent < 1)
+            this.active = true;
+        return this;
+    }
+    pause() {
+        this.active = false;
+        return this;
+    }
+    update() {
+        if (this.percent < 1) {
+            this.percent += Engine.delta / this.duration;
+            if (this.percent >= 1) {
+                this.percent = 1;
+                this.active = false;
+                this.callback(this);
+            }
+        }
+    }
+}
 /**
  * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
  */
@@ -1603,6 +1638,52 @@ class Physics extends Hitbox {
         this.remainder.x = this.remainder.y = 0;
     }
 }
+class Tween extends Component {
+    constructor() {
+        super();
+        this.percent = 0;
+        this.removeOnComplete = false;
+        this.active = this.visible = false;
+    }
+    start(duration, from, to, ease, step, removeOnComplete) {
+        this.percent = 0;
+        this.duration = duration;
+        this.from = from;
+        this.to = to;
+        this.ease = ease;
+        this.step = step;
+        this.removeOnComplete = removeOnComplete;
+        return this;
+    }
+    restart() {
+        this.percent = 0;
+        this.active = true;
+        return this;
+    }
+    resume() {
+        if (this.percent < 1)
+            this.active = true;
+        return this;
+    }
+    pause() {
+        this.active = false;
+        return this;
+    }
+    update() {
+        if (this.percent < 1) {
+            this.percent += Engine.delta / this.duration;
+            if (this.percent >= 1) {
+                this.percent = 1;
+                this.step(this.to);
+                this.active = false;
+                if (this.removeOnComplete)
+                    this.entity.remove(this);
+            }
+            else
+                this.step(this.from + (this.to - this.from) * this.ease(this.percent));
+        }
+    }
+}
 class Keys {
     static init() {
         window.addEventListener("keydown", function (e) {
@@ -1844,6 +1925,12 @@ class Vector {
         return result;
     }
 }
+Vector.directions = [
+    new Vector(-1, 0),
+    new Vector(0, -1),
+    new Vector(1, 0),
+    new Vector(0, 1)
+];
 /// <reference path="./../util/vector.ts"/>
 class Mouse {
     static get x() { return this._position.x; }
@@ -1932,6 +2019,9 @@ class Calc {
     static approach(n, target, step) {
         return n > target ? Math.max(n - step, target) : Math.min(n + step, target);
     }
+    static number(min, max) {
+        return min + Math.random() * (max - min);
+    }
 }
 /// <reference path="./vector.ts"/>
 class Camera {
@@ -1998,18 +2088,26 @@ class Color {
     get a() { return this.color[3]; }
     set a(v) { this.color[3] = Math.min(1, Math.max(0, v)); }
     get rgba() { return this.color; }
-    mult(alpha) {
-        return new Color(this.r, this.g, this.b, this.a * alpha);
+    set(r, g, b, a) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+        return this;
     }
-    static lerpOn(out, a, b, p) {
+    mult(alpha, out) {
+        if (out == undefined)
+            out = new Color();
+        return out.set(this.r, this.g, this.b, this.a * alpha);
+    }
+    static lerp(a, b, p, out) {
+        if (out == undefined)
+            out = new Color();
         out.r = a.r + (b.r - a.r) * p;
         out.g = a.g + (b.g - a.g) * p;
         out.b = a.b + (b.b - a.b) * p;
         out.a = a.a + (b.a - a.a) * p;
         return out;
-    }
-    static lerp(a, b, p) {
-        return Color.lerpOn(new Color(), a, b, p);
     }
 }
 Color.white = new Color(1, 1, 1, 1);
@@ -2017,6 +2115,70 @@ Color.black = new Color(0, 0, 0, 1);
 Color.red = new Color(1, 0, 0, 1);
 Color.green = new Color(0, 1, 0, 1);
 Color.blue = new Color(0, 0, 1, 1);
+class Ease {
+    static linear(t) {
+        return t;
+    }
+    static quadIn(t) {
+        return t * t;
+    }
+    static quadOut(t) {
+        return 1 - Ease.quadIn(1 - t);
+    }
+    static quadInOut(t) {
+        return (t <= 0.5) ? Ease.quadIn(t * 2) / 2 : Ease.quadOut(t * 2 - 1) / 2 + 0.5;
+    }
+    static cubeIn(t) {
+        return t * t * t;
+    }
+    static cubeOut(t) {
+        return 1 - Ease.cubeIn(1 - t);
+    }
+    static cubeInOut(t) {
+        return (t <= 0.5) ? Ease.cubeIn(t * 2) / 2 : Ease.cubeOut(t * 2 - 1) / 2 + 0.5;
+    }
+    static backIn(t) {
+        return t * t * (2.70158 * t - 1.70158);
+    }
+    static backOut(t) {
+        return 1 - Ease.backIn(1 - t);
+    }
+    static backInOut(t) {
+        return (t <= 0.5) ? Ease.backIn(t * 2) / 2 : Ease.backOut(t * 2 - 1) / 2 + 0.5;
+    }
+    static expoIn(t) {
+        return Math.pow(2, 10 * (t - 1));
+    }
+    static expoOut(t) {
+        return 1 - Ease.expoIn(t);
+    }
+    static expoInOut(t) {
+        return t < .5 ? Ease.expoIn(t * 2) / 2 : Ease.expoOut(t * 2) / 2;
+    }
+    static sineIn(t) {
+        return -Math.cos((Math.PI / 2) * t) + 1;
+    }
+    static sineOut(t) {
+        return Math.sin((Math.PI / 2) * t);
+    }
+    static sineInOut(t) {
+        return -Math.cos(Math.PI * t) / 2 + .5;
+    }
+    static elasticInOut(t) {
+        if ((t /= 0.5) == 2)
+            return 1;
+        let p = (0.3 * 1.5);
+        let s = p / 4;
+        if (t < 1)
+            return -0.5 * (Math.pow(2, 10 * (t -= 1)) * Math.sin((t - s) * (2 * Math.PI) / p));
+        return Math.pow(2, -10 * (t -= 1)) * Math.sin((t - s) * (2 * Math.PI) / p) * 0.5 + 1;
+    }
+    static arc(t, ease) {
+        if (t < 0.5)
+            return 1 - ease(1 - t * 2);
+        return (1 - ease((t - 0.5) * 2));
+    }
+}
 class FosterIO {
     static read(path, callback) {
         if (Engine.client == Client.Desktop) {
@@ -2549,9 +2711,10 @@ class Graphic extends Component {
     get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
     get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
     render(camera) {
-        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
+        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha, Graphic.tempColor), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
 }
+Graphic.tempColor = new Color();
 /// <reference path="./../../component.ts"/>
 class Rectsprite extends Component {
     constructor(width, height, color) {

@@ -14,4 +14,16 @@ class Calc
 	{
 		return n > target ? Math.max(n - step, target) : Math.min(n + step, target);
 	}
+
+	public static range(min:number, max?:number):number
+	{
+		if (max == undefined)
+			return -min + Math.random() * min * 2;
+		return min + Math.random() * (max - min);
+	}
+
+	public static choose<T>(list:T[]):T
+	{
+		return list[Math.floor(Math.random() * list.length)];
+	}
 }

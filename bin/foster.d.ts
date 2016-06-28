@@ -380,6 +380,7 @@ declare class Atlas {
     };
     constructor(name: string, texture: Texture, json: Object, type: AtlasType);
     get(name: string): Texture;
+    has(name: string): boolean;
     list(prefix: string, names: string[]): Texture[];
     private loadAsepriteAtlas();
 }
@@ -401,6 +402,17 @@ declare class Texture {
     getSubtexture(clip: Rectangle, sub?: Texture): Texture;
     clone(): Texture;
     toString(): string;
+}
+declare class Alarm extends Component {
+    percent: number;
+    duration: number;
+    callback: (Alarm) => void;
+    constructor();
+    start(duration: number, callback: (Alarm) => void): Alarm;
+    restart(): Alarm;
+    resume(): Alarm;
+    pause(): Alarm;
+    update(): void;
 }
 /**
  * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
@@ -459,6 +471,21 @@ declare class Physics extends Hitbox {
     maxspeed(mx?: number, my?: number): Physics;
     circularMaxspeed(length: number): Physics;
     stop(): void;
+}
+declare class Tween extends Component {
+    percent: number;
+    duration: number;
+    from: number;
+    to: number;
+    ease: (number) => number;
+    step: (number) => void;
+    removeOnComplete: boolean;
+    constructor();
+    start(duration: number, from: number, to: number, ease: (number) => number, step: (number) => void, removeOnComplete?: boolean): Tween;
+    restart(): Tween;
+    resume(): Tween;
+    pause(): Tween;
+    update(): void;
 }
 declare class Keys {
     private static _down;
@@ -596,6 +623,7 @@ declare class Vector {
     static sub(a: Vector, b: Vector): Vector;
     static mult(a: Vector, b: Vector): Vector;
     static transform(a: Vector, m: Matrix): Vector;
+    static directions: Vector[];
 }
 declare class Mouse {
     private static _left;
@@ -630,6 +658,8 @@ declare class Calc {
     static sign(n: number): number;
     static clamp(n: number, min: number, max: number): number;
     static approach(n: number, target: number, step: number): number;
+    static range(min: number, max?: number): number;
+    static choose<T>(list: T[]): T;
 }
 declare class Camera {
     position: Vector;
@@ -658,14 +688,34 @@ declare class Color {
     a: number;
     rgba: number[];
     constructor(r?: number, g?: number, b?: number, a?: number);
-    mult(alpha: number): Color;
-    static lerpOn(out: Color, a: Color, b: Color, p: number): Color;
-    static lerp(a: Color, b: Color, p: number): Color;
+    set(r: number, g: number, b: number, a: number): Color;
+    mult(alpha: number, out?: Color): Color;
+    static lerp(a: Color, b: Color, p: number, out?: Color): Color;
     static white: Color;
     static black: Color;
     static red: Color;
     static green: Color;
     static blue: Color;
+}
+declare class Ease {
+    static linear(t: number): number;
+    static quadIn(t: number): number;
+    static quadOut(t: number): number;
+    static quadInOut(t: number): number;
+    static cubeIn(t: number): number;
+    static cubeOut(t: number): number;
+    static cubeInOut(t: number): number;
+    static backIn(t: number): number;
+    static backOut(t: number): number;
+    static backInOut(t: number): number;
+    static expoIn(t: number): number;
+    static expoOut(t: number): number;
+    static expoInOut(t: number): number;
+    static sineIn(t: number): number;
+    static sineOut(t: number): number;
+    static sineInOut(t: number): number;
+    static elasticInOut(t: number): number;
+    static arc(t: number, ease: (number) => number): number;
 }
 declare class FosterIO {
     private static fs;
@@ -778,6 +828,92 @@ declare class Hitgrid extends Collider {
     private debugSub;
     debugRender(camera: Camera): void;
 }
+declare class Particle {
+    x: number;
+    y: number;
+    percent: number;
+    duration: number;
+    colorFrom: Color;
+    colorTo: Color;
+    scaleFromX: number;
+    scaleToX: number;
+    scaleFromY: number;
+    scaleToY: number;
+    rotationFrom: number;
+    rotationTo: number;
+    speedX: number;
+    speedY: number;
+    accelX: number;
+    accelY: number;
+    frictionX: number;
+    frictionY: number;
+}
+declare class ParticleSystem extends Component {
+    template: ParticleTemplate;
+    private particles;
+    private static cache;
+    private static color;
+    private static origin;
+    private static scale;
+    constructor(template: ParticleTemplate);
+    update(): void;
+    render(camera: Camera): void;
+    burst(x: number, y: number, rangeX?: number, rangeY?: number, count?: number): void;
+}
+declare class ParticleTemplate {
+    speedBaseX: number;
+    speedRangeX: number;
+    speedBaseY: number;
+    speedRangeY: number;
+    accelBaseX: number;
+    accelRangeX: number;
+    accelBaseY: number;
+    accelRangeY: number;
+    frictionBaseX: number;
+    frictionRangeX: number;
+    frictionBaseY: number;
+    frictionRangeY: number;
+    colorsFrom: Color[];
+    colorsTo: Color[];
+    colorEaser: (number) => number;
+    rotationFromBase: number;
+    rotationFromRange: number;
+    rotationToBase: number;
+    rotationToRange: number;
+    rotationEaser: (number) => number;
+    scaleFromBaseX: number;
+    scaleFromRangeX: number;
+    scaleToBaseX: number;
+    scaleToRangeX: number;
+    scaleXEaser: (number) => number;
+    scaleFromBaseY: number;
+    scaleFromRangeY: number;
+    scaleToBaseY: number;
+    scaleToRangeY: number;
+    scaleYEaser: (number) => number;
+    durationBase: number;
+    durationRange: number;
+    speedX(Base: number, Range?: number): ParticleTemplate;
+    speedY(Base: number, Range?: number): ParticleTemplate;
+    accelX(Base: number, Range?: number): ParticleTemplate;
+    accelY(Base: number, Range?: number): ParticleTemplate;
+    frictionX(Base: number, Range?: number): ParticleTemplate;
+    frictionY(Base: number, Range?: number): ParticleTemplate;
+    colors(from: Color[], to?: Color[]): ParticleTemplate;
+    rotation(Base: number, Range?: number): ParticleTemplate;
+    rotationFrom(Base: number, Range?: number): ParticleTemplate;
+    rotationTo(Base: number, Range?: number): ParticleTemplate;
+    scale(Base: number, Range?: number): ParticleTemplate;
+    scaleFrom(Base: number, Range?: number): ParticleTemplate;
+    scaleTo(Base: number, Range?: number): ParticleTemplate;
+    scaleX(Base: number, Range?: number): ParticleTemplate;
+    scaleFromX(Base: number, Range?: number): ParticleTemplate;
+    scaleToX(Base: number, Range?: number): ParticleTemplate;
+    scaleY(Base: number, Range?: number): ParticleTemplate;
+    scaleFromY(Base: number, Range?: number): ParticleTemplate;
+    scaleToY(Base: number, Range?: number): ParticleTemplate;
+    duration(Base: number, Range?: number): ParticleTemplate;
+}
 declare class Graphic extends Component {
     texture: Texture;
     crop: Rectangle;
@@ -790,6 +926,7 @@ declare class Graphic extends Component {
     alpha: number;
     width: number;
     height: number;
+    private static tempColor;
     constructor(texture: Texture, position?: Vector);
     render(camera: Camera): void;
 }

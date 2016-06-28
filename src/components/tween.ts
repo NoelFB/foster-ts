@@ -1,3 +1,4 @@
+/// <reference path="./../component.ts"/>
 class Tween extends Component
 {
 

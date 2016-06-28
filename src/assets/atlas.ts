@@ -30,6 +30,11 @@ class Atlas
 		return this.subtextures[name];
 	}
 
+	public has(name:string):boolean
+	{
+		return this.subtextures[name] != undefined;
+	}
+
 	public list(prefix:string, names:string[]):Texture[]
 	{
 		let listed:Texture[] = [];

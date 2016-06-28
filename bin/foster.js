@@ -1277,6 +1277,9 @@ class Atlas {
     get(name) {
         return this.subtextures[name];
     }
+    has(name) {
+        return this.subtextures[name] != undefined;
+    }
     list(prefix, names) {
         let listed = [];
         for (let i = 0; i < names.length; i++)
@@ -1339,9 +1342,46 @@ class Texture {
             "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
     }
 }
+/// <reference path="./../component.ts"/>
+class Alarm extends Component {
+    constructor() {
+        super();
+        this.active = this.visible = false;
+    }
+    start(duration, callback) {
+        this.percent = 0;
+        this.duration = duration;
+        this.callback = callback;
+        return this;
+    }
+    restart() {
+        this.percent = 0;
+        return this;
+    }
+    resume() {
+        if (this.percent < 1)
+            this.active = true;
+        return this;
+    }
+    pause() {
+        this.active = false;
+        return this;
+    }
+    update() {
+        if (this.percent < 1) {
+            this.percent += Engine.delta / this.duration;
+            if (this.percent >= 1) {
+                this.percent = 1;
+                this.active = false;
+                this.callback(this);
+            }
+        }
+    }
+}
 /**
  * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
  */
+/// <reference path="./../component.ts"/>
 class Coroutine extends Component {
     constructor(call) {
         super();
@@ -1603,6 +1643,53 @@ class Physics extends Hitbox {
         this.remainder.x = this.remainder.y = 0;
     }
 }
+/// <reference path="./../component.ts"/>
+class Tween extends Component {
+    constructor() {
+        super();
+        this.percent = 0;
+        this.removeOnComplete = false;
+        this.active = this.visible = false;
+    }
+    start(duration, from, to, ease, step, removeOnComplete) {
+        this.percent = 0;
+        this.duration = duration;
+        this.from = from;
+        this.to = to;
+        this.ease = ease;
+        this.step = step;
+        this.removeOnComplete = removeOnComplete;
+        return this;
+    }
+    restart() {
+        this.percent = 0;
+        this.active = true;
+        return this;
+    }
+    resume() {
+        if (this.percent < 1)
+            this.active = true;
+        return this;
+    }
+    pause() {
+        this.active = false;
+        return this;
+    }
+    update() {
+        if (this.percent < 1) {
+            this.percent += Engine.delta / this.duration;
+            if (this.percent >= 1) {
+                this.percent = 1;
+                this.step(this.to);
+                this.active = false;
+                if (this.removeOnComplete)
+                    this.entity.remove(this);
+            }
+            else
+                this.step(this.from + (this.to - this.from) * this.ease(this.percent));
+        }
+    }
+}
 class Keys {
     static init() {
         window.addEventListener("keydown", function (e) {
@@ -1844,6 +1931,12 @@ class Vector {
         return result;
     }
 }
+Vector.directions = [
+    new Vector(-1, 0),
+    new Vector(0, -1),
+    new Vector(1, 0),
+    new Vector(0, 1)
+];
 /// <reference path="./../util/vector.ts"/>
 class Mouse {
     static get x() { return this._position.x; }
@@ -1932,6 +2025,14 @@ class Calc {
     static approach(n, target, step) {
         return n > target ? Math.max(n - step, target) : Math.min(n + step, target);
     }
+    static range(min, max) {
+        if (max == undefined)
+            return -min + Math.random() * min * 2;
+        return min + Math.random() * (max - min);
+    }
+    static choose(list) {
+        return list[Math.floor(Math.random() * list.length)];
+    }
 }
 /// <reference path="./vector.ts"/>
 class Camera {
@@ -1998,18 +2099,26 @@ class Color {
     get a() { return this.color[3]; }
     set a(v) { this.color[3] = Math.min(1, Math.max(0, v)); }
     get rgba() { return this.color; }
-    mult(alpha) {
-        return new Color(this.r, this.g, this.b, this.a * alpha);
+    set(r, g, b, a) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+        return this;
     }
-    static lerpOn(out, a, b, p) {
+    mult(alpha, out) {
+        if (out == undefined)
+            out = new Color();
+        return out.set(this.r, this.g, this.b, this.a * alpha);
+    }
+    static lerp(a, b, p, out) {
+        if (out == undefined)
+            out = new Color();
         out.r = a.r + (b.r - a.r) * p;
         out.g = a.g + (b.g - a.g) * p;
         out.b = a.b + (b.b - a.b) * p;
         out.a = a.a + (b.a - a.a) * p;
         return out;
-    }
-    static lerp(a, b, p) {
-        return Color.lerpOn(new Color(), a, b, p);
     }
 }
 Color.white = new Color(1, 1, 1, 1);
@@ -2017,6 +2126,70 @@ Color.black = new Color(0, 0, 0, 1);
 Color.red = new Color(1, 0, 0, 1);
 Color.green = new Color(0, 1, 0, 1);
 Color.blue = new Color(0, 0, 1, 1);
+class Ease {
+    static linear(t) {
+        return t;
+    }
+    static quadIn(t) {
+        return t * t;
+    }
+    static quadOut(t) {
+        return 1 - Ease.quadIn(1 - t);
+    }
+    static quadInOut(t) {
+        return (t <= 0.5) ? Ease.quadIn(t * 2) / 2 : Ease.quadOut(t * 2 - 1) / 2 + 0.5;
+    }
+    static cubeIn(t) {
+        return t * t * t;
+    }
+    static cubeOut(t) {
+        return 1 - Ease.cubeIn(1 - t);
+    }
+    static cubeInOut(t) {
+        return (t <= 0.5) ? Ease.cubeIn(t * 2) / 2 : Ease.cubeOut(t * 2 - 1) / 2 + 0.5;
+    }
+    static backIn(t) {
+        return t * t * (2.70158 * t - 1.70158);
+    }
+    static backOut(t) {
+        return 1 - Ease.backIn(1 - t);
+    }
+    static backInOut(t) {
+        return (t <= 0.5) ? Ease.backIn(t * 2) / 2 : Ease.backOut(t * 2 - 1) / 2 + 0.5;
+    }
+    static expoIn(t) {
+        return Math.pow(2, 10 * (t - 1));
+    }
+    static expoOut(t) {
+        return 1 - Ease.expoIn(t);
+    }
+    static expoInOut(t) {
+        return t < .5 ? Ease.expoIn(t * 2) / 2 : Ease.expoOut(t * 2) / 2;
+    }
+    static sineIn(t) {
+        return -Math.cos((Math.PI / 2) * t) + 1;
+    }
+    static sineOut(t) {
+        return Math.sin((Math.PI / 2) * t);
+    }
+    static sineInOut(t) {
+        return -Math.cos(Math.PI * t) / 2 + .5;
+    }
+    static elasticInOut(t) {
+        if ((t /= 0.5) == 2)
+            return 1;
+        let p = (0.3 * 1.5);
+        let s = p / 4;
+        if (t < 1)
+            return -0.5 * (Math.pow(2, 10 * (t -= 1)) * Math.sin((t - s) * (2 * Math.PI) / p));
+        return Math.pow(2, -10 * (t -= 1)) * Math.sin((t - s) * (2 * Math.PI) / p) * 0.5 + 1;
+    }
+    static arc(t, ease) {
+        if (t < 0.5)
+            return 1 - ease(1 - t * 2);
+        return (1 - ease((t - 0.5) * 2));
+    }
+}
 class FosterIO {
     static read(path, callback) {
         if (Engine.client == Client.Desktop) {
@@ -2528,6 +2701,233 @@ class Hitgrid extends Collider {
         }
     }
 }
+class Particle {
+}
+/// <reference path="./../../component.ts"/>
+class ParticleSystem extends Component {
+    constructor(template) {
+        super();
+        this.particles = [];
+        this.template = template;
+    }
+    update() {
+        let dt = Engine.delta;
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i];
+            if (p.percent >= 1) {
+                this.particles.splice(i, 1);
+                ParticleSystem.cache.push(p);
+                continue;
+            }
+            p.percent = Math.min(1, p.percent + dt / p.duration);
+            p.x += p.speedX * dt;
+            p.y += p.speedY * dt;
+            p.speedX += p.accelX * dt;
+            p.speedY += p.accelY * dt;
+            p.speedX = Calc.approach(p.speedX, 0, p.frictionX * dt);
+            p.speedY = Calc.approach(p.speedY, 0, p.frictionY * dt);
+        }
+    }
+    render(camera) {
+        if (Engine.graphics.pixel == null)
+            throw "Particle System requires Engine.graphis.pixel to be set";
+        let pos = this.scenePosition;
+        let t = this.template;
+        for (let i = 0; i < this.particles.length; i++) {
+            let p = this.particles[i];
+            let lerp = p.percent;
+            let x = pos.x + p.x;
+            let y = pos.y + p.y;
+            let scaleX = p.scaleFromX + (p.scaleToX - p.scaleFromX) * t.scaleXEaser(lerp);
+            let scaleY = p.scaleFromY + (p.scaleToY - p.scaleFromY) * t.scaleYEaser(lerp);
+            let rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
+            let color = Color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp), ParticleSystem.color);
+            Engine.graphics.texture(Engine.graphics.pixel, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
+        }
+    }
+    burst(x, y, rangeX, rangeY, count) {
+        let t = this.template;
+        if (rangeX == undefined || rangeX == null)
+            rangeX = 0;
+        if (rangeY == undefined || rangeY == null)
+            rangeY = 0;
+        for (let i = 0; i < count || 1; i++) {
+            let duration = t.durationBase + Calc.range(t.durationRange);
+            if (duration <= 0)
+                continue;
+            // get particle
+            let p = null;
+            if (ParticleSystem.cache.length > 0) {
+                p = ParticleSystem.cache[0];
+                ParticleSystem.cache.splice(0, 1);
+            }
+            else
+                p = new Particle();
+            // spawn particle
+            p.percent = 0;
+            p.duration = duration;
+            p.x = x + Calc.range(rangeX);
+            p.y = y + Calc.range(rangeY);
+            p.colorFrom = Calc.choose(t.colorsFrom);
+            p.colorTo = Calc.choose(t.colorsTo);
+            p.speedX = t.speedBaseX + Calc.range(t.speedRangeX);
+            p.speedY = t.speedBaseY + Calc.range(t.speedRangeY);
+            p.accelX = t.accelBaseX + Calc.range(t.accelRangeX);
+            p.accelY = t.accelBaseY + Calc.range(t.accelRangeY);
+            p.frictionX = t.frictionBaseX + Calc.range(t.frictionRangeX);
+            p.frictionY = t.frictionBaseY + Calc.range(t.frictionRangeY);
+            p.scaleFromX = t.scaleFromBaseX + Calc.range(t.scaleFromRangeX);
+            p.scaleFromY = t.scaleFromBaseY + Calc.range(t.scaleFromRangeY);
+            p.scaleToX = t.scaleToBaseX + Calc.range(t.scaleToRangeX);
+            p.scaleToY = t.scaleToBaseY + Calc.range(t.scaleToRangeY);
+            p.rotationFrom = t.rotationFromBase + Calc.range(t.rotationFromRange);
+            p.rotationTo = t.rotationToBase + Calc.range(t.rotationToRange);
+            // addd
+            this.particles.push(p);
+        }
+    }
+}
+ParticleSystem.cache = [];
+// temp values used during rendering so we aren't creating new ones every frame
+ParticleSystem.color = new Color();
+ParticleSystem.origin = new Vector(0.5, 0.5);
+ParticleSystem.scale = new Vector(0, 0);
+class ParticleTemplate {
+    constructor() {
+        this.speedBaseX = 0;
+        this.speedRangeX = 0;
+        this.speedBaseY = 0;
+        this.speedRangeY = 0;
+        this.accelBaseX = 0;
+        this.accelRangeX = 0;
+        this.accelBaseY = 0;
+        this.accelRangeY = 0;
+        this.frictionBaseX = 0;
+        this.frictionRangeX = 0;
+        this.frictionBaseY = 0;
+        this.frictionRangeY = 0;
+        this.colorsFrom = [Color.white];
+        this.colorsTo = [Color.white];
+        this.colorEaser = Ease.linear;
+        this.rotationFromBase = 0;
+        this.rotationFromRange = 0;
+        this.rotationToBase = 0;
+        this.rotationToRange = 0;
+        this.rotationEaser = Ease.linear;
+        this.scaleFromBaseX = 1;
+        this.scaleFromRangeX = 0;
+        this.scaleToBaseX = 1;
+        this.scaleToRangeX = 0;
+        this.scaleXEaser = Ease.linear;
+        this.scaleFromBaseY = 1;
+        this.scaleFromRangeY = 0;
+        this.scaleToBaseY = 1;
+        this.scaleToRangeY = 0;
+        this.scaleYEaser = Ease.linear;
+        this.durationBase = 1;
+        this.durationRange = 1;
+    }
+    speedX(Base, Range) {
+        this.speedBaseX = Base;
+        this.speedRangeX = Range || Base;
+        return this;
+    }
+    speedY(Base, Range) {
+        this.speedBaseY = Base;
+        this.speedRangeY = Range || Base;
+        return this;
+    }
+    accelX(Base, Range) {
+        this.accelBaseX = Base;
+        this.accelRangeX = Range || Base;
+        return this;
+    }
+    accelY(Base, Range) {
+        this.accelBaseY = Base;
+        this.accelRangeY = Range || Base;
+        return this;
+    }
+    frictionX(Base, Range) {
+        this.frictionBaseX = Base;
+        this.frictionRangeX = Range || Base;
+        return this;
+    }
+    frictionY(Base, Range) {
+        this.frictionBaseY = Base;
+        this.frictionRangeY = Range || Base;
+        return this;
+    }
+    colors(from, to) {
+        this.colorsFrom = from;
+        this.colorsTo = to || from;
+        return this;
+    }
+    rotation(Base, Range) {
+        this.rotationFrom(Base, Range);
+        this.rotationTo(Base, Range);
+        return this;
+    }
+    rotationFrom(Base, Range) {
+        this.rotationFromBase = Base;
+        this.rotationFromRange = Range || Base;
+        return this;
+    }
+    rotationTo(Base, Range) {
+        this.rotationToBase = Base;
+        this.rotationToRange = Range || Base;
+        return this;
+    }
+    scale(Base, Range) {
+        this.scaleFrom(Base, Range);
+        this.scaleTo(Base, Range);
+        return this;
+    }
+    scaleFrom(Base, Range) {
+        this.scaleFromX(Base, Range);
+        this.scaleFromY(Base, Range);
+        return this;
+    }
+    scaleTo(Base, Range) {
+        this.scaleToX(Base, Range);
+        this.scaleToY(Base, Range);
+        return this;
+    }
+    scaleX(Base, Range) {
+        this.scaleFromX(Base, Range);
+        this.scaleToX(Base, Range);
+        return this;
+    }
+    scaleFromX(Base, Range) {
+        this.scaleFromBaseX = Base;
+        this.scaleFromRangeX = Range || Base;
+        return this;
+    }
+    scaleToX(Base, Range) {
+        this.scaleToBaseX = Base;
+        this.scaleToRangeX = Range || Base;
+        return this;
+    }
+    scaleY(Base, Range) {
+        this.scaleFromY(Base, Range);
+        this.scaleToY(Base, Range);
+        return this;
+    }
+    scaleFromY(Base, Range) {
+        this.scaleFromBaseY = Base;
+        this.scaleFromRangeY = Range || Base;
+        return this;
+    }
+    scaleToY(Base, Range) {
+        this.scaleToBaseY = Base;
+        this.scaleToRangeY = Range || Base;
+        return this;
+    }
+    duration(Base, Range) {
+        this.durationBase = Base;
+        this.durationRange = Range || Base;
+        return this;
+    }
+}
 /// <reference path="./../../component.ts"/>
 class Graphic extends Component {
     constructor(texture, position) {
@@ -2549,9 +2949,10 @@ class Graphic extends Component {
     get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
     get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
     render(camera) {
-        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
+        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha, Graphic.tempColor), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
 }
+Graphic.tempColor = new Color();
 /// <reference path="./../../component.ts"/>
 class Rectsprite extends Component {
     constructor(width, height, color) {

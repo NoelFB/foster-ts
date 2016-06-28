@@ -1,6 +1,7 @@
 /**
  * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
  */
+/// <reference path="./../component.ts"/>
 class Coroutine extends Component
 {
 	public wait:number = 0;
