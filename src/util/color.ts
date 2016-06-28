@@ -19,24 +19,32 @@ class Color
 		this.b = b || 0;
 		this.a = a || 1;
 	}
-	
-	public mult(alpha:number):Color
+
+	public set(r:number, g:number, b:number, a:number):Color
 	{
-		return new Color(this.r, this.g, this.b, this.a * alpha);
+		this.r = r;
+		this.g = g;
+		this.b = b;
+		this.a = a;
+		return this;
 	}
 	
-	public static lerpOn(out:Color, a:Color, b:Color, p:number):Color
+	public mult(alpha:number, out?:Color):Color
 	{
+		if (out == undefined)
+			out = new Color();
+		return out.set(this.r, this.g, this.b, this.a * alpha);
+	}
+
+	public static lerp(a:Color, b:Color, p:number, out?:Color):Color
+	{	
+		if (out == undefined)
+			out = new Color();
 		out.r  = a.r + (b.r - a.r) * p;
 		out.g  = a.g + (b.g - a.g) * p;
 		out.b  = a.b + (b.b - a.b) * p;
 		out.a  = a.a + (b.a - a.a) * p;
 		return out;
-	}
-	
-	public static lerp(a:Color, b:Color, p:number):Color
-	{	
-		return Color.lerpOn(new Color(), a, b, p);
 	}
 	
 	public static white:Color = new Color(1, 1, 1, 1);

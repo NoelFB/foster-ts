@@ -14,6 +14,8 @@ class Graphic extends Component
 	
 	public get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
 	public get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
+
+	private static tempColor:Color = new Color();
 	
 	constructor(texture:Texture, position?:Vector)
 	{
@@ -37,7 +39,7 @@ class Graphic extends Component
 			this.scenePosition.x,
 			this.scenePosition.y, 
 			this.crop, 
-			this.color.mult(this.alpha), 
+			this.color.mult(this.alpha, Graphic.tempColor), 
 			this.origin, 
 			this.scale, 
 			this.rotation, 

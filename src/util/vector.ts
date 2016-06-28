@@ -116,4 +116,12 @@ class Vector
 		return result;
 	}
 
+	public static directions:Vector[] = 
+	[
+		new Vector(-1, 0),
+		new Vector(0, -1),
+		new Vector(1, 0),
+		new Vector(0, 1)
+	];
+
 }
