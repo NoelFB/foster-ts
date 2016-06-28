@@ -1339,6 +1339,62 @@ class Texture {
             "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
     }
 }
+/**
+ * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
+ */
+class Coroutine extends Component {
+    constructor(call) {
+        super();
+        this.wait = 0;
+        this.iterator = null;
+        this.active = this.visible = false;
+        if (call)
+            this.start(call);
+    }
+    start(call) {
+        this.iterator = call();
+        this.active = true;
+        return this;
+    }
+    resume() {
+        this.active = true;
+        return this;
+    }
+    pause() {
+        this.active = false;
+        return this;
+    }
+    stop() {
+        this.wait = 0;
+        this.active = false;
+        this.iterator = null;
+        return this;
+    }
+    update() {
+        this.wait -= Engine.delta;
+        if (this.wait > 0)
+            return;
+        this.step();
+    }
+    step() {
+        if (this.iterator != null) {
+            let next = this.iterator.next();
+            if (next.done)
+                this.end(next.value == "remove");
+            else {
+                if (next.value == null)
+                    this.wait = 0;
+                else if ((typeof next.value) === "number")
+                    this.wait = parseFloat(next.value);
+            }
+        }
+    }
+    end(remove) {
+        this.stop();
+        if (remove)
+            this.entity.remove(this);
+    }
+}
 /// <reference path="./../../component.ts"/>
 class Collider extends Component {
     constructor(...args) {

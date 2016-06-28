@@ -402,6 +402,21 @@ declare class Texture {
     clone(): Texture;
     toString(): string;
 }
+/**
+ * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
+ */
+declare class Coroutine extends Component {
+    wait: number;
+    private iterator;
+    constructor(call?: any);
+    start(call: any): Coroutine;
+    resume(): Coroutine;
+    pause(): Coroutine;
+    stop(): Coroutine;
+    update(): void;
+    step(): void;
+    end(remove: boolean): void;
+}
 declare abstract class Collider extends Component {
     tags: string[];
     tag(tag: string): void;

@@ -66,6 +66,7 @@ class Player extends Entity {
         this.sprite.play("idle");
         this.sprite.origin.x = this.sprite.width / 2;
         this.sprite.origin.y = this.sprite.height;
+        this.add(new Coroutine(this.routine));
     }
     update() {
         if (Keys.mapDown("up"))
@@ -90,6 +91,16 @@ class Player extends Entity {
         if (this.physics.speed.x != 0)
             this.sprite.scale.x = (this.physics.speed.x < 0 ? -1 : 1);
         super.update();
+    }
+    *routine() {
+        console.log("test");
+        yield 0.5;
+        console.log("test2");
+        yield 2;
+        console.log("test3");
+        yield 4;
+        console.log("final");
+        yield null;
     }
 }
 Game.main();
