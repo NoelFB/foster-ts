@@ -19,6 +19,12 @@ class ParticleTemplate
 	public colorsTo:Color[] = [Color.white];
 	public colorEaser:(number)=>number = Ease.linear;
 
+	public alphaFromBase:number = 1;
+	public alphaFromRange:number = 0;
+	public alphaToBase:number = 1;
+	public alphaToRange:number = 0;
+	public alphaEaser:(number)=>number = Ease.linear;
+
 	public rotationFromBase:number = 0;
 	public rotationFromRange:number = 0;
 	public rotationToBase:number = 0;
@@ -89,6 +95,39 @@ class ParticleTemplate
 		return this;
 	}
 
+	public colorEase(easer:(number)=>number):ParticleTemplate
+	{
+		this.colorEaser = easer;
+		return this;
+	}
+
+	public alpha(Base:number, Range?:number):ParticleTemplate
+	{
+		this.alphaFrom(Base, Range);
+		this.alphaTo(Base, Range);
+		return this;
+	}
+
+	public alphaFrom(Base:number, Range?:number):ParticleTemplate
+	{
+		this.alphaFromBase = Base;
+		this.alphaFromRange = Range || Base;
+		return this;
+	}
+
+	public alphaTo(Base:number, Range?:number):ParticleTemplate
+	{
+		this.alphaToBase = Base;
+		this.alphaToRange = Range || Base;
+		return this;
+	}
+
+	public alphaEase(easer:(number)=>number):ParticleTemplate
+	{
+		this.alphaEaser = easer;
+		return this;
+	}
+
 	public rotation(Base:number, Range?:number):ParticleTemplate
 	{
 		this.rotationFrom(Base, Range);
@@ -110,6 +149,12 @@ class ParticleTemplate
 		return this;
 	}
 
+	public rotationEase(easer:(number)=>number):ParticleTemplate
+	{
+		this.rotationEaser = easer;
+		return this;
+	}
+
 	public scale(Base:number, Range?:number):ParticleTemplate
 	{
 		this.scaleFrom(Base, Range);
@@ -128,6 +173,13 @@ class ParticleTemplate
 	{
 		this.scaleToX(Base, Range);
 		this.scaleToY(Base, Range);
+		return this;
+	}
+
+	public scaleEase(easer:(number)=>number):ParticleTemplate
+	{
+		this.scaleXEaser = easer;
+		this.scaleYEaser = easer;
 		return this;
 	}
 
@@ -159,6 +211,12 @@ class ParticleTemplate
 		return this;
 	}
 
+	public scaleXEase(easer:(number)=>number):ParticleTemplate
+	{
+		this.scaleXEaser = easer;
+		return this;
+	}
+
 	public scaleFromY(Base:number, Range?:number):ParticleTemplate
 	{
 		this.scaleFromBaseY = Base;
@@ -170,6 +228,12 @@ class ParticleTemplate
 	{
 		this.scaleToBaseY = Base;
 		this.scaleToRangeY = Range || Base;
+		return this;
+	}
+
+	public scaleYEase(easer:(number)=>number):ParticleTemplate
+	{
+		this.scaleYEaser = easer;
 		return this;
 	}
 

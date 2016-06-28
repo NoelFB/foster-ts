@@ -56,7 +56,9 @@ class ParticleSystem extends Component
 			let scaleX = p.scaleFromX + (p.scaleToX - p.scaleFromX) * t.scaleXEaser(lerp);
 			let scaleY = p.scaleFromY + (p.scaleToY - p.scaleFromY) * t.scaleYEaser(lerp);
 			let rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
+			let alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
 			let color = Color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp), ParticleSystem.color);
+			color = color.mult(alpha, color);
 
 			Engine.graphics.texture(Engine.graphics.pixel, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
 		}
@@ -106,6 +108,8 @@ class ParticleSystem extends Component
 			p.scaleToY		= t.scaleToBaseY + Calc.range(t.scaleToRangeY);
 			p.rotationFrom 	= t.rotationFromBase + Calc.range(t.rotationFromRange);
 			p.rotationTo 	= t.rotationToBase + Calc.range(t.rotationToRange);
+			p.alphaFrom 	= t.alphaFromBase + Calc.range(t.alphaFromRange);
+			p.alphaTo 	= t.alphaToBase + Calc.range(t.alphaToRange);
 
 			// addd
 			this.particles.push(p);	

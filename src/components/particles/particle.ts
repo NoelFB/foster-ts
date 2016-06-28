@@ -13,6 +13,8 @@ class Particle
 	public scaleToY:number;
 	public rotationFrom:number;
 	public rotationTo:number;
+	public alphaFrom:number;
+	public alphaTo:number;
 
 	public speedX:number;
 	public speedY:number;
