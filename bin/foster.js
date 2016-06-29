@@ -2566,7 +2566,7 @@ class Shaders {
             '{' +
             '	gl_Position = vec4((matrix * vec3(a_position, 1.0)).xy, 0.0, 1.0);' +
             '	v_texcoord = a_texcoord;' +
-            '	v_color = a_color;' +
+            '	v_color = vec4(a_color.rgb * a_color.a, a_color.a);' +
             '}', 
         // fragment shader
         'precision mediump float;' +
@@ -2707,6 +2707,7 @@ class Particle {
 class ParticleSystem extends Component {
     constructor(template) {
         super();
+        this.renderRelativeToEntity = false;
         this.particles = [];
         this.template = template;
     }
@@ -2731,7 +2732,9 @@ class ParticleSystem extends Component {
     render(camera) {
         if (Engine.graphics.pixel == null)
             throw "Particle System requires Engine.graphis.pixel to be set";
-        let pos = this.scenePosition;
+        let pos = this.position;
+        if (this.renderRelativeToEntity)
+            pos = this.scenePosition;
         let t = this.template;
         for (let i = 0; i < this.particles.length; i++) {
             let p = this.particles[i];
@@ -2741,17 +2744,21 @@ class ParticleSystem extends Component {
             let scaleX = p.scaleFromX + (p.scaleToX - p.scaleFromX) * t.scaleXEaser(lerp);
             let scaleY = p.scaleFromY + (p.scaleToY - p.scaleFromY) * t.scaleYEaser(lerp);
             let rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
+            let alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
             let color = Color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp), ParticleSystem.color);
+            color = color.mult(alpha, color);
             Engine.graphics.texture(Engine.graphics.pixel, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
         }
     }
-    burst(x, y, rangeX, rangeY, count) {
+    burst(x, y, direction, rangeX, rangeY, count) {
         let t = this.template;
         if (rangeX == undefined || rangeX == null)
             rangeX = 0;
         if (rangeY == undefined || rangeY == null)
             rangeY = 0;
-        for (let i = 0; i < count || 1; i++) {
+        if (count == undefined)
+            count = 1;
+        for (let i = 0; i < count; i++) {
             let duration = t.durationBase + Calc.range(t.durationRange);
             if (duration <= 0)
                 continue;
@@ -2763,6 +2770,7 @@ class ParticleSystem extends Component {
             }
             else
                 p = new Particle();
+            let speed = t.speedBase + Calc.range(t.speedRange);
             // spawn particle
             p.percent = 0;
             p.duration = duration;
@@ -2770,8 +2778,8 @@ class ParticleSystem extends Component {
             p.y = y + Calc.range(rangeY);
             p.colorFrom = Calc.choose(t.colorsFrom);
             p.colorTo = Calc.choose(t.colorsTo);
-            p.speedX = t.speedBaseX + Calc.range(t.speedRangeX);
-            p.speedY = t.speedBaseY + Calc.range(t.speedRangeY);
+            p.speedX = Math.cos(direction) * speed;
+            p.speedY = -Math.sin(direction) * speed;
             p.accelX = t.accelBaseX + Calc.range(t.accelRangeX);
             p.accelY = t.accelBaseY + Calc.range(t.accelRangeY);
             p.frictionX = t.frictionBaseX + Calc.range(t.frictionRangeX);
@@ -2782,6 +2790,8 @@ class ParticleSystem extends Component {
             p.scaleToY = t.scaleToBaseY + Calc.range(t.scaleToRangeY);
             p.rotationFrom = t.rotationFromBase + Calc.range(t.rotationFromRange);
             p.rotationTo = t.rotationToBase + Calc.range(t.rotationToRange);
+            p.alphaFrom = t.alphaFromBase + Calc.range(t.alphaFromRange);
+            p.alphaTo = t.alphaToBase + Calc.range(t.alphaToRange);
             // addd
             this.particles.push(p);
         }
@@ -2794,10 +2804,8 @@ ParticleSystem.origin = new Vector(0.5, 0.5);
 ParticleSystem.scale = new Vector(0, 0);
 class ParticleTemplate {
     constructor() {
-        this.speedBaseX = 0;
-        this.speedRangeX = 0;
-        this.speedBaseY = 0;
-        this.speedRangeY = 0;
+        this.speedBase = 0;
+        this.speedRange = 0;
         this.accelBaseX = 0;
         this.accelRangeX = 0;
         this.accelBaseY = 0;
@@ -2809,6 +2817,11 @@ class ParticleTemplate {
         this.colorsFrom = [Color.white];
         this.colorsTo = [Color.white];
         this.colorEaser = Ease.linear;
+        this.alphaFromBase = 1;
+        this.alphaFromRange = 0;
+        this.alphaToBase = 1;
+        this.alphaToRange = 0;
+        this.alphaEaser = Ease.linear;
         this.rotationFromBase = 0;
         this.rotationFromRange = 0;
         this.rotationToBase = 0;
@@ -2827,39 +2840,57 @@ class ParticleTemplate {
         this.durationBase = 1;
         this.durationRange = 1;
     }
-    speedX(Base, Range) {
-        this.speedBaseX = Base;
-        this.speedRangeX = Range || Base;
-        return this;
-    }
-    speedY(Base, Range) {
-        this.speedBaseY = Base;
-        this.speedRangeY = Range || Base;
+    speed(Base, Range) {
+        this.speedBase = Base;
+        this.speedRange = Range || 0;
         return this;
     }
     accelX(Base, Range) {
         this.accelBaseX = Base;
-        this.accelRangeX = Range || Base;
+        this.accelRangeX = Range || 0;
         return this;
     }
     accelY(Base, Range) {
         this.accelBaseY = Base;
-        this.accelRangeY = Range || Base;
+        this.accelRangeY = Range || 0;
         return this;
     }
     frictionX(Base, Range) {
         this.frictionBaseX = Base;
-        this.frictionRangeX = Range || Base;
+        this.frictionRangeX = Range || 0;
         return this;
     }
     frictionY(Base, Range) {
         this.frictionBaseY = Base;
-        this.frictionRangeY = Range || Base;
+        this.frictionRangeY = Range || 0;
         return this;
     }
     colors(from, to) {
         this.colorsFrom = from;
         this.colorsTo = to || from;
+        return this;
+    }
+    colorEase(easer) {
+        this.colorEaser = easer;
+        return this;
+    }
+    alpha(Base, Range) {
+        this.alphaFrom(Base, Range);
+        this.alphaTo(Base, Range);
+        return this;
+    }
+    alphaFrom(Base, Range) {
+        this.alphaFromBase = Base;
+        this.alphaFromRange = Range || 0;
+        return this;
+    }
+    alphaTo(Base, Range) {
+        this.alphaToBase = Base;
+        this.alphaToRange = Range || 0;
+        return this;
+    }
+    alphaEase(easer) {
+        this.alphaEaser = easer;
         return this;
     }
     rotation(Base, Range) {
@@ -2869,12 +2900,16 @@ class ParticleTemplate {
     }
     rotationFrom(Base, Range) {
         this.rotationFromBase = Base;
-        this.rotationFromRange = Range || Base;
+        this.rotationFromRange = Range || 0;
         return this;
     }
     rotationTo(Base, Range) {
         this.rotationToBase = Base;
-        this.rotationToRange = Range || Base;
+        this.rotationToRange = Range || 0;
+        return this;
+    }
+    rotationEase(easer) {
+        this.rotationEaser = easer;
         return this;
     }
     scale(Base, Range) {
@@ -2892,6 +2927,11 @@ class ParticleTemplate {
         this.scaleToY(Base, Range);
         return this;
     }
+    scaleEase(easer) {
+        this.scaleXEaser = easer;
+        this.scaleYEaser = easer;
+        return this;
+    }
     scaleX(Base, Range) {
         this.scaleFromX(Base, Range);
         this.scaleToX(Base, Range);
@@ -2899,12 +2939,12 @@ class ParticleTemplate {
     }
     scaleFromX(Base, Range) {
         this.scaleFromBaseX = Base;
-        this.scaleFromRangeX = Range || Base;
+        this.scaleFromRangeX = Range || 0;
         return this;
     }
     scaleToX(Base, Range) {
         this.scaleToBaseX = Base;
-        this.scaleToRangeX = Range || Base;
+        this.scaleToRangeX = Range || 0;
         return this;
     }
     scaleY(Base, Range) {
@@ -2912,19 +2952,27 @@ class ParticleTemplate {
         this.scaleToY(Base, Range);
         return this;
     }
+    scaleXEase(easer) {
+        this.scaleXEaser = easer;
+        return this;
+    }
     scaleFromY(Base, Range) {
         this.scaleFromBaseY = Base;
-        this.scaleFromRangeY = Range || Base;
+        this.scaleFromRangeY = Range || 0;
         return this;
     }
     scaleToY(Base, Range) {
         this.scaleToBaseY = Base;
-        this.scaleToRangeY = Range || Base;
+        this.scaleToRangeY = Range || 0;
+        return this;
+    }
+    scaleYEase(easer) {
+        this.scaleYEaser = easer;
         return this;
     }
     duration(Base, Range) {
         this.durationBase = Base;
-        this.durationRange = Range || Base;
+        this.durationRange = Range || 0;
         return this;
     }
 }

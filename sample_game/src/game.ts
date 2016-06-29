@@ -3,6 +3,7 @@
 class Game 
 {
 	public static block:Texture;
+	public static dust:ParticleTemplate;
 
 	public static main():void
 	{
@@ -21,6 +22,18 @@ class Game
 					AnimationBank.create("player")
 						.add("idle", 0, [atlas.get("player 0")], false)
 						.add("run", 10, atlas.list("player ", ["1", "2", "3", "0"]), true);
+
+					// dust particles
+					Game.dust = new ParticleTemplate()
+						.speed(120, 20)
+						.frictionX(300, 80)
+						.accelY(-40, 10)
+						.colors([new Color(0.8, 0.8, 0.8), new Color(1, 1, 1)])
+						.alphaFrom(1, 0)
+						.alphaTo(0, 0)
+						.duration(1, 0.2)
+						.scaleFrom(2, 0.2)
+						.scaleTo(0, 0);
 
 					// begin game
 					Engine.scene = new GameScene();
@@ -83,6 +96,7 @@ class Player extends Entity
 {
 	private physics:Physics;
 	private sprite:Sprite;
+	private dust:ParticleSystem;
 	
 	constructor()
 	{
@@ -113,6 +127,10 @@ class Player extends Entity
 		this.sprite.origin.x = this.sprite.width / 2;
 		this.sprite.origin.y = this.sprite.height;
 
+		// dust
+		this.add(this.dust = new ParticleSystem(Game.dust));
+
+		// test coroutine
 		this.add(new Coroutine(this.routine));
 	}
 	
@@ -129,11 +147,15 @@ class Player extends Entity
 		{
 			this.physics.speed.x -= 240 * Engine.delta;
 			this.sprite.scale.x = -Math.abs(this.sprite.scale.x);
+			if (this.physics.speed.x > 0)
+				this.dust.burst(this.x, this.y, 0, 4, 0);
 		}
 		else if (Keys.mapDown("right"))
 		{
 			this.physics.speed.x += 240 * Engine.delta;
 			this.sprite.scale.x = Math.abs(this.sprite.scale.x);
+			if (this.physics.speed.x < 0)
+				this.dust.burst(this.x, this.y, Math.PI, 4, 0);
 		}
 		else
 			this.physics.friction(180, 0);

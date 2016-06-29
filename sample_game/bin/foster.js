@@ -1277,6 +1277,9 @@ class Atlas {
     get(name) {
         return this.subtextures[name];
     }
+    has(name) {
+        return this.subtextures[name] != undefined;
+    }
     list(prefix, names) {
         let listed = [];
         for (let i = 0; i < names.length; i++)
@@ -1339,6 +1342,7 @@ class Texture {
             "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
     }
 }
+/// <reference path="./../component.ts"/>
 class Alarm extends Component {
     constructor() {
         super();
@@ -1377,6 +1381,7 @@ class Alarm extends Component {
 /**
  * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
  */
+/// <reference path="./../component.ts"/>
 class Coroutine extends Component {
     constructor(call) {
         super();
@@ -1638,6 +1643,7 @@ class Physics extends Hitbox {
         this.remainder.x = this.remainder.y = 0;
     }
 }
+/// <reference path="./../component.ts"/>
 class Tween extends Component {
     constructor() {
         super();
@@ -2019,8 +2025,13 @@ class Calc {
     static approach(n, target, step) {
         return n > target ? Math.max(n - step, target) : Math.min(n + step, target);
     }
-    static number(min, max) {
+    static range(min, max) {
+        if (max == undefined)
+            return -min + Math.random() * min * 2;
         return min + Math.random() * (max - min);
+    }
+    static choose(list) {
+        return list[Math.floor(Math.random() * list.length)];
     }
 }
 /// <reference path="./vector.ts"/>
@@ -2555,7 +2566,7 @@ class Shaders {
             '{' +
             '	gl_Position = vec4((matrix * vec3(a_position, 1.0)).xy, 0.0, 1.0);' +
             '	v_texcoord = a_texcoord;' +
-            '	v_color = a_color;' +
+            '	v_color = vec4(a_color.rgb * a_color.a, a_color.a);' +
             '}', 
         // fragment shader
         'precision mediump float;' +
@@ -2688,6 +2699,281 @@ class Hitgrid extends Collider {
                 }
             }
         }
+    }
+}
+class Particle {
+}
+/// <reference path="./../../component.ts"/>
+class ParticleSystem extends Component {
+    constructor(template) {
+        super();
+        this.renderRelativeToEntity = false;
+        this.particles = [];
+        this.template = template;
+    }
+    update() {
+        let dt = Engine.delta;
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i];
+            if (p.percent >= 1) {
+                this.particles.splice(i, 1);
+                ParticleSystem.cache.push(p);
+                continue;
+            }
+            p.percent = Math.min(1, p.percent + dt / p.duration);
+            p.x += p.speedX * dt;
+            p.y += p.speedY * dt;
+            p.speedX += p.accelX * dt;
+            p.speedY += p.accelY * dt;
+            p.speedX = Calc.approach(p.speedX, 0, p.frictionX * dt);
+            p.speedY = Calc.approach(p.speedY, 0, p.frictionY * dt);
+        }
+    }
+    render(camera) {
+        if (Engine.graphics.pixel == null)
+            throw "Particle System requires Engine.graphis.pixel to be set";
+        let pos = this.position;
+        if (this.renderRelativeToEntity)
+            pos = this.scenePosition;
+        let t = this.template;
+        for (let i = 0; i < this.particles.length; i++) {
+            let p = this.particles[i];
+            let lerp = p.percent;
+            let x = pos.x + p.x;
+            let y = pos.y + p.y;
+            let scaleX = p.scaleFromX + (p.scaleToX - p.scaleFromX) * t.scaleXEaser(lerp);
+            let scaleY = p.scaleFromY + (p.scaleToY - p.scaleFromY) * t.scaleYEaser(lerp);
+            let rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
+            let alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
+            let color = Color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp), ParticleSystem.color);
+            color = color.mult(alpha, color);
+            Engine.graphics.texture(Engine.graphics.pixel, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
+        }
+    }
+    burst(x, y, direction, rangeX, rangeY, count) {
+        let t = this.template;
+        if (rangeX == undefined || rangeX == null)
+            rangeX = 0;
+        if (rangeY == undefined || rangeY == null)
+            rangeY = 0;
+        if (count == undefined)
+            count = 1;
+        for (let i = 0; i < count; i++) {
+            let duration = t.durationBase + Calc.range(t.durationRange);
+            if (duration <= 0)
+                continue;
+            // get particle
+            let p = null;
+            if (ParticleSystem.cache.length > 0) {
+                p = ParticleSystem.cache[0];
+                ParticleSystem.cache.splice(0, 1);
+            }
+            else
+                p = new Particle();
+            let speed = t.speedBase + Calc.range(t.speedRange);
+            // spawn particle
+            p.percent = 0;
+            p.duration = duration;
+            p.x = x + Calc.range(rangeX);
+            p.y = y + Calc.range(rangeY);
+            p.colorFrom = Calc.choose(t.colorsFrom);
+            p.colorTo = Calc.choose(t.colorsTo);
+            p.speedX = Math.cos(direction) * speed;
+            p.speedY = -Math.sin(direction) * speed;
+            p.accelX = t.accelBaseX + Calc.range(t.accelRangeX);
+            p.accelY = t.accelBaseY + Calc.range(t.accelRangeY);
+            p.frictionX = t.frictionBaseX + Calc.range(t.frictionRangeX);
+            p.frictionY = t.frictionBaseY + Calc.range(t.frictionRangeY);
+            p.scaleFromX = t.scaleFromBaseX + Calc.range(t.scaleFromRangeX);
+            p.scaleFromY = t.scaleFromBaseY + Calc.range(t.scaleFromRangeY);
+            p.scaleToX = t.scaleToBaseX + Calc.range(t.scaleToRangeX);
+            p.scaleToY = t.scaleToBaseY + Calc.range(t.scaleToRangeY);
+            p.rotationFrom = t.rotationFromBase + Calc.range(t.rotationFromRange);
+            p.rotationTo = t.rotationToBase + Calc.range(t.rotationToRange);
+            p.alphaFrom = t.alphaFromBase + Calc.range(t.alphaFromRange);
+            p.alphaTo = t.alphaToBase + Calc.range(t.alphaToRange);
+            // addd
+            this.particles.push(p);
+        }
+    }
+}
+ParticleSystem.cache = [];
+// temp values used during rendering so we aren't creating new ones every frame
+ParticleSystem.color = new Color();
+ParticleSystem.origin = new Vector(0.5, 0.5);
+ParticleSystem.scale = new Vector(0, 0);
+class ParticleTemplate {
+    constructor() {
+        this.speedBase = 0;
+        this.speedRange = 0;
+        this.accelBaseX = 0;
+        this.accelRangeX = 0;
+        this.accelBaseY = 0;
+        this.accelRangeY = 0;
+        this.frictionBaseX = 0;
+        this.frictionRangeX = 0;
+        this.frictionBaseY = 0;
+        this.frictionRangeY = 0;
+        this.colorsFrom = [Color.white];
+        this.colorsTo = [Color.white];
+        this.colorEaser = Ease.linear;
+        this.alphaFromBase = 1;
+        this.alphaFromRange = 0;
+        this.alphaToBase = 1;
+        this.alphaToRange = 0;
+        this.alphaEaser = Ease.linear;
+        this.rotationFromBase = 0;
+        this.rotationFromRange = 0;
+        this.rotationToBase = 0;
+        this.rotationToRange = 0;
+        this.rotationEaser = Ease.linear;
+        this.scaleFromBaseX = 1;
+        this.scaleFromRangeX = 0;
+        this.scaleToBaseX = 1;
+        this.scaleToRangeX = 0;
+        this.scaleXEaser = Ease.linear;
+        this.scaleFromBaseY = 1;
+        this.scaleFromRangeY = 0;
+        this.scaleToBaseY = 1;
+        this.scaleToRangeY = 0;
+        this.scaleYEaser = Ease.linear;
+        this.durationBase = 1;
+        this.durationRange = 1;
+    }
+    speed(Base, Range) {
+        this.speedBase = Base;
+        this.speedRange = Range || 0;
+        return this;
+    }
+    accelX(Base, Range) {
+        this.accelBaseX = Base;
+        this.accelRangeX = Range || 0;
+        return this;
+    }
+    accelY(Base, Range) {
+        this.accelBaseY = Base;
+        this.accelRangeY = Range || 0;
+        return this;
+    }
+    frictionX(Base, Range) {
+        this.frictionBaseX = Base;
+        this.frictionRangeX = Range || 0;
+        return this;
+    }
+    frictionY(Base, Range) {
+        this.frictionBaseY = Base;
+        this.frictionRangeY = Range || 0;
+        return this;
+    }
+    colors(from, to) {
+        this.colorsFrom = from;
+        this.colorsTo = to || from;
+        return this;
+    }
+    colorEase(easer) {
+        this.colorEaser = easer;
+        return this;
+    }
+    alpha(Base, Range) {
+        this.alphaFrom(Base, Range);
+        this.alphaTo(Base, Range);
+        return this;
+    }
+    alphaFrom(Base, Range) {
+        this.alphaFromBase = Base;
+        this.alphaFromRange = Range || 0;
+        return this;
+    }
+    alphaTo(Base, Range) {
+        this.alphaToBase = Base;
+        this.alphaToRange = Range || 0;
+        return this;
+    }
+    alphaEase(easer) {
+        this.alphaEaser = easer;
+        return this;
+    }
+    rotation(Base, Range) {
+        this.rotationFrom(Base, Range);
+        this.rotationTo(Base, Range);
+        return this;
+    }
+    rotationFrom(Base, Range) {
+        this.rotationFromBase = Base;
+        this.rotationFromRange = Range || 0;
+        return this;
+    }
+    rotationTo(Base, Range) {
+        this.rotationToBase = Base;
+        this.rotationToRange = Range || 0;
+        return this;
+    }
+    rotationEase(easer) {
+        this.rotationEaser = easer;
+        return this;
+    }
+    scale(Base, Range) {
+        this.scaleFrom(Base, Range);
+        this.scaleTo(Base, Range);
+        return this;
+    }
+    scaleFrom(Base, Range) {
+        this.scaleFromX(Base, Range);
+        this.scaleFromY(Base, Range);
+        return this;
+    }
+    scaleTo(Base, Range) {
+        this.scaleToX(Base, Range);
+        this.scaleToY(Base, Range);
+        return this;
+    }
+    scaleEase(easer) {
+        this.scaleXEaser = easer;
+        this.scaleYEaser = easer;
+        return this;
+    }
+    scaleX(Base, Range) {
+        this.scaleFromX(Base, Range);
+        this.scaleToX(Base, Range);
+        return this;
+    }
+    scaleFromX(Base, Range) {
+        this.scaleFromBaseX = Base;
+        this.scaleFromRangeX = Range || 0;
+        return this;
+    }
+    scaleToX(Base, Range) {
+        this.scaleToBaseX = Base;
+        this.scaleToRangeX = Range || 0;
+        return this;
+    }
+    scaleY(Base, Range) {
+        this.scaleFromY(Base, Range);
+        this.scaleToY(Base, Range);
+        return this;
+    }
+    scaleXEase(easer) {
+        this.scaleXEaser = easer;
+        return this;
+    }
+    scaleFromY(Base, Range) {
+        this.scaleFromBaseY = Base;
+        this.scaleFromRangeY = Range || 0;
+        return this;
+    }
+    scaleToY(Base, Range) {
+        this.scaleToBaseY = Base;
+        this.scaleToRangeY = Range || 0;
+        return this;
+    }
+    scaleYEase(easer) {
+        this.scaleYEaser = easer;
+        return this;
+    }
+    duration(Base, Range) {
+        this.durationBase = Base;
+        this.durationRange = Range || 0;
+        return this;
     }
 }
 /// <reference path="./../../component.ts"/>

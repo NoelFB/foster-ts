@@ -2,6 +2,7 @@
 class ParticleSystem extends Component
 {
 	public template:ParticleTemplate;
+	public renderRelativeToEntity:boolean = false;
 	private particles:Particle[] = [];
 	private static cache:Particle[] = [];
 
@@ -44,7 +45,10 @@ class ParticleSystem extends Component
 		if (Engine.graphics.pixel == null)
 			throw "Particle System requires Engine.graphis.pixel to be set";
 
-		let pos = this.scenePosition;
+		let pos = this.position;
+		if (this.renderRelativeToEntity)
+			pos = this.scenePosition;
+		
 		let t = this.template;
 		for (let i = 0; i < this.particles.length; i ++)
 		{
@@ -64,7 +68,7 @@ class ParticleSystem extends Component
 		}
 	}
 
-	public burst(x:number, y:number, rangeX?:number, rangeY?:number, count?:number)
+	public burst(x:number, y:number, direction:number, rangeX?:number, rangeY?:number, count?:number)
 	{
 		let t = this.template;
 
@@ -72,8 +76,10 @@ class ParticleSystem extends Component
 			rangeX = 0;
 		if (rangeY == undefined || rangeY == null)
 			rangeY = 0;
+		if (count == undefined)
+			count = 1;
 
-		for (let i = 0; i < count || 1; i ++)
+		for (let i = 0; i < count; i ++)
 		{
 			let duration = t.durationBase + Calc.range(t.durationRange);
 			if (duration <= 0)
@@ -89,6 +95,8 @@ class ParticleSystem extends Component
 			else
 				p = new Particle();
 
+			let speed = t.speedBase + Calc.range(t.speedRange);
+
 			// spawn particle
 			p.percent 		= 0;
 			p.duration 		= duration;
@@ -96,8 +104,8 @@ class ParticleSystem extends Component
 			p.y 			= y + Calc.range(rangeY);
 			p.colorFrom 	= Calc.choose(t.colorsFrom);
 			p.colorTo 		= Calc.choose(t.colorsTo);
-			p.speedX 		= t.speedBaseX + Calc.range(t.speedRangeX);
-			p.speedY 		= t.speedBaseY + Calc.range(t.speedRangeY);
+			p.speedX 		= Math.cos(direction) * speed;
+			p.speedY 		= -Math.sin(direction) * speed;
 			p.accelX 		= t.accelBaseX + Calc.range(t.accelRangeX);
 			p.accelY 		= t.accelBaseY + Calc.range(t.accelRangeY);
 			p.frictionX 	= t.frictionBaseX + Calc.range(t.frictionRangeX);

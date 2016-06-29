@@ -1,9 +1,7 @@
 class ParticleTemplate
 {
-	public speedBaseX:number = 0;
-	public speedRangeX:number = 0;
-	public speedBaseY:number = 0;
-	public speedRangeY:number = 0;
+	public speedBase:number = 0;
+	public speedRange:number = 0;
 	
 	public accelBaseX:number = 0;
 	public accelRangeX:number = 0;
@@ -46,45 +44,38 @@ class ParticleTemplate
 	public durationBase:number = 1;
 	public durationRange:number = 1;
 
-	public speedX(Base:number, Range?:number):ParticleTemplate
+	public speed(Base:number, Range?:number):ParticleTemplate
 	{
-		this.speedBaseX = Base;
-		this.speedRangeX = Range || Base;
-		return this;
-	}
-
-	public speedY(Base:number, Range?:number):ParticleTemplate
-	{
-		this.speedBaseY = Base;
-		this.speedRangeY = Range || Base;
+		this.speedBase = Base;
+		this.speedRange = Range || 0;
 		return this;
 	}
 
 	public accelX(Base:number, Range?:number):ParticleTemplate
 	{
 		this.accelBaseX = Base;
-		this.accelRangeX = Range || Base;
+		this.accelRangeX = Range || 0;
 		return this;
 	}
 
 	public accelY(Base:number, Range?:number):ParticleTemplate
 	{
 		this.accelBaseY = Base;
-		this.accelRangeY = Range || Base;
+		this.accelRangeY = Range || 0;
 		return this;
 	}
 
 	public frictionX(Base:number, Range?:number):ParticleTemplate
 	{
 		this.frictionBaseX = Base;
-		this.frictionRangeX = Range || Base;
+		this.frictionRangeX = Range || 0;
 		return this;
 	}
 
 	public frictionY(Base:number, Range?:number):ParticleTemplate
 	{
 		this.frictionBaseY = Base;
-		this.frictionRangeY = Range || Base;
+		this.frictionRangeY = Range || 0;
 		return this;
 	}
 
@@ -111,14 +102,14 @@ class ParticleTemplate
 	public alphaFrom(Base:number, Range?:number):ParticleTemplate
 	{
 		this.alphaFromBase = Base;
-		this.alphaFromRange = Range || Base;
+		this.alphaFromRange = Range || 0;
 		return this;
 	}
 
 	public alphaTo(Base:number, Range?:number):ParticleTemplate
 	{
 		this.alphaToBase = Base;
-		this.alphaToRange = Range || Base;
+		this.alphaToRange = Range || 0;
 		return this;
 	}
 
@@ -138,14 +129,14 @@ class ParticleTemplate
 	public rotationFrom(Base:number, Range?:number):ParticleTemplate
 	{
 		this.rotationFromBase = Base;
-		this.rotationFromRange = Range || Base;
+		this.rotationFromRange = Range || 0;
 		return this;
 	}
 
 	public rotationTo(Base:number, Range?:number):ParticleTemplate
 	{
 		this.rotationToBase = Base;
-		this.rotationToRange = Range || Base;
+		this.rotationToRange = Range || 0;
 		return this;
 	}
 
@@ -193,14 +184,14 @@ class ParticleTemplate
 	public scaleFromX(Base:number, Range?:number):ParticleTemplate
 	{
 		this.scaleFromBaseX = Base;
-		this.scaleFromRangeX = Range || Base;
+		this.scaleFromRangeX = Range || 0;
 		return this;
 	}
 
 	public scaleToX(Base:number, Range?:number):ParticleTemplate
 	{
 		this.scaleToBaseX = Base;
-		this.scaleToRangeX = Range || Base;
+		this.scaleToRangeX = Range || 0;
 		return this;
 	}
 
@@ -220,14 +211,14 @@ class ParticleTemplate
 	public scaleFromY(Base:number, Range?:number):ParticleTemplate
 	{
 		this.scaleFromBaseY = Base;
-		this.scaleFromRangeY = Range || Base;
+		this.scaleFromRangeY = Range || 0;
 		return this;
 	}
 
 	public scaleToY(Base:number, Range?:number):ParticleTemplate
 	{
 		this.scaleToBaseY = Base;
-		this.scaleToRangeY = Range || Base;
+		this.scaleToRangeY = Range || 0;
 		return this;
 	}
 
@@ -240,7 +231,7 @@ class ParticleTemplate
 	public duration(Base:number, Range?:number):ParticleTemplate
 	{
 		this.durationBase = Base;
-		this.durationRange = Range || Base;
+		this.durationRange = Range || 0;
 		return this;
 	}
 }

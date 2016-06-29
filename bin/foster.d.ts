@@ -841,6 +841,8 @@ declare class Particle {
     scaleToY: number;
     rotationFrom: number;
     rotationTo: number;
+    alphaFrom: number;
+    alphaTo: number;
     speedX: number;
     speedY: number;
     accelX: number;
@@ -850,6 +852,7 @@ declare class Particle {
 }
 declare class ParticleSystem extends Component {
     template: ParticleTemplate;
+    renderRelativeToEntity: boolean;
     private particles;
     private static cache;
     private static color;
@@ -858,13 +861,11 @@ declare class ParticleSystem extends Component {
     constructor(template: ParticleTemplate);
     update(): void;
     render(camera: Camera): void;
-    burst(x: number, y: number, rangeX?: number, rangeY?: number, count?: number): void;
+    burst(x: number, y: number, direction: number, rangeX?: number, rangeY?: number, count?: number): void;
 }
 declare class ParticleTemplate {
-    speedBaseX: number;
-    speedRangeX: number;
-    speedBaseY: number;
-    speedRangeY: number;
+    speedBase: number;
+    speedRange: number;
     accelBaseX: number;
     accelRangeX: number;
     accelBaseY: number;
@@ -876,6 +877,11 @@ declare class ParticleTemplate {
     colorsFrom: Color[];
     colorsTo: Color[];
     colorEaser: (number) => number;
+    alphaFromBase: number;
+    alphaFromRange: number;
+    alphaToBase: number;
+    alphaToRange: number;
+    alphaEaser: (number) => number;
     rotationFromBase: number;
     rotationFromRange: number;
     rotationToBase: number;
@@ -893,25 +899,33 @@ declare class ParticleTemplate {
     scaleYEaser: (number) => number;
     durationBase: number;
     durationRange: number;
-    speedX(Base: number, Range?: number): ParticleTemplate;
-    speedY(Base: number, Range?: number): ParticleTemplate;
+    speed(Base: number, Range?: number): ParticleTemplate;
     accelX(Base: number, Range?: number): ParticleTemplate;
     accelY(Base: number, Range?: number): ParticleTemplate;
     frictionX(Base: number, Range?: number): ParticleTemplate;
     frictionY(Base: number, Range?: number): ParticleTemplate;
     colors(from: Color[], to?: Color[]): ParticleTemplate;
+    colorEase(easer: (number) => number): ParticleTemplate;
+    alpha(Base: number, Range?: number): ParticleTemplate;
+    alphaFrom(Base: number, Range?: number): ParticleTemplate;
+    alphaTo(Base: number, Range?: number): ParticleTemplate;
+    alphaEase(easer: (number) => number): ParticleTemplate;
     rotation(Base: number, Range?: number): ParticleTemplate;
     rotationFrom(Base: number, Range?: number): ParticleTemplate;
     rotationTo(Base: number, Range?: number): ParticleTemplate;
+    rotationEase(easer: (number) => number): ParticleTemplate;
     scale(Base: number, Range?: number): ParticleTemplate;
     scaleFrom(Base: number, Range?: number): ParticleTemplate;
     scaleTo(Base: number, Range?: number): ParticleTemplate;
+    scaleEase(easer: (number) => number): ParticleTemplate;
     scaleX(Base: number, Range?: number): ParticleTemplate;
     scaleFromX(Base: number, Range?: number): ParticleTemplate;
     scaleToX(Base: number, Range?: number): ParticleTemplate;
     scaleY(Base: number, Range?: number): ParticleTemplate;
+    scaleXEase(easer: (number) => number): ParticleTemplate;
     scaleFromY(Base: number, Range?: number): ParticleTemplate;
     scaleToY(Base: number, Range?: number): ParticleTemplate;
+    scaleYEase(easer: (number) => number): ParticleTemplate;
     duration(Base: number, Range?: number): ParticleTemplate;
 }
 declare class Graphic extends Component {
