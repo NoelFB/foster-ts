@@ -6,21 +6,21 @@ const {BrowserWindow} = electron;
 
 app.on('window-all-closed', () =>
 {
-    if (process.platform != 'darwin')
-        app.quit();
+	if (process.platform != 'darwin')
+		app.quit();
 });
 
 app.on('ready', () =>
 {
-        let win = new BrowserWindow();
-        win.setMenu(null);
-		win.loadURL(`file://${__dirname}/index.html`);
+	let win = new BrowserWindow();
+	win.setMenu(null);
+	win.loadURL(`file://${__dirname}/index.html`);
 
-		// comment this out to not open devtools by default
-        win.webContents.openDevTools();
+	// comment this line out to not open devtools by default
+	win.webContents.openDevTools();
 
-        win.on("closed", () =>
-        { 
-            win = null; 
-        });
+	win.on("closed", () =>
+	{ 
+		win = null; 
+	});
 });
