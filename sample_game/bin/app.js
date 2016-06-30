@@ -1,24 +1,26 @@
 "use strict"
 
-const electron = require("electron");
-const BrowserWindow = require('browser-window');
+const electron = require('electron');
+const {app} = electron;
+const {BrowserWindow} = electron;
 
-var app = require('app');
-
-app.on('window-all-closed', function() 
+app.on('window-all-closed', () =>
 {
     if (process.platform != 'darwin')
         app.quit();
 });
 
-app.on('ready', function()
+app.on('ready', () =>
 {
-        var screen = new BrowserWindow();
-        screen.setMenu(null);
-        screen.toggleDevTools();
-        screen.loadUrl('file:///' + __dirname + '/index.html');
-        screen.on("closed", function() 
+        let win = new BrowserWindow();
+        win.setMenu(null);
+		win.loadURL(`file://${__dirname}/index.html`);
+
+		// comment this out to not open devtools by default
+        win.webContents.openDevTools();
+
+        win.on("closed", () =>
         { 
-            screen = null; 
+            win = null; 
         });
 });
