@@ -26,7 +26,7 @@ class GameWindow
 		if (Engine.client == Client.Desktop)
 			GameWindow.browserWindow.setTitle(val); 
 		else
-			console.warn("Can only set Title in Client.Desktop mode");
+			document.title = val;
 	}
 	
 	public static get fullscreen():boolean 
@@ -47,7 +47,7 @@ class GameWindow
 		if (Engine.client == Client.Desktop)
 			return GameWindow.browserWindow.getPosition()[0];
 		else
-			return Engine.graphics.screenCanvas.getBoundingClientRect().top;
+			return Engine.graphics.screenCanvas.getBoundingClientRect().left;
 	}
 	
 	public static get screenTop():number
@@ -55,7 +55,7 @@ class GameWindow
 		if (Engine.client == Client.Desktop)
 			return GameWindow.browserWindow.getPosition()[1];
 		else
-			return Engine.graphics.screenCanvas.getBoundingClientRect().left;
+			return Engine.graphics.screenCanvas.getBoundingClientRect().top;
 	}
 	
 	public static get screenWidth():number 
