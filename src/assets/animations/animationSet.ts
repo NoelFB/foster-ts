@@ -1,25 +1,4 @@
-class AnimationBank
-{
-	public static bank:{[name:string]: AnimationSet} = {};
-	
-	public static create(name:string):AnimationSet
-	{
-		var animSet = new AnimationSet(name);
-		AnimationBank.bank[name] = animSet;
-		return animSet;
-	}
-	
-	public static get(name:string):AnimationSet
-	{
-		return AnimationBank.bank[name];
-	}
-	
-	public static has(name:string):boolean
-	{
-		return AnimationBank.bank[name] != undefined;
-	}
-}
-
+/// <reference path="./animationTemplate.ts"/>
 class AnimationSet
 {
 	public name:string;
@@ -70,26 +49,5 @@ class AnimationSet
 	public has(name:string):boolean
 	{
 		return this.animations[name] != undefined;
-	}
-}
-
-class AnimationTemplate
-{
-	public name:string;
-	public speed:number;
-	public frames:Texture[];
-	public origin:Vector;
-	public position:Vector;
-	public loops:boolean = false;
-	public goto:string[] = null;
-	
-	constructor(name:string, speed:number, frames:Texture[], loops?:boolean, position?:Vector, origin?:Vector)
-	{
-		this.name = name;
-		this.speed = speed;
-		this.frames = frames;
-		this.loops = loops || false;
-		this.position = (position || new Vector(0, 0));
-		this.origin = (origin || new Vector(0, 0));
 	}
 }
