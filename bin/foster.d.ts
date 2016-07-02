@@ -1124,9 +1124,9 @@ declare class Tilemap extends Component {
     private tileColumns;
     private crop;
     constructor(texture: Texture, tileWidth: number, tileHeight: number);
-    set(tileX: number, tileY: number, mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): void;
+    set(tileX: number, tileY: number, mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): Tilemap;
+    clear(mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): Tilemap;
     has(mapX: number, mapY: number): boolean;
     get(mapX: number, mapY: number): Vector;
-    clear(mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): void;
     render(camera: Camera): void;
 }

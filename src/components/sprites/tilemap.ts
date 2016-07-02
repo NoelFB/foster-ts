@@ -19,16 +19,27 @@ class Tilemap extends Component
 		this.tileColumns = this.texture.width / this.tileWidth;
 	}
 
-	public set(tileX:number, tileY:number, mapX:number, mapY:number, mapWidth?:number, mapHeight?:number):void
+	public set(tileX:number, tileY:number, mapX:number, mapY:number, mapWidth?:number, mapHeight?:number):Tilemap
 	{
 		let tileIndex = tileX + tileY * this.tileColumns;
 		for (let x = mapX; x < mapX + (mapWidth || 1); x ++)
+		{
+			if (this.map[x] == undefined)
+				this.map[x] = {};
 			for (let y = mapY; y < mapY + (mapHeight || 1); y ++)
-			{
-				if (this.map[x] == undefined)
-					this.map[x] = {};
 				this.map[x][y] = tileIndex;
-			}
+		}
+		return this;
+	}
+
+	public clear(mapX:number, mapY:number, mapWidth?:number, mapHeight?:number):Tilemap
+	{
+		for (let x = mapX; x < mapX + (mapWidth || 1); x ++)
+			if (this.map[x] != undefined)
+				for (let y = mapY; y < mapY + (mapHeight || 1); y ++)
+					if (this.map[x][y] != undefined)
+						delete this.map[x][y];
+		return this;
 	}
 
 	public has(mapX:number, mapY:number):boolean
@@ -45,17 +56,7 @@ class Tilemap extends Component
 		}
 		return null;
 	}
-
-	public clear(mapX:number, mapY:number, mapWidth?:number, mapHeight?:number):void
-	{
-		for (let x = mapX; x < mapX + (mapWidth || 1); x ++)
-			for (let y = mapY; y < mapY + (mapHeight || 1); y ++)
-			{
-				if (this.map[x] != undefined && this.map[x][y] != undefined)
-					delete this.map[x][y];
-			}
-	}
-
+	
 	public render(camera:Camera):void
 	{
 		// get bounds of rendering
@@ -71,11 +72,11 @@ class Tilemap extends Component
 		this.crop.height = this.tileHeight;
 
 		for (let tx = left; tx < right; tx ++)
+		{
+			if (this.map[tx] == undefined)
+				continue;
 			for (let ty = top; ty < bottom; ty ++)
 			{
-				if (this.map[tx] == undefined)
-					continue;
-
 				let index = this.map[tx][ty];
 				if (index != undefined)
 				{
@@ -88,6 +89,7 @@ class Tilemap extends Component
 						this.crop);
 				}
 			}
+		}
 	}
 
 }

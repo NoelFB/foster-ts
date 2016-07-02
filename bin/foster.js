@@ -3287,12 +3287,21 @@ class Tilemap extends Component {
     }
     set(tileX, tileY, mapX, mapY, mapWidth, mapHeight) {
         let tileIndex = tileX + tileY * this.tileColumns;
-        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
-            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
-                if (this.map[x] == undefined)
-                    this.map[x] = {};
+        for (let x = mapX; x < mapX + (mapWidth || 1); x++) {
+            if (this.map[x] == undefined)
+                this.map[x] = {};
+            for (let y = mapY; y < mapY + (mapHeight || 1); y++)
                 this.map[x][y] = tileIndex;
-            }
+        }
+        return this;
+    }
+    clear(mapX, mapY, mapWidth, mapHeight) {
+        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
+            if (this.map[x] != undefined)
+                for (let y = mapY; y < mapY + (mapHeight || 1); y++)
+                    if (this.map[x][y] != undefined)
+                        delete this.map[x][y];
+        return this;
     }
     has(mapX, mapY) {
         return (this.map[mapX] != undefined && this.map[mapX][mapY] != undefined);
@@ -3303,13 +3312,6 @@ class Tilemap extends Component {
             return new Vector(index % this.tileColumns, Math.floor(index / this.tileColumns));
         }
         return null;
-    }
-    clear(mapX, mapY, mapWidth, mapHeight) {
-        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
-            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
-                if (this.map[x] != undefined && this.map[x][y] != undefined)
-                    delete this.map[x][y];
-            }
     }
     render(camera) {
         // get bounds of rendering
@@ -3322,10 +3324,10 @@ class Tilemap extends Component {
         // tile texture cropping
         this.crop.width = this.tileWidth;
         this.crop.height = this.tileHeight;
-        for (let tx = left; tx < right; tx++)
+        for (let tx = left; tx < right; tx++) {
+            if (this.map[tx] == undefined)
+                continue;
             for (let ty = top; ty < bottom; ty++) {
-                if (this.map[tx] == undefined)
-                    continue;
                 let index = this.map[tx][ty];
                 if (index != undefined) {
                     this.crop.x = (index % this.tileColumns) * this.tileWidth;
@@ -3333,5 +3335,6 @@ class Tilemap extends Component {
                     Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop);
                 }
             }
+        }
     }
 }
