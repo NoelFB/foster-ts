@@ -567,7 +567,7 @@ class Graphics {
      */
     push(x, y, u, v, color) {
         // shader was changed
-        this.check();
+        this.checkState();
         // append
         this.vertices.push(x, y);
         this.uvs.push(u, v);
@@ -583,7 +583,6 @@ class Graphics {
      * @param color optional color for the vertex
      */
     pushUnsafe(x, y, u, v, color) {
-        // append
         this.vertices.push(x, y);
         this.uvs.push(u, v);
         if (color != undefined && color != null)
@@ -593,7 +592,7 @@ class Graphics {
      * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
      */
     pushList(pos, uv, color) {
-        this.check();
+        this.checkState();
         for (let i = 0; i < pos.length; i++) {
             this.vertices.push(pos[i].x, pos[i].y);
             if (uv != undefined && uv != null)
@@ -607,7 +606,7 @@ class Graphics {
     /**
      * Checks if the shader was modified, and if so, flushes the current vertices & starts a new draw
      */
-    check() {
+    checkState() {
         if (this.nextShader != null || this.currentShader.dirty) {
             // flush existing
             if (this.currentShader != null)
@@ -638,7 +637,10 @@ class Graphics {
                     }
                     else if (uniform.type == ShaderUniformType.sampler2D) {
                         this.gl.activeTexture(this.gl["TEXTURE" + textureCounter]);
-                        this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
+                        if (uniform.value instanceof Texture)
+                            this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value.texture.webGLTexture);
+                        else
+                            this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
                         this.gl.uniform1i(location, 0);
                         textureCounter += 1;
                     }
@@ -843,12 +845,13 @@ class Graphics {
         this.setShaderTexture(this._pixel);
         if (colorB == undefined)
             colorB = colorA;
+        this.checkState();
         let uv = this._pixelUVs;
         let last = new Vector(pos.x + rad, pos.y);
         for (let i = 1; i <= steps; i++) {
             let angle = (i / steps) * Math.PI * 2;
             let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
-            this.push(pos.x, pos.y, uv[0].x, uv[0].y, colorA);
+            this.pushUnsafe(pos.x, pos.y, uv[0].x, uv[0].y, colorA);
             this.pushUnsafe(last.x, last.y, uv[1].x, uv[1].y, colorB);
             this.pushUnsafe(next.x, next.y, uv[2].x, uv[2].y, colorB);
             last = next;
@@ -885,12 +888,13 @@ class Graphics {
     circle(pos, rad, steps, colorA, colorB) {
         if (colorB == undefined)
             colorB = colorA;
+        this.checkState();
         let uv = this._pixelUVs;
         let last = new Vector(pos.x + rad, pos.y);
         for (let i = 1; i <= steps; i++) {
             let angle = (i / steps) * Math.PI * 2;
             let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
-            this.push(pos.x, pos.y, 0, 0, colorA);
+            this.pushUnsafe(pos.x, pos.y, 0, 0, colorA);
             this.pushUnsafe(last.x, last.y, 0, 0, colorB);
             this.pushUnsafe(next.x, next.y, 0, 0, colorB);
             last = next;

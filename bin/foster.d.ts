@@ -296,7 +296,7 @@ declare class Graphics {
     /**
      * Checks if the shader was modified, and if so, flushes the current vertices & starts a new draw
      */
-    check(): void;
+    checkState(): void;
     /**
      * Flushes the current vertices to the screen
      */
