@@ -16,8 +16,7 @@ and am only working on this in my spare time!
 #### Todo
  - Implement Audio stuff
  - Comment everything (and generate Docs somehow?)
- - Add Some kind of TypeScript `Foster` Namespace so internal engine variables can be properly hidden from the Game (ex. `Scene.trackComponent`)
- - Add XML Loading (just seems like a good idea to support both JSON and XML)
+ - Maybe put it in  `Foster Namespace`? I find it really annoying to type "`new Foster.Entity`" and etc, all the time though
  
 #### Builds
  - [foster.js](https://raw.githubusercontent.com/Drazzke/foster/master/bin/foster.js) : compiled JS file
