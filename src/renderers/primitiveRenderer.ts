@@ -1,3 +1,4 @@
+/// <reference path="./../renderer.ts"/>
 class PrimitiveRenderer extends Renderer
 {
 	constructor()

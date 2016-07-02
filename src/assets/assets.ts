@@ -2,6 +2,8 @@ class Assets
 {
 	public static textures:{[path: string]:Texture;} = {};
 	public static json:{[path:string]:Object;} = {};
+	public static xml:{[path:string]:Object;} = {};
+	public static text:{[path:string]:string;} = {};
 	public static sounds:{[path:string]:HTMLAudioElement} = {};
 	public static atlases:{[path:string]:Atlas} = {};
 }
@@ -19,8 +21,10 @@ class AssetLoader
 	
 	private textures:string[] = [];
 	private jsons:string[] = [];
+	private xmls:string[] = [];
 	private sounds:string[] = [];
 	private atlases:any[] = [];
+	private texts:string[] = [];
 
 	public addTexture(path:string):AssetLoader
 	{
@@ -39,7 +43,25 @@ class AssetLoader
 		this.assets ++;
 		return this;
 	}
+
+	public addXml(path:string):AssetLoader
+	{
+		if (this.loading || this.loaded)
+			throw "Cannot add more assets when already loaded";
+		this.xmls.push(path);
+		this.assets ++;
+		return this;
+	}
 	
+	public addText(path:string):AssetLoader
+	{
+		if (this.loading || this.loaded)
+			throw "Cannot add more assets when already loaded";
+		this.texts.push(path);
+		this.assets ++;
+		return this;
+	}
+
 	public addSound(path:string):AssetLoader
 	{
 		throw "Audio not implemented yet"
@@ -69,9 +91,17 @@ class AssetLoader
 		for (let i = 0; i < this.textures.length; i ++)
 			this.loadTexture(this.textures[i]);
 
-		// jsons
+		// json files
 		for (let i = 0; i < this.jsons.length; i ++)
 			this.loadJson(this.jsons[i]);
+
+		// xml files
+		for (let i = 0; i < this.xmls.length; i ++)
+			this.loadXml(this.xmls[i]);
+
+		// text files
+		for (let i = 0; i < this.texts.length; i ++)
+			this.loadText(this.texts[i]);
 
 		// sounds
 		for (let i = 0; i < this.sounds.length; i ++)
@@ -80,6 +110,17 @@ class AssetLoader
 		// atlases
 		for (let i = 0; i < this.atlases.length; i ++)
 			this.loadAtlas(this.atlases[i]);
+	}
+
+	public unload():void
+	{
+		if (this.loading)
+			throw "Cannot unload until finished loading";
+		if (!this.loaded)
+			throw "Cannot unload before loading";
+
+		// TODO: IMPLEMENT THIS
+		throw "Asset Unloading not Implemented";
 	}
 	
 	private loadTexture(path:string, callback?:(texture:Texture)=>void):void
@@ -130,6 +171,34 @@ class AssetLoader
 		});
 	}
 
+	private loadXml(path:string, callback?:(xml:Object)=>void):void
+	{
+		var self = this;
+		FosterIO.read(path, (data) =>
+		{
+			Assets.xml[path] = (new DOMParser()).parseFromString(data, "text/xml");
+			
+			if (callback != undefined)
+				callback(Assets.xml[path]);
+				
+			self.incrementLoader();
+		});
+	}
+	
+	private loadText(path:string, callback?:(text:string)=>void):void
+	{
+		var self = this;
+		FosterIO.read(path, (data) =>
+		{
+			Assets.text[path] = data;
+			
+			if (callback != undefined)
+				callback(Assets.text[path]);
+				
+			self.incrementLoader();
+		});
+	}
+
 	private loadSound(path:string, callback?:(sound:HTMLAudioElement)=>void):void
 	{
 		var self = this;
@@ -141,20 +210,28 @@ class AssetLoader
 	{
 		var self = this;
 		var texture:Texture = null;
-		var json:Object = null;
+		var atlasdata:Object = null;
 
+		// check to see if both the texture and data file are done
+		// if they are, then create the atlas object
 		function check()
 		{
-			if (texture == null || json == null)
+			if (texture == null || atlasdata == null)
 				return;
 			
-			let atlas = new Atlas(data.name, texture, json, data.type);
+			let atlas = new Atlas(data.name, texture, atlasdata, data.type);
 			Assets.atlases[atlas.name] = atlas;
 			self.incrementLoader();
 		}
 
+		// load atlas data file  (XML or JSON)
+		if ((/(?:\.([^.]+))?$/).exec(data.data)[1] == "xml")
+			this.loadXml(data.data, (xml) => { atlasdata = xml; check(); })
+		else
+			this.loadJson(data.data, (j) => { atlasdata = j; check(); });
+
+		// load atlas texture file
 		this.loadTexture(data.image, (tex) => { texture = tex; check(); });
-		this.loadJson(data.data, (j) => { json = j; check(); });
 	}
 
 	private incrementLoader()

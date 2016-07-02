@@ -9,16 +9,16 @@ class Atlas
 
 	public name:string;
 	public texture:Texture;
-	public json:Object;
+	public data:Object;
 	public type:AtlasType;
 
 	public subtextures:{[path:string]:Texture} = {};
 
-	constructor(name:string, texture:Texture, json:Object, type:AtlasType)
+	constructor(name:string, texture:Texture, data:Object, type:AtlasType)
 	{
 		this.name = name;
 		this.texture = texture;
-		this.json = json;
+		this.data = data;
 		this.type = type;
 
 		if (type == AtlasType.ASEPRITE)
@@ -45,7 +45,7 @@ class Atlas
 
 	private loadAsepriteAtlas()
 	{
-		let frames = this.json["frames"];
+		let frames = this.data["frames"];
 		for (var path in frames)
 		{
 			var name = path.replace(".ase", "");

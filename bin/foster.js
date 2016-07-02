@@ -1264,6 +1264,8 @@ class Assets {
 }
 Assets.textures = {};
 Assets.json = {};
+Assets.xml = {};
+Assets.text = {};
 Assets.sounds = {};
 Assets.atlases = {};
 class AssetLoader {
@@ -1274,8 +1276,10 @@ class AssetLoader {
         this.assetsLoaded = 0;
         this.textures = [];
         this.jsons = [];
+        this.xmls = [];
         this.sounds = [];
         this.atlases = [];
+        this.texts = [];
     }
     get percent() { return this.assetsLoaded / this.assets; }
     addTexture(path) {
@@ -1289,6 +1293,20 @@ class AssetLoader {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
         this.jsons.push(path);
+        this.assets++;
+        return this;
+    }
+    addXml(path) {
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.xmls.push(path);
+        this.assets++;
+        return this;
+    }
+    addText(path) {
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.texts.push(path);
         this.assets++;
         return this;
     }
@@ -1314,15 +1332,29 @@ class AssetLoader {
         // textures
         for (let i = 0; i < this.textures.length; i++)
             this.loadTexture(this.textures[i]);
-        // jsons
+        // json files
         for (let i = 0; i < this.jsons.length; i++)
             this.loadJson(this.jsons[i]);
+        // xml files
+        for (let i = 0; i < this.xmls.length; i++)
+            this.loadXml(this.xmls[i]);
+        // text files
+        for (let i = 0; i < this.texts.length; i++)
+            this.loadText(this.texts[i]);
         // sounds
         for (let i = 0; i < this.sounds.length; i++)
             this.loadSound(this.sounds[i]);
         // atlases
         for (let i = 0; i < this.atlases.length; i++)
             this.loadAtlas(this.atlases[i]);
+    }
+    unload() {
+        if (this.loading)
+            throw "Cannot unload until finished loading";
+        if (!this.loaded)
+            throw "Cannot unload before loading";
+        // TODO: IMPLEMENT THIS
+        throw "Asset Unloading not Implemented";
     }
     loadTexture(path, callback) {
         var self = this;
@@ -1358,6 +1390,24 @@ class AssetLoader {
             self.incrementLoader();
         });
     }
+    loadXml(path, callback) {
+        var self = this;
+        FosterIO.read(path, (data) => {
+            Assets.xml[path] = (new DOMParser()).parseFromString(data, "text/xml");
+            if (callback != undefined)
+                callback(Assets.xml[path]);
+            self.incrementLoader();
+        });
+    }
+    loadText(path, callback) {
+        var self = this;
+        FosterIO.read(path, (data) => {
+            Assets.text[path] = data;
+            if (callback != undefined)
+                callback(Assets.text[path]);
+            self.incrementLoader();
+        });
+    }
     loadSound(path, callback) {
         var self = this;
         // todo: LOAD SOUND
@@ -1366,16 +1416,23 @@ class AssetLoader {
     loadAtlas(data) {
         var self = this;
         var texture = null;
-        var json = null;
+        var atlasdata = null;
+        // check to see if both the texture and data file are done
+        // if they are, then create the atlas object
         function check() {
-            if (texture == null || json == null)
+            if (texture == null || atlasdata == null)
                 return;
-            let atlas = new Atlas(data.name, texture, json, data.type);
+            let atlas = new Atlas(data.name, texture, atlasdata, data.type);
             Assets.atlases[atlas.name] = atlas;
             self.incrementLoader();
         }
+        // load atlas data file  (XML or JSON)
+        if ((/(?:\.([^.]+))?$/).exec(data.data)[1] == "xml")
+            this.loadXml(data.data, (xml) => { atlasdata = xml; check(); });
+        else
+            this.loadJson(data.data, (j) => { atlasdata = j; check(); });
+        // load atlas texture file
         this.loadTexture(data.image, (tex) => { texture = tex; check(); });
-        this.loadJson(data.data, (j) => { json = j; check(); });
     }
     incrementLoader() {
         this.assetsLoaded++;
@@ -1392,11 +1449,11 @@ var AtlasType;
     AtlasType[AtlasType["ASEPRITE"] = 0] = "ASEPRITE";
 })(AtlasType || (AtlasType = {}));
 class Atlas {
-    constructor(name, texture, json, type) {
+    constructor(name, texture, data, type) {
         this.subtextures = {};
         this.name = name;
         this.texture = texture;
-        this.json = json;
+        this.data = data;
         this.type = type;
         if (type == AtlasType.ASEPRITE)
             this.loadAsepriteAtlas();
@@ -1414,7 +1471,7 @@ class Atlas {
         return listed;
     }
     loadAsepriteAtlas() {
-        let frames = this.json["frames"];
+        let frames = this.data["frames"];
         for (var path in frames) {
             var name = path.replace(".ase", "");
             var obj = frames[path];
@@ -2128,6 +2185,7 @@ class Mouse {
 Mouse._position = new Vector(0, 0);
 Mouse._positionNext = new Vector(0, 0);
 Mouse.absolute = new Vector(0, 0);
+/// <reference path="./../renderer.ts"/>
 class PrimitiveRenderer extends Renderer {
     constructor() {
         super();
@@ -2135,6 +2193,7 @@ class PrimitiveRenderer extends Renderer {
         this.shaderMatrixUniformName = "matrix";
     }
 }
+/// <reference path="./../renderer.ts"/>
 class SpriteRenderer extends Renderer {
     constructor() {
         super();
@@ -2828,6 +2887,177 @@ class Hitgrid extends Collider {
         }
     }
 }
+/// <reference path="./../../component.ts"/>
+class Graphic extends Component {
+    constructor(texture, position) {
+        super();
+        this.scale = new Vector(1, 1);
+        this.origin = new Vector(0, 0);
+        this.rotation = 0;
+        this.flipX = false;
+        this.flipY = false;
+        this.color = Color.white;
+        this.alpha = 1;
+        if (texture != null) {
+            this.texture = texture;
+            this.crop = new Rectangle(0, 0, texture.width, texture.height);
+        }
+        if (position)
+            this.position = position;
+    }
+    get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
+    get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
+    render(camera) {
+        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha, Graphic.tempColor), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
+    }
+}
+Graphic.tempColor = new Color();
+/// <reference path="./../../component.ts"/>
+class Rectsprite extends Component {
+    constructor(width, height, color) {
+        super();
+        this.size = new Vector(0, 0);
+        this.scale = new Vector(1, 1);
+        this.origin = new Vector(0, 0);
+        this.rotation = 0;
+        this.color = Color.white;
+        this.alpha = 1;
+        this.size.x = width;
+        this.size.y = height;
+        this.color = color || Color.white;
+    }
+    get width() { return this.size.x; }
+    set width(val) { this.size.x = val; }
+    get height() { return this.size.y; }
+    set height(val) { this.size.y = val; }
+    render() {
+        // draw with a pixel texture (shader is using textures)
+        if (Engine.graphics.shader.sampler2d != null && Engine.graphics.pixel != null) {
+            Engine.graphics.texture(Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, this.color.mult(this.alpha), new Vector(this.origin.x / this.size.x, this.origin.y / this.size.y), Vector.mult(this.size, this.scale), this.rotation);
+        }
+        else {
+            Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, this.color.mult(this.alpha), this.origin, this.scale, this.rotation);
+        }
+    }
+}
+/// <reference path="./graphic.ts"/>
+class Sprite extends Graphic {
+    constructor(animation) {
+        super(null);
+        this._animation = null;
+        this._playing = null;
+        this._frame = 0;
+        this.rate = 1;
+        Engine.assert(AnimationBank.has(animation), "Missing animation '" + animation + "'!");
+        this._animation = AnimationBank.get(animation);
+        this.texture = this._animation.first.frames[0];
+    }
+    get animation() { return this._animation; }
+    get playing() { return this._playing; }
+    get frame() { return Math.floor(this._frame); }
+    play(name, restart) {
+        if (this.animation == null)
+            return;
+        let next = this.animation.get(name);
+        if (next != null && (this.playing != next || restart)) {
+            this._playing = next;
+            this._frame = 0;
+            this.active = true;
+            if (this._playing.frames.length > 0)
+                this.texture = this._playing.frames[0];
+        }
+    }
+    has(name) {
+        return this.animation != null && this.animation.has(name);
+    }
+    update() {
+        if (this.playing != null) {
+            this._frame += this.playing.speed * this.rate * Engine.delta;
+            if (this.frame >= this.playing.frames.length) {
+                // loop this animation
+                if (this.playing.loops) {
+                    while (this._frame >= this.playing.frames.length)
+                        this._frame -= this.playing.frames.length;
+                }
+                else if (this.playing.goto != null && this.playing.goto.length > 0) {
+                    let next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
+                    this.play(next, true);
+                }
+                else {
+                    this.active = false;
+                    this._frame = this.playing.frames.length - 1;
+                }
+            }
+            if (this.playing != null)
+                this.texture = this.playing.frames[this.frame];
+        }
+    }
+    render(camera) {
+        if (this.texture != null)
+            super.render(camera);
+    }
+}
+/// <reference path="./../../component.ts"/>
+class Tilemap extends Component {
+    constructor(texture, tileWidth, tileHeight) {
+        super();
+        this.map = {};
+        this.crop = new Rectangle();
+        this.texture = texture;
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
+        this.tileColumns = this.texture.width / this.tileWidth;
+    }
+    set(tileX, tileY, mapX, mapY, mapWidth, mapHeight) {
+        let tileIndex = tileX + tileY * this.tileColumns;
+        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
+            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
+                if (this.map[x] == undefined)
+                    this.map[x] = {};
+                this.map[x][y] = tileIndex;
+            }
+    }
+    has(mapX, mapY) {
+        return (this.map[mapX] != undefined && this.map[mapX][mapY] != undefined);
+    }
+    get(mapX, mapY) {
+        if (this.has(mapX, mapY)) {
+            var index = this.map[mapX][mapY];
+            return new Vector(index % this.tileColumns, Math.floor(index / this.tileColumns));
+        }
+        return null;
+    }
+    clear(mapX, mapY, mapWidth, mapHeight) {
+        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
+            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
+                if (this.map[x] != undefined && this.map[x][y] != undefined)
+                    delete this.map[x][y];
+            }
+    }
+    render(camera) {
+        // get bounds of rendering
+        let bounds = camera.extents;
+        let pos = this.scenePosition;
+        let left = Math.floor((bounds.left - pos.x) / this.tileWidth) - 1;
+        let right = Math.ceil((bounds.right - pos.x) / this.tileWidth) + 1;
+        let top = Math.floor((bounds.top - pos.y) / this.tileHeight) - 1;
+        let bottom = Math.ceil((bounds.bottom - pos.y) / this.tileHeight) + 1;
+        // tile texture cropping
+        this.crop.width = this.tileWidth;
+        this.crop.height = this.tileHeight;
+        for (let tx = left; tx < right; tx++)
+            for (let ty = top; ty < bottom; ty++) {
+                if (this.map[tx] == undefined)
+                    continue;
+                let index = this.map[tx][ty];
+                if (index != undefined) {
+                    this.crop.x = (index % this.tileColumns) * this.tileWidth;
+                    this.crop.y = Math.floor(index / this.tileColumns) * this.tileHeight;
+                    Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop);
+                }
+            }
+    }
+}
 class Particle {
 }
 /// <reference path="./../../component.ts"/>
@@ -3101,176 +3331,5 @@ class ParticleTemplate {
         this.durationBase = Base;
         this.durationRange = Range || 0;
         return this;
-    }
-}
-/// <reference path="./../../component.ts"/>
-class Graphic extends Component {
-    constructor(texture, position) {
-        super();
-        this.scale = new Vector(1, 1);
-        this.origin = new Vector(0, 0);
-        this.rotation = 0;
-        this.flipX = false;
-        this.flipY = false;
-        this.color = Color.white;
-        this.alpha = 1;
-        if (texture != null) {
-            this.texture = texture;
-            this.crop = new Rectangle(0, 0, texture.width, texture.height);
-        }
-        if (position)
-            this.position = position;
-    }
-    get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
-    get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
-    render(camera) {
-        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha, Graphic.tempColor), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
-    }
-}
-Graphic.tempColor = new Color();
-/// <reference path="./../../component.ts"/>
-class Rectsprite extends Component {
-    constructor(width, height, color) {
-        super();
-        this.size = new Vector(0, 0);
-        this.scale = new Vector(1, 1);
-        this.origin = new Vector(0, 0);
-        this.rotation = 0;
-        this.color = Color.white;
-        this.alpha = 1;
-        this.size.x = width;
-        this.size.y = height;
-        this.color = color || Color.white;
-    }
-    get width() { return this.size.x; }
-    set width(val) { this.size.x = val; }
-    get height() { return this.size.y; }
-    set height(val) { this.size.y = val; }
-    render() {
-        // draw with a pixel texture (shader is using textures)
-        if (Engine.graphics.shader.sampler2d != null && Engine.graphics.pixel != null) {
-            Engine.graphics.texture(Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, this.color.mult(this.alpha), new Vector(this.origin.x / this.size.x, this.origin.y / this.size.y), Vector.mult(this.size, this.scale), this.rotation);
-        }
-        else {
-            Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, this.color.mult(this.alpha), this.origin, this.scale, this.rotation);
-        }
-    }
-}
-/// <reference path="./graphic.ts"/>
-class Sprite extends Graphic {
-    constructor(animation) {
-        super(null);
-        this._animation = null;
-        this._playing = null;
-        this._frame = 0;
-        this.rate = 1;
-        Engine.assert(AnimationBank.has(animation), "Missing animation '" + animation + "'!");
-        this._animation = AnimationBank.get(animation);
-        this.texture = this._animation.first.frames[0];
-    }
-    get animation() { return this._animation; }
-    get playing() { return this._playing; }
-    get frame() { return Math.floor(this._frame); }
-    play(name, restart) {
-        if (this.animation == null)
-            return;
-        let next = this.animation.get(name);
-        if (next != null && (this.playing != next || restart)) {
-            this._playing = next;
-            this._frame = 0;
-            this.active = true;
-            if (this._playing.frames.length > 0)
-                this.texture = this._playing.frames[0];
-        }
-    }
-    has(name) {
-        return this.animation != null && this.animation.has(name);
-    }
-    update() {
-        if (this.playing != null) {
-            this._frame += this.playing.speed * this.rate * Engine.delta;
-            if (this.frame >= this.playing.frames.length) {
-                // loop this animation
-                if (this.playing.loops) {
-                    while (this._frame >= this.playing.frames.length)
-                        this._frame -= this.playing.frames.length;
-                }
-                else if (this.playing.goto != null && this.playing.goto.length > 0) {
-                    let next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
-                    this.play(next, true);
-                }
-                else {
-                    this.active = false;
-                    this._frame = this.playing.frames.length - 1;
-                }
-            }
-            if (this.playing != null)
-                this.texture = this.playing.frames[this.frame];
-        }
-    }
-    render(camera) {
-        if (this.texture != null)
-            super.render(camera);
-    }
-}
-/// <reference path="./../../component.ts"/>
-class Tilemap extends Component {
-    constructor(texture, tileWidth, tileHeight) {
-        super();
-        this.map = {};
-        this.crop = new Rectangle();
-        this.texture = texture;
-        this.tileWidth = tileWidth;
-        this.tileHeight = tileHeight;
-        this.tileColumns = this.texture.width / this.tileWidth;
-    }
-    set(tileX, tileY, mapX, mapY, mapWidth, mapHeight) {
-        let tileIndex = tileX + tileY * this.tileColumns;
-        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
-            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
-                if (this.map[x] == undefined)
-                    this.map[x] = {};
-                this.map[x][y] = tileIndex;
-            }
-    }
-    has(mapX, mapY) {
-        return (this.map[mapX] != undefined && this.map[mapX][mapY] != undefined);
-    }
-    get(mapX, mapY) {
-        if (this.has(mapX, mapY)) {
-            var index = this.map[mapX][mapY];
-            return new Vector(index % this.tileColumns, Math.floor(index / this.tileColumns));
-        }
-        return null;
-    }
-    clear(mapX, mapY, mapWidth, mapHeight) {
-        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
-            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
-                if (this.map[x] != undefined && this.map[x][y] != undefined)
-                    delete this.map[x][y];
-            }
-    }
-    render(camera) {
-        // get bounds of rendering
-        let bounds = camera.extents;
-        let pos = this.scenePosition;
-        let left = Math.floor((bounds.left - pos.x) / this.tileWidth) - 1;
-        let right = Math.ceil((bounds.right - pos.x) / this.tileWidth) + 1;
-        let top = Math.floor((bounds.top - pos.y) / this.tileHeight) - 1;
-        let bottom = Math.ceil((bounds.bottom - pos.y) / this.tileHeight) + 1;
-        // tile texture cropping
-        this.crop.width = this.tileWidth;
-        this.crop.height = this.tileHeight;
-        for (let tx = left; tx < right; tx++)
-            for (let ty = top; ty < bottom; ty++) {
-                if (this.map[tx] == undefined)
-                    continue;
-                let index = this.map[tx][ty];
-                if (index != undefined) {
-                    this.crop.x = (index % this.tileColumns) * this.tileWidth;
-                    this.crop.y = Math.floor(index / this.tileColumns) * this.tileHeight;
-                    Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop);
-                }
-            }
     }
 }
