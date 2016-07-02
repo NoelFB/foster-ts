@@ -269,7 +269,10 @@ class Graphics
 					else if (uniform.type == ShaderUniformType.sampler2D)
 					{
 						this.gl.activeTexture((<any>this.gl)["TEXTURE" + textureCounter]);
-						this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
+						if (uniform.value instanceof Texture)
+							this.gl.bindTexture(this.gl.TEXTURE_2D, (<Texture>uniform.value).texture.webGLTexture);
+						else
+							this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
 						this.gl.uniform1i(location, 0);
 						textureCounter += 1;
 					}
