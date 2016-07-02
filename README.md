@@ -11,7 +11,13 @@ and am only working on this in my spare time!
  - ES6 all the way. Not my goal to be backwards / ES5 compatible as this is to be primarily used in Electron
  - Scene -> Entity -> Component structure
  - Frame-based animation, with atlas loading (Aseprite, Texture Packer, etc)
- - AABB Collision system, with simple Physics component to handle motion / collision
+ - AABB Collision system, with simple Physics component to handle motion / 
+ 
+#### Todo
+ - Implement Audio stuff
+ - Comment everything (and generate Docs somehow?)
+ - Add Some kind of TypeScript `Foster` Namespace so internal engine variables can be properly hidden from the Game (ex. `Scene.trackComponent`)
+ - Add XML Loading (just seems like a good idea to support both JSON and XML)
  
 #### Builds
  - [foster.js](https://raw.githubusercontent.com/Drazzke/foster/master/bin/foster.js) : compiled JS file
