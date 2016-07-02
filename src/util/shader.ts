@@ -105,14 +105,7 @@ class ShaderUniform
 	public get value():any { return this._value; }
 	public set value(a:any)
 	{
-		let willBeDirty = (this.value != a);
-
-		// special case for textures
-		if (this.type == ShaderUniformType.sampler2D && this._value != null && a != null)
-			if ((this._value as Texture).texture.webGLTexture == (a as Texture).texture.webGLTexture)
-				willBeDirty = false;
-
-		if (willBeDirty)
+		if (this.value != a)
 		{
 			this._value = a;
 			this._shader.dirty = true;

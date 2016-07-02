@@ -575,6 +575,21 @@ class Graphics {
             this.colors.push(color.r, color.g, color.b, color.a);
     }
     /**
+     * Same as Graphics.push, but this method assumes the shader was NOT modified. Don't use this unless you know what you're doing
+     * @param x 	X position of the vertex
+     * @param y		Y position of the vertex
+     * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+     * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+     * @param color optional color for the vertex
+     */
+    pushUnsafe(x, y, u, v, color) {
+        // append
+        this.vertices.push(x, y);
+        this.uvs.push(u, v);
+        if (color != undefined && color != null)
+            this.colors.push(color.r, color.g, color.b, color.a);
+    }
+    /**
      * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
      */
     pushList(pos, uv, color) {
@@ -623,7 +638,7 @@ class Graphics {
                     }
                     else if (uniform.type == ShaderUniformType.sampler2D) {
                         this.gl.activeTexture(this.gl["TEXTURE" + textureCounter]);
-                        this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value.texture.webGLTexture);
+                        this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
                         this.gl.uniform1i(location, 0);
                         textureCounter += 1;
                     }
@@ -677,7 +692,7 @@ class Graphics {
      */
     setShaderTexture(tex) {
         if (Engine.assert(this.shader.sampler2d != null, "This shader has no Sampler2D to set the texture to"))
-            this.shader.sampler2d.value = tex;
+            this.shader.sampler2d.value = tex.texture.webGLTexture;
     }
     /**
      * Draws a texture at the given position. If the current Shader does not take a texture, this will throw an error.
@@ -744,11 +759,11 @@ class Graphics {
         let col = (color || Color.white);
         // push vertices
         this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
-        this.push(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, col);
-        this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
-        this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
-        this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
-        this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col);
+        this.pushUnsafe(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, col);
+        this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+        this.pushUnsafe(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
+        this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+        this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col);
     }
     quad(posX, posY, width, height, color, origin, scale, rotation) {
         let left = 0;
@@ -785,11 +800,11 @@ class Graphics {
         let col = (color || Color.white);
         // push vertices
         this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
-        this.push(posX + this.topright.x, posY + this.topright.y, 0, 0, color);
-        this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
-        this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
-        this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
-        this.push(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
+        this.pushUnsafe(posX + this.topright.x, posY + this.topright.y, 0, 0, color);
+        this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
+        this.pushUnsafe(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
+        this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
+        this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
     }
     /**
      * Draws a rectangle with the Graphics.Pixel texture
@@ -799,11 +814,11 @@ class Graphics {
         this.setShaderTexture(this._pixel);
         let uv = this._pixelUVs;
         this.push(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
-        this.push(bounds.right, bounds.top, uv[1].x, uv[1].y, color);
-        this.push(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
-        this.push(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
-        this.push(bounds.left, bounds.bottom, uv[3].x, uv[3].y, color);
-        this.push(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
+        this.pushUnsafe(bounds.right, bounds.top, uv[1].x, uv[1].y, color);
+        this.pushUnsafe(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
+        this.pushUnsafe(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
+        this.pushUnsafe(bounds.left, bounds.bottom, uv[3].x, uv[3].y, color);
+        this.pushUnsafe(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
     }
     /**
      * Draws a triangle with the Graphics.Pixel texture
@@ -817,8 +832,8 @@ class Graphics {
             colC = colA;
         let uv = this._pixelUVs;
         this.push(a.x, a.y, uv[0].x, uv[0].y, colA);
-        this.push(b.x, b.y, uv[1].x, uv[1].y, colB);
-        this.push(c.x, c.y, uv[2].x, uv[2].y, colC);
+        this.pushUnsafe(b.x, b.y, uv[1].x, uv[1].y, colB);
+        this.pushUnsafe(c.x, c.y, uv[2].x, uv[2].y, colC);
     }
     /**
      * Draws a circle with the Graphics.Pixel texture
@@ -834,8 +849,8 @@ class Graphics {
             let angle = (i / steps) * Math.PI * 2;
             let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
             this.push(pos.x, pos.y, uv[0].x, uv[0].y, colorA);
-            this.push(last.x, last.y, uv[1].x, uv[1].y, colorB);
-            this.push(next.x, next.y, uv[2].x, uv[2].y, colorB);
+            this.pushUnsafe(last.x, last.y, uv[1].x, uv[1].y, colorB);
+            this.pushUnsafe(next.x, next.y, uv[2].x, uv[2].y, colorB);
             last = next;
         }
     }
@@ -848,8 +863,8 @@ class Graphics {
         if (colC == undefined)
             colC = colA;
         this.push(a.x, a.y, 0, 0, colA);
-        this.push(b.x, b.y, 0, 0, colB);
-        this.push(c.x, c.y, 0, 0, colC);
+        this.pushUnsafe(b.x, b.y, 0, 0, colB);
+        this.pushUnsafe(c.x, c.y, 0, 0, colC);
     }
     /**
      * Draws a rectangle. Best used with Shaders.Primitive
@@ -876,8 +891,8 @@ class Graphics {
             let angle = (i / steps) * Math.PI * 2;
             let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
             this.push(pos.x, pos.y, 0, 0, colorA);
-            this.push(last.x, last.y, 0, 0, colorB);
-            this.push(next.x, next.y, 0, 0, colorB);
+            this.pushUnsafe(last.x, last.y, 0, 0, colorB);
+            this.pushUnsafe(next.x, next.y, 0, 0, colorB);
             last = next;
         }
     }
@@ -2564,12 +2579,7 @@ class ShaderUniform {
     }
     get value() { return this._value; }
     set value(a) {
-        let willBeDirty = (this.value != a);
-        // special case for textures
-        if (this.type == ShaderUniformType.sampler2D && this._value != null && a != null)
-            if (this._value.texture.webGLTexture == a.texture.webGLTexture)
-                willBeDirty = false;
-        if (willBeDirty) {
+        if (this.value != a) {
             this._value = a;
             this._shader.dirty = true;
             this.dirty = true;

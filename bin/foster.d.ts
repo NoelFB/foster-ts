@@ -281,6 +281,15 @@ declare class Graphics {
      */
     push(x: number, y: number, u: number, v: number, color?: Color): void;
     /**
+     * Same as Graphics.push, but this method assumes the shader was NOT modified. Don't use this unless you know what you're doing
+     * @param x 	X position of the vertex
+     * @param y		Y position of the vertex
+     * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+     * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+     * @param color optional color for the vertex
+     */
+    pushUnsafe(x: number, y: number, u: number, v: number, color?: Color): void;
+    /**
      * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
      */
     pushList(pos: Vector[], uv: Vector[], color: Color[]): void;

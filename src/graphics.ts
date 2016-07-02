@@ -178,9 +178,25 @@ class Graphics
 	public push(x:number, y:number, u:number, v:number, color?:Color)
 	{
 		// shader was changed
-		this.check();
+		this.checkState();
 		
 		// append
+		this.vertices.push(x, y);
+		this.uvs.push(u, v);
+		if (color != undefined && color != null)
+			this.colors.push(color.r, color.g, color.b, color.a);
+	}
+
+	/**
+	 * Same as Graphics.push, but this method assumes the shader was NOT modified. Don't use this unless you know what you're doing
+	 * @param x 	X position of the vertex
+	 * @param y		Y position of the vertex
+	 * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+	 * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+	 * @param color optional color for the vertex
+	 */
+	public pushUnsafe(x:number, y:number, u:number, v:number, color?:Color)
+	{
 		this.vertices.push(x, y);
 		this.uvs.push(u, v);
 		if (color != undefined && color != null)
@@ -192,7 +208,7 @@ class Graphics
 	 */
 	public pushList(pos:Vector[], uv:Vector[], color:Color[])
 	{
-		this.check();
+		this.checkState();
 		
 		for (let i = 0; i < pos.length; i ++)
 		{
@@ -210,7 +226,7 @@ class Graphics
 	/**
 	 * Checks if the shader was modified, and if so, flushes the current vertices & starts a new draw
 	 */
-	public check()
+	public checkState()
 	{
 		if (this.nextShader != null || this.currentShader.dirty)
 		{
@@ -253,7 +269,7 @@ class Graphics
 					else if (uniform.type == ShaderUniformType.sampler2D)
 					{
 						this.gl.activeTexture((<any>this.gl)["TEXTURE" + textureCounter]);
-						this.gl.bindTexture(this.gl.TEXTURE_2D, (uniform.value as Texture).texture.webGLTexture);
+						this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
 						this.gl.uniform1i(location, 0);
 						textureCounter += 1;
 					}
@@ -269,7 +285,6 @@ class Graphics
 				}
 			}
 
-			
 			this.currentShader.dirty = false;
 		}
 	}
@@ -329,7 +344,7 @@ class Graphics
 	public setShaderTexture(tex:Texture):void
 	{
 		if (Engine.assert(this.shader.sampler2d != null, "This shader has no Sampler2D to set the texture to"))
-			this.shader.sampler2d.value = tex;
+			this.shader.sampler2d.value = tex.texture.webGLTexture;
 	}
 	
 	/**
@@ -414,11 +429,11 @@ class Graphics
 
 		// push vertices
 		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
-		this.push(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, col);
-		this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
-		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
-		this.push(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
-		this.push(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col);
+		this.pushUnsafe(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, col);
+		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+		this.pushUnsafe(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
+		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+		this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col);
 	}
 	
 	public quad(posX:number, posY:number, width:number, height:number, color?:Color, origin?:Vector, scale?:Vector, rotation?:number)
@@ -466,11 +481,11 @@ class Graphics
 		
 		// push vertices
 		this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
-		this.push(posX + this.topright.x, posY + this.topright.y, 0, 0, color);
-		this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
-		this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
-		this.push(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
-		this.push(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
+		this.pushUnsafe(posX + this.topright.x, posY + this.topright.y, 0, 0, color);
+		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
+		this.pushUnsafe(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
+		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
+		this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
 	}
 	
 	/**
@@ -483,11 +498,11 @@ class Graphics
 			
 		let uv = this._pixelUVs;
 		this.push(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
-		this.push(bounds.right, bounds.top, uv[1].x, uv[1].y, color);
-		this.push(bounds.right, bounds.bottom,uv[2].x, uv[2].y, color);
-		this.push(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
-		this.push(bounds.left, bounds.bottom, uv[3].x, uv[3].y, color);
-		this.push(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
+		this.pushUnsafe(bounds.right, bounds.top, uv[1].x, uv[1].y, color);
+		this.pushUnsafe(bounds.right, bounds.bottom,uv[2].x, uv[2].y, color);
+		this.pushUnsafe(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
+		this.pushUnsafe(bounds.left, bounds.bottom, uv[3].x, uv[3].y, color);
+		this.pushUnsafe(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
 	}
 	
 	/**
@@ -503,8 +518,8 @@ class Graphics
 		
 		let uv = this._pixelUVs;
 		this.push(a.x, a.y, uv[0].x, uv[0].y, colA);
-		this.push(b.x, b.y, uv[1].x, uv[1].y, colB);
-		this.push(c.x, c.y, uv[2].x, uv[2].y, colC);
+		this.pushUnsafe(b.x, b.y, uv[1].x, uv[1].y, colB);
+		this.pushUnsafe(c.x, c.y, uv[2].x, uv[2].y, colC);
 	}
 	
 	/**
@@ -517,6 +532,8 @@ class Graphics
 			
 		if (colorB == undefined)
 			colorB = colorA;
+
+		this.checkState();
 			
 		let uv = this._pixelUVs;
 		let last = new Vector(pos.x + rad, pos.y);
@@ -525,9 +542,9 @@ class Graphics
 			let angle = (i / steps) * Math.PI * 2;
 			let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
 			
-			this.push(pos.x, pos.y, uv[0].x, uv[0].y, colorA);
-			this.push(last.x, last.y, uv[1].x, uv[1].y, colorB);
-			this.push(next.x, next.y, uv[2].x, uv[2].y, colorB);
+			this.pushUnsafe(pos.x, pos.y, uv[0].x, uv[0].y, colorA);
+			this.pushUnsafe(last.x, last.y, uv[1].x, uv[1].y, colorB);
+			this.pushUnsafe(next.x, next.y, uv[2].x, uv[2].y, colorB);
 			last  = next;
 		}
 	}
@@ -541,8 +558,8 @@ class Graphics
 		if (colC == undefined) colC = colA;
 		
 		this.push(a.x, a.y, 0, 0, colA);
-		this.push(b.x, b.y, 0, 0, colB);
-		this.push(c.x, c.y, 0, 0, colC);
+		this.pushUnsafe(b.x, b.y, 0, 0, colB);
+		this.pushUnsafe(c.x, c.y, 0, 0, colC);
 	}
 	
 	/**
@@ -569,7 +586,9 @@ class Graphics
 	{		
 		if (colorB == undefined)
 			colorB = colorA;
-			
+		
+		this.checkState();
+
 		let uv = this._pixelUVs;
 		let last = new Vector(pos.x + rad, pos.y);
 		for (let i = 1; i <= steps; i ++)
@@ -577,9 +596,9 @@ class Graphics
 			let angle = (i / steps) * Math.PI * 2;
 			let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
 			
-			this.push(pos.x, pos.y, 0, 0, colorA);
-			this.push(last.x, last.y, 0, 0, colorB);
-			this.push(next.x, next.y, 0, 0, colorB);
+			this.pushUnsafe(pos.x, pos.y, 0, 0, colorA);
+			this.pushUnsafe(last.x, last.y, 0, 0, colorB);
+			this.pushUnsafe(next.x, next.y, 0, 0, colorB);
 			last  = next;
 		}
 	}
