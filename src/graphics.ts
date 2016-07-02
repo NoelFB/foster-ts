@@ -1,11 +1,11 @@
 class Graphics
 {
 	// core
-    private engine:Engine;
-    private screen:HTMLCanvasElement;
+	private engine:Engine;
+	private screen:HTMLCanvasElement;
 	private screenContext:CanvasRenderingContext2D;
-    private buffer:HTMLCanvasElement;
-    private bufferContext:WebGLRenderingContext;
+	private buffer:HTMLCanvasElement;
+	private bufferContext:WebGLRenderingContext;
 	public get gl():WebGLRenderingContext { return this.bufferContext; }
 	public get screenCanvas():HTMLCanvasElement { return this.screen; }
 	
@@ -63,53 +63,53 @@ class Graphics
 	public clearColor:Color = new Color(0.1, 0.1, 0.3, 1);
 	public drawCalls:number = 0;
    
-    /**
+	/**
 	 * Creates the Engine.Graphics
 	 */
-    constructor(engine:Engine)
-    {
-        this.engine = engine;
-        
-        // create the screen
-        this.screen = document.createElement("canvas");
+	constructor(engine:Engine)
+	{
+		this.engine = engine;
+
+		// create the screen
+		this.screen = document.createElement("canvas");
 		this.screenContext = this.screen.getContext('2d');
-        Engine.root.appendChild(this.screen);
-        
-        // create the buffer
-        this.buffer = document.createElement("canvas");
-        this.bufferContext = this.buffer.getContext("experimental-webgl", 
+		Engine.root.appendChild(this.screen);
+
+		// create the buffer
+		this.buffer = document.createElement("canvas");
+		this.bufferContext = this.buffer.getContext("experimental-webgl", 
 		{
 			alpha: false, 
 			antialias: false
 		}) as WebGLRenderingContext;
-		
+
 		this.gl.enable(this.gl.BLEND);
 		this.gl.disable(this.gl.DEPTH_TEST);
 		this.gl.disable(this.gl.CULL_FACE);
-        this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
-		
+		this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
+
 		this.vertexBuffer = this.gl.createBuffer();
 		this.uvBuffer = this.gl.createBuffer();
 		this.colorBuffer = this.gl.createBuffer();
-        
+
 		this.resize();
-    }
+	}
     
 	/**
 	 * Called when the Game resolution changes
 	 */
-    public resize():void
-    {
+	public resize():void
+	{
 		// buffer
-        this.buffer.width = Engine.width;
-        this.buffer.height = Engine.height;
-        this.gl.viewport(0, 0, this.buffer.width, this.buffer.height);
-		
+		this.buffer.width = Engine.width;
+		this.buffer.height = Engine.height;
+		this.gl.viewport(0, 0, this.buffer.width, this.buffer.height);
+
 		// orthographic matrix
 		this.orthoMatrix = new Matrix();
 		this.orthoMatrix.translate(-1, 1);
 		this.orthoMatrix.scale(1 / this.buffer.width * 2, -1 / this.buffer.height * 2);
-    }
+	}
 	
 	/**
 	 * Updates the Graphics
@@ -130,7 +130,7 @@ class Graphics
 	public clear(color:Color)
 	{
 		this.gl.clearColor(color.r, color.g, color.b, color.a);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 	}
 	
 	/**
