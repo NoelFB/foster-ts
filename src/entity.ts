@@ -1,29 +1,64 @@
 class Entity
 {
+	/**
+	 * Position of the Entity in the Scene
+	 */
 	public position:Vector = new Vector(0, 0);
+
+	/**
+	 * X position of the Entity in the Scene
+	 */
 	public get x():number { return this.position.x; }
 	public set x(val:number) { this.position.x = val; }
+
+	/**
+	 * Y position of the Entity in the Scene
+	 */
 	public get y():number { return this.position.y; }
 	public set y(val:number) { this.position.y = val; }
 	
+	/**
+	 * If the Entity is visible. If false, Entity.render is not called
+	 */
 	public visible:boolean = true;
+
+	/**
+	 * If the Entity is active. If false, Entity.update is not called
+	 */
 	public active:boolean = true;
+
+	/**
+	 * If the Entity has been instantiated yet (has it ever been added to a scene)
+	 */
 	public instantiated:boolean = false;
 	
+	/**
+	 * The current scene that the Entity is in
+	 */
 	public scene:Scene;
+
+	/**
+	 * List of all Entity components
+	 */
 	public components:Component[] = [];
+
+	/**
+	 * List of all Groups the Entity is in
+	 */
 	public groups:string[] = [];
 	
 	public _depth:number = 0;
 	public _nextDepth:number = null;
 	
+	/**
+	 * The Render-Depth of the Entity (lower = rendered later)
+	 */
 	get depth() 
 	{
 		if (this._nextDepth != null)
 			return this._nextDepth; 
 		return this._depth; 
 	}
-	
 	set depth(val)
 	{
 		if (this.scene != null)
@@ -113,6 +148,9 @@ class Entity
 				this.components[i].debugRender(camera);
 	}
 
+	/**
+	 * Adds a Component to this Entity
+	 */
 	add(component:Component):void
 	{
 		this.components.push(component);
@@ -123,6 +161,9 @@ class Entity
 			this.scene._trackComponent(component);
 	}
 
+	/**
+	 * Removes a Components from this Entity
+	 */
 	remove(component:Component):void
 	{
 		let index = this.components.indexOf(component);
@@ -136,12 +177,18 @@ class Entity
 		}
 	}
 
+	/**
+	 * Removes all Components from this Entity
+	 */
 	removeAll()
 	{
 		for (let i = this.components.length - 1; i >= 0; i --)
 			this.remove(this.components[i]);
 	}
 	
+	/**
+	 * Finds the first component in this Entity of the given Class
+	 */
 	find(className:any):any
 	{
 		for (let i = 0; i < this.components.length; i ++)
@@ -150,6 +197,9 @@ class Entity
 		return null;
 	}
 
+	/**
+	 * Finds all components in this Entity of the given Class
+	 */
 	findAll(componentClassType:any):any[]
 	{
 		let list:any = [];
@@ -159,6 +209,9 @@ class Entity
 		return list;
 	}
 
+	/**
+	 * Groups this entity into the given Group
+	 */
 	group(groupType:string):void
 	{
 		this.groups.push(groupType);
@@ -166,6 +219,9 @@ class Entity
 			this.scene._groupEntity(this, groupType);
 	}
 
+	/**
+	 * Removes this Entity from the given Group
+	 */
 	ungroup(groupType:string):void
 	{
 		let index = this.groups.indexOf(groupType);
@@ -177,6 +233,9 @@ class Entity
 		}
 	}
 
+	/**
+	 * Checks if this Entity is in the given Group
+	 */
 	ingroup(groupType:string):boolean
 	{
 		return (this.groups.indexOf(groupType) >= 0);

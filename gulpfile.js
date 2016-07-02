@@ -22,7 +22,7 @@ var gulp = require("gulp"),
 	gulp.task("default", function()
 	{
 		gulp.start(["ts"]);
-	})
+	});
 }
 
 // compiling sample_game

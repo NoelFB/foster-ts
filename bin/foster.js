@@ -52,31 +52,50 @@ class Engine {
             this.client = Client.Desktop;
         this.startTime = Date.now();
     }
-    // properties
+    /**
+     * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
+     */
     static get root() { return Engine.instance.root; }
+    /**
+     * Current Client (Client.Desktop if in Electron and Client.Web if in the browser)
+     */
     static get client() { return Engine.instance.client; }
+    /**
+     * The current game Scene
+     */
     static get scene() { return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene); }
     static set scene(val) { Engine.instance.nextScene = val; }
+    /**
+     * Gets the Game Width, before being scaled up / down to fit in the screen
+     */
     static get width() { return Engine.instance.width; }
+    /**
+     * Gets the Game Height, before being scaled up / down to fit in the screen
+     */
     static get height() { return Engine.instance.height; }
+    /**
+     * Toggles Debug Mode, which shows hitboxes and allows entities to be dragged around
+     */
     static get debugMode() { return Engine.instance.debuggerEnabled; }
     static set debugMode(v) { Engine.instance.debuggerEnabled = v; }
-    // time
+    /**
+     * Delta Time (time, in seconds, since the last frame)
+     */
     static get delta() { return Engine.instance.dt; }
+    /**
+     * Total elapsed game time (time, in seconds, since the Engine was started)
+     */
     static get elapsed() { return Engine.instance.elapsed; }
-    // graphics
+    /**
+     * Gets the current Engine graphics (used for all rendering)
+     */
     static get graphics() { return Engine.instance.graphics; }
-    static resize(width, height) {
-        Engine.instance.width = width;
-        Engine.instance.height = height;
-        Engine.instance.graphics.resize();
-    }
     /**
      * Starts up the Game Engine
      * @param title 	Window Title
      * @param width 	Game Width
      * @param height 	Game Height
-     * @param scale 	Scales the Window (on Desktop) to width*scale and height*scale
+     * @param scale 	Scales the Window (on Desktop) to width * scale and height * scale
      * @param ready 	Callback when the Engine is ready
      */
     static start(title, width, height, scale, ready) {
@@ -93,7 +112,7 @@ class Engine {
             var c = String.fromCharCode(0x25cf);
             console.log("%c " + c + " ENGINE START " + c + " ", "background: #222; color: #ff44aa;");
             Engine.instance.root = document.getElementsByTagName("body")[0];
-            // graphics
+            // init
             Engine.instance.graphics = new Graphics(Engine.instance);
             Engine.resize(width, height);
             Shaders.init();
@@ -106,6 +125,19 @@ class Engine {
                 ready();
         };
     }
+    /**
+     * Resizes the game to the given size
+     * @param width 	new Game Width
+     * @param height 	new Game Height
+     */
+    static resize(width, height) {
+        Engine.instance.width = width;
+        Engine.instance.height = height;
+        Engine.instance.graphics.resize();
+    }
+    /**
+     * Checks that the given value is true, otherwise throws an error
+     */
     static assert(value, message) {
         if (!value)
             throw message;
@@ -150,19 +182,46 @@ Engine.instance = null;
 Engine.started = false;
 class Entity {
     constructor() {
+        /**
+         * Position of the Entity in the Scene
+         */
         this.position = new Vector(0, 0);
+        /**
+         * If the Entity is visible. If false, Entity.render is not called
+         */
         this.visible = true;
+        /**
+         * If the Entity is active. If false, Entity.update is not called
+         */
         this.active = true;
+        /**
+         * If the Entity has been instantiated yet (has it ever been added to a scene)
+         */
         this.instantiated = false;
+        /**
+         * List of all Entity components
+         */
         this.components = [];
+        /**
+         * List of all Groups the Entity is in
+         */
         this.groups = [];
         this._depth = 0;
         this._nextDepth = null;
     }
+    /**
+     * X position of the Entity in the Scene
+     */
     get x() { return this.position.x; }
     set x(val) { this.position.x = val; }
+    /**
+     * Y position of the Entity in the Scene
+     */
     get y() { return this.position.y; }
     set y(val) { this.position.y = val; }
+    /**
+     * The Render-Depth of the Entity (lower = rendered later)
+     */
     get depth() {
         if (this._nextDepth != null)
             return this._nextDepth;
@@ -227,6 +286,9 @@ class Entity {
             if (this.components[i].visible)
                 this.components[i].debugRender(camera);
     }
+    /**
+     * Adds a Component to this Entity
+     */
     add(component) {
         this.components.push(component);
         component.entity = this;
@@ -234,6 +296,9 @@ class Entity {
         if (this.scene != null)
             this.scene._trackComponent(component);
     }
+    /**
+     * Removes a Components from this Entity
+     */
     remove(component) {
         let index = this.components.indexOf(component);
         if (index >= 0) {
@@ -244,16 +309,25 @@ class Entity {
                 this.scene._untrackComponent(component);
         }
     }
+    /**
+     * Removes all Components from this Entity
+     */
     removeAll() {
         for (let i = this.components.length - 1; i >= 0; i--)
             this.remove(this.components[i]);
     }
+    /**
+     * Finds the first component in this Entity of the given Class
+     */
     find(className) {
         for (let i = 0; i < this.components.length; i++)
             if (this.components[i] instanceof className)
                 return this.components[i];
         return null;
     }
+    /**
+     * Finds all components in this Entity of the given Class
+     */
     findAll(componentClassType) {
         let list = [];
         for (let i = 0; i < this.components.length; i++)
@@ -261,11 +335,17 @@ class Entity {
                 list.push(this.components[i]);
         return list;
     }
+    /**
+     * Groups this entity into the given Group
+     */
     group(groupType) {
         this.groups.push(groupType);
         if (this.scene != null)
             this.scene._groupEntity(this, groupType);
     }
+    /**
+     * Removes this Entity from the given Group
+     */
     ungroup(groupType) {
         let index = this.groups.indexOf(groupType);
         if (index >= 0) {
@@ -274,6 +354,9 @@ class Entity {
                 this.scene._ungroupEntity(this, groupType);
         }
     }
+    /**
+     * Checks if this Entity is in the given Group
+     */
     ingroup(groupType) {
         return (this.groups.indexOf(groupType) >= 0);
     }
@@ -822,9 +905,21 @@ class Renderer {
 }
 class Scene {
     constructor() {
+        /**
+         * The Camera in the Scene
+         */
         this.camera = new Camera();
+        /**
+         * A list of all the Entities in the Scene
+         */
         this.entities = [];
+        /**
+         * A list of all the Renderers in the Scene
+         */
         this.renderers = [];
+        /**
+         * List of entities about to be sorted by depth
+         */
         this.sorting = [];
         this.colliders = {};
         this.groups = {};
@@ -832,10 +927,19 @@ class Scene {
         this.camera = new Camera();
         this.addRenderer(new SpriteRenderer());
     }
+    /**
+     * Called when this Scene begins (after Engine.scene has been set)
+     */
     begin() {
     }
+    /**
+     * Called when this Scene ends (Engine.scene is going to a new scene)
+     */
     ended() {
     }
+    /**
+     * Called every frame and updates the Scene
+     */
     update() {
         // update entities
         let lengthWas = this.entities.length;
@@ -854,6 +958,9 @@ class Scene {
             if (this.renderers[i].visible)
                 this.renderers[i].update();
     }
+    /**
+     * Called when the Scene should be rendered, and renders each of its Renderers
+     */
     render() {
         // sort entities
         for (let i = 0; i < this.sorting.length; i++) {
@@ -886,6 +993,11 @@ class Scene {
                     this.entities[i].debugRender(this.camera);
         }
     }
+    /**
+     * Adds the given Entity to this Scene
+     * @param entity 	The Entity to add
+     * @param position 	The optional position to add the Entity at
+     */
     add(entity, position) {
         entity.scene = this;
         this._insertEntityInto(entity, this.entities, false);
@@ -930,11 +1042,19 @@ class Scene {
         this.cache[bucket].push(entity);
         entity.recycled();
     }
+    /**
+     * Removes the given Entity from the scene
+     * @param entity 	The entity to remove
+     */
     remove(entity) {
         let index = this.entities.indexOf(entity);
         if (index >= 0)
             this.removeAt(index);
     }
+    /**
+     * Removes an Entity from Scene.entities at the given index
+     * @param index 	The Index to remove at
+     */
     removeAt(index) {
         let entity = this.entities[index];
         entity.removed();
@@ -948,10 +1068,17 @@ class Scene {
         entity.scene = null;
         this.entities.splice(index, 1);
     }
+    /**
+     * Removes every Entity from the Scene
+     */
     removeAll() {
         for (let i = this.entities.length - 1; i >= 0; i--)
             this.entities.splice(i, 1);
     }
+    /**
+     * Destroys the given entity (calls Entity.destroy, sets Entity.instantiated to false)
+     * @param entity 	The entity to destroy
+     */
     destroy(entity) {
         if (entity.scene != null)
             this.remove(entity);
@@ -2701,177 +2828,6 @@ class Hitgrid extends Collider {
         }
     }
 }
-/// <reference path="./../../component.ts"/>
-class Graphic extends Component {
-    constructor(texture, position) {
-        super();
-        this.scale = new Vector(1, 1);
-        this.origin = new Vector(0, 0);
-        this.rotation = 0;
-        this.flipX = false;
-        this.flipY = false;
-        this.color = Color.white;
-        this.alpha = 1;
-        if (texture != null) {
-            this.texture = texture;
-            this.crop = new Rectangle(0, 0, texture.width, texture.height);
-        }
-        if (position)
-            this.position = position;
-    }
-    get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
-    get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
-    render(camera) {
-        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha, Graphic.tempColor), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
-    }
-}
-Graphic.tempColor = new Color();
-/// <reference path="./../../component.ts"/>
-class Rectsprite extends Component {
-    constructor(width, height, color) {
-        super();
-        this.size = new Vector(0, 0);
-        this.scale = new Vector(1, 1);
-        this.origin = new Vector(0, 0);
-        this.rotation = 0;
-        this.color = Color.white;
-        this.alpha = 1;
-        this.size.x = width;
-        this.size.y = height;
-        this.color = color || Color.white;
-    }
-    get width() { return this.size.x; }
-    set width(val) { this.size.x = val; }
-    get height() { return this.size.y; }
-    set height(val) { this.size.y = val; }
-    render() {
-        // draw with a pixel texture (shader is using textures)
-        if (Engine.graphics.shader.sampler2d != null && Engine.graphics.pixel != null) {
-            Engine.graphics.texture(Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, this.color.mult(this.alpha), new Vector(this.origin.x / this.size.x, this.origin.y / this.size.y), Vector.mult(this.size, this.scale), this.rotation);
-        }
-        else {
-            Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, this.color.mult(this.alpha), this.origin, this.scale, this.rotation);
-        }
-    }
-}
-/// <reference path="./graphic.ts"/>
-class Sprite extends Graphic {
-    constructor(animation) {
-        super(null);
-        this._animation = null;
-        this._playing = null;
-        this._frame = 0;
-        this.rate = 1;
-        Engine.assert(AnimationBank.has(animation), "Missing animation '" + animation + "'!");
-        this._animation = AnimationBank.get(animation);
-        this.texture = this._animation.first.frames[0];
-    }
-    get animation() { return this._animation; }
-    get playing() { return this._playing; }
-    get frame() { return Math.floor(this._frame); }
-    play(name, restart) {
-        if (this.animation == null)
-            return;
-        let next = this.animation.get(name);
-        if (next != null && (this.playing != next || restart)) {
-            this._playing = next;
-            this._frame = 0;
-            this.active = true;
-            if (this._playing.frames.length > 0)
-                this.texture = this._playing.frames[0];
-        }
-    }
-    has(name) {
-        return this.animation != null && this.animation.has(name);
-    }
-    update() {
-        if (this.playing != null) {
-            this._frame += this.playing.speed * this.rate * Engine.delta;
-            if (this.frame >= this.playing.frames.length) {
-                // loop this animation
-                if (this.playing.loops) {
-                    while (this._frame >= this.playing.frames.length)
-                        this._frame -= this.playing.frames.length;
-                }
-                else if (this.playing.goto != null && this.playing.goto.length > 0) {
-                    let next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
-                    this.play(next, true);
-                }
-                else {
-                    this.active = false;
-                    this._frame = this.playing.frames.length - 1;
-                }
-            }
-            if (this.playing != null)
-                this.texture = this.playing.frames[this.frame];
-        }
-    }
-    render(camera) {
-        if (this.texture != null)
-            super.render(camera);
-    }
-}
-/// <reference path="./../../component.ts"/>
-class Tilemap extends Component {
-    constructor(texture, tileWidth, tileHeight) {
-        super();
-        this.map = {};
-        this.crop = new Rectangle();
-        this.texture = texture;
-        this.tileWidth = tileWidth;
-        this.tileHeight = tileHeight;
-        this.tileColumns = this.texture.width / this.tileWidth;
-    }
-    set(tileX, tileY, mapX, mapY, mapWidth, mapHeight) {
-        let tileIndex = tileX + tileY * this.tileColumns;
-        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
-            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
-                if (this.map[x] == undefined)
-                    this.map[x] = {};
-                this.map[x][y] = tileIndex;
-            }
-    }
-    has(mapX, mapY) {
-        return (this.map[mapX] != undefined && this.map[mapX][mapY] != undefined);
-    }
-    get(mapX, mapY) {
-        if (this.has(mapX, mapY)) {
-            var index = this.map[mapX][mapY];
-            return new Vector(index % this.tileColumns, Math.floor(index / this.tileColumns));
-        }
-        return null;
-    }
-    clear(mapX, mapY, mapWidth, mapHeight) {
-        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
-            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
-                if (this.map[x] != undefined && this.map[x][y] != undefined)
-                    delete this.map[x][y];
-            }
-    }
-    render(camera) {
-        // get bounds of rendering
-        let bounds = camera.extents;
-        let pos = this.scenePosition;
-        let left = Math.floor((bounds.left - pos.x) / this.tileWidth) - 1;
-        let right = Math.ceil((bounds.right - pos.x) / this.tileWidth) + 1;
-        let top = Math.floor((bounds.top - pos.y) / this.tileHeight) - 1;
-        let bottom = Math.ceil((bounds.bottom - pos.y) / this.tileHeight) + 1;
-        // tile texture cropping
-        this.crop.width = this.tileWidth;
-        this.crop.height = this.tileHeight;
-        for (let tx = left; tx < right; tx++)
-            for (let ty = top; ty < bottom; ty++) {
-                if (this.map[tx] == undefined)
-                    continue;
-                let index = this.map[tx][ty];
-                if (index != undefined) {
-                    this.crop.x = (index % this.tileColumns) * this.tileWidth;
-                    this.crop.y = Math.floor(index / this.tileColumns) * this.tileHeight;
-                    Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop);
-                }
-            }
-    }
-}
 class Particle {
 }
 /// <reference path="./../../component.ts"/>
@@ -3145,5 +3101,176 @@ class ParticleTemplate {
         this.durationBase = Base;
         this.durationRange = Range || 0;
         return this;
+    }
+}
+/// <reference path="./../../component.ts"/>
+class Graphic extends Component {
+    constructor(texture, position) {
+        super();
+        this.scale = new Vector(1, 1);
+        this.origin = new Vector(0, 0);
+        this.rotation = 0;
+        this.flipX = false;
+        this.flipY = false;
+        this.color = Color.white;
+        this.alpha = 1;
+        if (texture != null) {
+            this.texture = texture;
+            this.crop = new Rectangle(0, 0, texture.width, texture.height);
+        }
+        if (position)
+            this.position = position;
+    }
+    get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
+    get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
+    render(camera) {
+        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha, Graphic.tempColor), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
+    }
+}
+Graphic.tempColor = new Color();
+/// <reference path="./../../component.ts"/>
+class Rectsprite extends Component {
+    constructor(width, height, color) {
+        super();
+        this.size = new Vector(0, 0);
+        this.scale = new Vector(1, 1);
+        this.origin = new Vector(0, 0);
+        this.rotation = 0;
+        this.color = Color.white;
+        this.alpha = 1;
+        this.size.x = width;
+        this.size.y = height;
+        this.color = color || Color.white;
+    }
+    get width() { return this.size.x; }
+    set width(val) { this.size.x = val; }
+    get height() { return this.size.y; }
+    set height(val) { this.size.y = val; }
+    render() {
+        // draw with a pixel texture (shader is using textures)
+        if (Engine.graphics.shader.sampler2d != null && Engine.graphics.pixel != null) {
+            Engine.graphics.texture(Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, this.color.mult(this.alpha), new Vector(this.origin.x / this.size.x, this.origin.y / this.size.y), Vector.mult(this.size, this.scale), this.rotation);
+        }
+        else {
+            Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, this.color.mult(this.alpha), this.origin, this.scale, this.rotation);
+        }
+    }
+}
+/// <reference path="./graphic.ts"/>
+class Sprite extends Graphic {
+    constructor(animation) {
+        super(null);
+        this._animation = null;
+        this._playing = null;
+        this._frame = 0;
+        this.rate = 1;
+        Engine.assert(AnimationBank.has(animation), "Missing animation '" + animation + "'!");
+        this._animation = AnimationBank.get(animation);
+        this.texture = this._animation.first.frames[0];
+    }
+    get animation() { return this._animation; }
+    get playing() { return this._playing; }
+    get frame() { return Math.floor(this._frame); }
+    play(name, restart) {
+        if (this.animation == null)
+            return;
+        let next = this.animation.get(name);
+        if (next != null && (this.playing != next || restart)) {
+            this._playing = next;
+            this._frame = 0;
+            this.active = true;
+            if (this._playing.frames.length > 0)
+                this.texture = this._playing.frames[0];
+        }
+    }
+    has(name) {
+        return this.animation != null && this.animation.has(name);
+    }
+    update() {
+        if (this.playing != null) {
+            this._frame += this.playing.speed * this.rate * Engine.delta;
+            if (this.frame >= this.playing.frames.length) {
+                // loop this animation
+                if (this.playing.loops) {
+                    while (this._frame >= this.playing.frames.length)
+                        this._frame -= this.playing.frames.length;
+                }
+                else if (this.playing.goto != null && this.playing.goto.length > 0) {
+                    let next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
+                    this.play(next, true);
+                }
+                else {
+                    this.active = false;
+                    this._frame = this.playing.frames.length - 1;
+                }
+            }
+            if (this.playing != null)
+                this.texture = this.playing.frames[this.frame];
+        }
+    }
+    render(camera) {
+        if (this.texture != null)
+            super.render(camera);
+    }
+}
+/// <reference path="./../../component.ts"/>
+class Tilemap extends Component {
+    constructor(texture, tileWidth, tileHeight) {
+        super();
+        this.map = {};
+        this.crop = new Rectangle();
+        this.texture = texture;
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
+        this.tileColumns = this.texture.width / this.tileWidth;
+    }
+    set(tileX, tileY, mapX, mapY, mapWidth, mapHeight) {
+        let tileIndex = tileX + tileY * this.tileColumns;
+        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
+            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
+                if (this.map[x] == undefined)
+                    this.map[x] = {};
+                this.map[x][y] = tileIndex;
+            }
+    }
+    has(mapX, mapY) {
+        return (this.map[mapX] != undefined && this.map[mapX][mapY] != undefined);
+    }
+    get(mapX, mapY) {
+        if (this.has(mapX, mapY)) {
+            var index = this.map[mapX][mapY];
+            return new Vector(index % this.tileColumns, Math.floor(index / this.tileColumns));
+        }
+        return null;
+    }
+    clear(mapX, mapY, mapWidth, mapHeight) {
+        for (let x = mapX; x < mapX + (mapWidth || 1); x++)
+            for (let y = mapY; y < mapY + (mapHeight || 1); y++) {
+                if (this.map[x] != undefined && this.map[x][y] != undefined)
+                    delete this.map[x][y];
+            }
+    }
+    render(camera) {
+        // get bounds of rendering
+        let bounds = camera.extents;
+        let pos = this.scenePosition;
+        let left = Math.floor((bounds.left - pos.x) / this.tileWidth) - 1;
+        let right = Math.ceil((bounds.right - pos.x) / this.tileWidth) + 1;
+        let top = Math.floor((bounds.top - pos.y) / this.tileHeight) - 1;
+        let bottom = Math.ceil((bounds.bottom - pos.y) / this.tileHeight) + 1;
+        // tile texture cropping
+        this.crop.width = this.tileWidth;
+        this.crop.height = this.tileHeight;
+        for (let tx = left; tx < right; tx++)
+            for (let ty = top; ty < bottom; ty++) {
+                if (this.map[tx] == undefined)
+                    continue;
+                let index = this.map[tx][ty];
+                if (index != undefined) {
+                    this.crop.x = (index % this.tileColumns) * this.tileWidth;
+                    this.crop.y = Math.floor(index / this.tileColumns) * this.tileHeight;
+                    Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop);
+                }
+            }
     }
 }

@@ -22,28 +22,63 @@ declare enum Client {
     Web = 1,
 }
 declare class Engine {
-    private static instance;
-    private static started;
+    /**
+     * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
+     */
     static root: HTMLElement;
+    /**
+     * Current Client (Client.Desktop if in Electron and Client.Web if in the browser)
+     */
     static client: Client;
+    /**
+     * The current game Scene
+     */
     static scene: Scene;
+    /**
+     * Gets the Game Width, before being scaled up / down to fit in the screen
+     */
     static width: number;
+    /**
+     * Gets the Game Height, before being scaled up / down to fit in the screen
+     */
     static height: number;
+    /**
+     * Toggles Debug Mode, which shows hitboxes and allows entities to be dragged around
+     */
     static debugMode: boolean;
+    /**
+     * Delta Time (time, in seconds, since the last frame)
+     */
     static delta: number;
+    /**
+     * Total elapsed game time (time, in seconds, since the Engine was started)
+     */
     static elapsed: number;
+    /**
+     * Gets the current Engine graphics (used for all rendering)
+     */
     static graphics: Graphics;
-    static resize(width: number, height: number): void;
     /**
      * Starts up the Game Engine
      * @param title 	Window Title
      * @param width 	Game Width
      * @param height 	Game Height
-     * @param scale 	Scales the Window (on Desktop) to width*scale and height*scale
+     * @param scale 	Scales the Window (on Desktop) to width * scale and height * scale
      * @param ready 	Callback when the Engine is ready
      */
-    static start(title: string, width: number, height: number, scale: number, ready?: () => void): void;
+    static start(title: string, width: number, height: number, scale: number, ready: () => void): void;
+    /**
+     * Resizes the game to the given size
+     * @param width 	new Game Width
+     * @param height 	new Game Height
+     */
+    static resize(width: number, height: number): void;
+    /**
+     * Checks that the given value is true, otherwise throws an error
+     */
     static assert(value: boolean, message: string): boolean;
+    private static instance;
+    private static started;
     private client;
     private scene;
     private nextScene;
@@ -60,17 +95,47 @@ declare class Engine {
     private step();
 }
 declare class Entity {
+    /**
+     * Position of the Entity in the Scene
+     */
     position: Vector;
+    /**
+     * X position of the Entity in the Scene
+     */
     x: number;
+    /**
+     * Y position of the Entity in the Scene
+     */
     y: number;
+    /**
+     * If the Entity is visible. If false, Entity.render is not called
+     */
     visible: boolean;
+    /**
+     * If the Entity is active. If false, Entity.update is not called
+     */
     active: boolean;
+    /**
+     * If the Entity has been instantiated yet (has it ever been added to a scene)
+     */
     instantiated: boolean;
+    /**
+     * The current scene that the Entity is in
+     */
     scene: Scene;
+    /**
+     * List of all Entity components
+     */
     components: Component[];
+    /**
+     * List of all Groups the Entity is in
+     */
     groups: string[];
     _depth: number;
     _nextDepth: number;
+    /**
+     * The Render-Depth of the Entity (lower = rendered later)
+     */
     depth: number;
     constructor();
     /**
@@ -105,13 +170,37 @@ declare class Entity {
      * Called via the Debug Renderer
      */
     debugRender(camera: Camera): void;
+    /**
+     * Adds a Component to this Entity
+     */
     add(component: Component): void;
+    /**
+     * Removes a Components from this Entity
+     */
     remove(component: Component): void;
+    /**
+     * Removes all Components from this Entity
+     */
     removeAll(): void;
+    /**
+     * Finds the first component in this Entity of the given Class
+     */
     find(className: any): any;
+    /**
+     * Finds all components in this Entity of the given Class
+     */
     findAll(componentClassType: any): any[];
+    /**
+     * Groups this entity into the given Group
+     */
     group(groupType: string): void;
+    /**
+     * Removes this Entity from the given Group
+     */
     ungroup(groupType: string): void;
+    /**
+     * Checks if this Entity is in the given Group
+     */
     ingroup(groupType: string): boolean;
 }
 declare class GameWindow {
@@ -256,18 +345,47 @@ declare abstract class Renderer {
     postRender(): void;
 }
 declare class Scene {
+    /**
+     * The Camera in the Scene
+     */
     camera: Camera;
+    /**
+     * A list of all the Entities in the Scene
+     */
     entities: Entity[];
+    /**
+     * A list of all the Renderers in the Scene
+     */
     renderers: Renderer[];
+    /**
+     * List of entities about to be sorted by depth
+     */
     sorting: Entity[];
     private colliders;
     private groups;
     private cache;
     constructor();
+    /**
+     * Called when this Scene begins (after Engine.scene has been set)
+     */
     begin(): void;
+    /**
+     * Called when this Scene ends (Engine.scene is going to a new scene)
+     */
     ended(): void;
+    /**
+     * Called every frame and updates the Scene
+     */
     update(): void;
+    /**
+     * Called when the Scene should be rendered, and renders each of its Renderers
+     */
     render(): void;
+    /**
+     * Adds the given Entity to this Scene
+     * @param entity 	The Entity to add
+     * @param position 	The optional position to add the Entity at
+     */
     add(entity: Entity, position?: Vector): Entity;
     /**
      * Recreates and adds an Entity from the cache in the given bucket. If there are no entities cache'd in that bucket, NULL is returned
@@ -280,9 +398,24 @@ declare class Scene {
      * @param entity	The entity to recycle & remove
      */
     recycle(bucket: string, entity: Entity): void;
+    /**
+     * Removes the given Entity from the scene
+     * @param entity 	The entity to remove
+     */
     remove(entity: Entity): void;
+    /**
+     * Removes an Entity from Scene.entities at the given index
+     * @param index 	The Index to remove at
+     */
     removeAt(index: number): void;
+    /**
+     * Removes every Entity from the Scene
+     */
     removeAll(): void;
+    /**
+     * Destroys the given entity (calls Entity.destroy, sets Entity.instantiated to false)
+     * @param entity 	The entity to destroy
+     */
     destroy(entity: Entity): void;
     firstEntityInGroup(group: string): Entity;
     firstEntityOfClass(classType: any): Entity;
@@ -828,62 +961,6 @@ declare class Hitgrid extends Collider {
     private debugSub;
     debugRender(camera: Camera): void;
 }
-declare class Graphic extends Component {
-    texture: Texture;
-    crop: Rectangle;
-    scale: Vector;
-    origin: Vector;
-    rotation: number;
-    flipX: boolean;
-    flipY: boolean;
-    color: Color;
-    alpha: number;
-    width: number;
-    height: number;
-    private static tempColor;
-    constructor(texture: Texture, position?: Vector);
-    render(camera: Camera): void;
-}
-declare class Rectsprite extends Component {
-    size: Vector;
-    scale: Vector;
-    origin: Vector;
-    rotation: number;
-    color: Color;
-    alpha: number;
-    width: number;
-    height: number;
-    constructor(width: number, height: number, color?: Color);
-    render(): void;
-}
-declare class Sprite extends Graphic {
-    private _animation;
-    private _playing;
-    private _frame;
-    animation: AnimationSet;
-    playing: AnimationTemplate;
-    frame: number;
-    rate: number;
-    constructor(animation: string);
-    play(name: string, restart?: boolean): void;
-    has(name: string): boolean;
-    update(): void;
-    render(camera: Camera): void;
-}
-declare class Tilemap extends Component {
-    texture: Texture;
-    tileWidth: number;
-    tileHeight: number;
-    private map;
-    private tileColumns;
-    private crop;
-    constructor(texture: Texture, tileWidth: number, tileHeight: number);
-    set(tileX: number, tileY: number, mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): void;
-    has(mapX: number, mapY: number): boolean;
-    get(mapX: number, mapY: number): Vector;
-    clear(mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): void;
-    render(camera: Camera): void;
-}
 declare class Particle {
     x: number;
     y: number;
@@ -983,4 +1060,60 @@ declare class ParticleTemplate {
     scaleToY(Base: number, Range?: number): ParticleTemplate;
     scaleYEase(easer: (number) => number): ParticleTemplate;
     duration(Base: number, Range?: number): ParticleTemplate;
+}
+declare class Graphic extends Component {
+    texture: Texture;
+    crop: Rectangle;
+    scale: Vector;
+    origin: Vector;
+    rotation: number;
+    flipX: boolean;
+    flipY: boolean;
+    color: Color;
+    alpha: number;
+    width: number;
+    height: number;
+    private static tempColor;
+    constructor(texture: Texture, position?: Vector);
+    render(camera: Camera): void;
+}
+declare class Rectsprite extends Component {
+    size: Vector;
+    scale: Vector;
+    origin: Vector;
+    rotation: number;
+    color: Color;
+    alpha: number;
+    width: number;
+    height: number;
+    constructor(width: number, height: number, color?: Color);
+    render(): void;
+}
+declare class Sprite extends Graphic {
+    private _animation;
+    private _playing;
+    private _frame;
+    animation: AnimationSet;
+    playing: AnimationTemplate;
+    frame: number;
+    rate: number;
+    constructor(animation: string);
+    play(name: string, restart?: boolean): void;
+    has(name: string): boolean;
+    update(): void;
+    render(camera: Camera): void;
+}
+declare class Tilemap extends Component {
+    texture: Texture;
+    tileWidth: number;
+    tileHeight: number;
+    private map;
+    private tileColumns;
+    private crop;
+    constructor(texture: Texture, tileWidth: number, tileHeight: number);
+    set(tileX: number, tileY: number, mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): void;
+    has(mapX: number, mapY: number): boolean;
+    get(mapX: number, mapY: number): Vector;
+    clear(mapX: number, mapY: number, mapWidth?: number, mapHeight?: number): void;
+    render(camera: Camera): void;
 }

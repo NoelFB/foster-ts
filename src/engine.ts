@@ -5,43 +5,63 @@ enum Client
 }
 
 class Engine
-{
-
-	private static instance:Engine = null;
-	private static started:boolean = false;
-	
-	// properties
+{	
+	/**
+	 * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
+	 */
 	public static get root():HTMLElement { return Engine.instance.root; }
+
+	/**
+	 * Current Client (Client.Desktop if in Electron and Client.Web if in the browser)
+	 */
 	public static get client():Client { return Engine.instance.client; }
+
+	/**
+	 * The current game Scene
+	 */
 	public static get scene():Scene { return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene); }
 	public static set scene(val:Scene) { Engine.instance.nextScene = val; }
+
+	/**
+	 * Gets the Game Width, before being scaled up / down to fit in the screen
+	 */
 	public static get width():number { return Engine.instance.width; }
+
+	/**
+	 * Gets the Game Height, before being scaled up / down to fit in the screen
+	 */
 	public static get height():number { return Engine.instance.height; }
+
+	/**
+	 * Toggles Debug Mode, which shows hitboxes and allows entities to be dragged around
+	 */
 	public static get debugMode():boolean { return Engine.instance.debuggerEnabled; }
 	public static set debugMode(v:boolean) { Engine.instance.debuggerEnabled = v; }
 
-	// time
+	/**
+	 * Delta Time (time, in seconds, since the last frame)
+	 */
 	public static get delta():number { return Engine.instance.dt; }
+
+	/**
+	 * Total elapsed game time (time, in seconds, since the Engine was started)
+	 */
 	public static get elapsed():number { return Engine.instance.elapsed; }
 
-	// graphics
+	/**
+	 * Gets the current Engine graphics (used for all rendering)
+	 */
 	public static get graphics():Graphics { return Engine.instance.graphics; }
-	public static resize(width:number, height:number):void
-	{
-		Engine.instance.width = width;
-		Engine.instance.height = height;
-		Engine.instance.graphics.resize();
-	}
 
 	/**
 	 * Starts up the Game Engine
 	 * @param title 	Window Title
 	 * @param width 	Game Width
 	 * @param height 	Game Height
-	 * @param scale 	Scales the Window (on Desktop) to width*scale and height*scale
+	 * @param scale 	Scales the Window (on Desktop) to width * scale and height * scale
 	 * @param ready 	Callback when the Engine is ready
 	 */
-	public static start(title:string, width:number, height:number, scale:number, ready?:() => void):void
+	public static start(title:string, width:number, height:number, scale:number, ready:() => void):void
 	{
 		// instantiate
 		Engine.started = true;
@@ -60,7 +80,7 @@ class Engine
 			console.log("%c " + c + " ENGINE START " + c + " ", "background: #222; color: #ff44aa;");
 			Engine.instance.root = document.getElementsByTagName("body")[0];
 			
-			// graphics
+			// init
 			Engine.instance.graphics = new Graphics(Engine.instance);
 			Engine.resize(width, height);
 			Shaders.init();
@@ -75,13 +95,31 @@ class Engine
 				ready();
 		}
 	}
+
+	/**
+	 * Resizes the game to the given size
+	 * @param width 	new Game Width
+	 * @param height 	new Game Height
+	 */
+	public static resize(width:number, height:number):void
+	{
+		Engine.instance.width = width;
+		Engine.instance.height = height;
+		Engine.instance.graphics.resize();
+	}
 	
+	/**
+	 * Checks that the given value is true, otherwise throws an error
+	 */
 	public static assert(value:boolean, message:string):boolean
 	{
 		if (!value)
 			throw message;
 		return value;
 	}
+
+	private static instance:Engine = null;
+	private static started:boolean = false;
 	
 	private client:Client;
 	private scene:Scene = null;

@@ -1,10 +1,26 @@
 class Scene
 {
 	
+	/**
+	 * The Camera in the Scene
+	 */
 	public camera:Camera = new Camera();
+
+	/**
+	 * A list of all the Entities in the Scene
+	 */
 	public entities:Entity[] = [];
+
+	/**
+	 * A list of all the Renderers in the Scene
+	 */
 	public renderers:Renderer[] = [];
+
+	/**
+	 * List of entities about to be sorted by depth
+	 */
 	public sorting:Entity[] = [];
+	
 	private colliders:any = {};
 	private groups:any = {};
 	private cache:any = {};
@@ -15,16 +31,25 @@ class Scene
 		this.addRenderer(new SpriteRenderer());
 	}
 
+	/**
+	 * Called when this Scene begins (after Engine.scene has been set)
+	 */
 	public begin()
 	{
 
 	}
 
+	/**
+	 * Called when this Scene ends (Engine.scene is going to a new scene)
+	 */
 	public ended()
 	{
 
 	}
 
+	/**
+	 * Called every frame and updates the Scene
+	 */
 	public update()
 	{
 		// update entities
@@ -49,6 +74,9 @@ class Scene
 				this.renderers[i].update();
 	}
 
+	/**
+	 * Called when the Scene should be rendered, and renders each of its Renderers
+	 */
 	public render()
 	{
 		// sort entities
@@ -91,6 +119,11 @@ class Scene
 		}
 	}
 
+	/**
+	 * Adds the given Entity to this Scene
+	 * @param entity 	The Entity to add
+	 * @param position 	The optional position to add the Entity at
+	 */
 	public add(entity:Entity, position?:Vector):Entity
 	{
 		entity.scene = this;
@@ -148,6 +181,10 @@ class Scene
 		entity.recycled();
 	}
 
+	/**
+	 * Removes the given Entity from the scene
+	 * @param entity 	The entity to remove
+	 */
 	public remove(entity:Entity):void
 	{
 		let index = this.entities.indexOf(entity);
@@ -155,6 +192,10 @@ class Scene
 			this.removeAt(index);
 	}
 
+	/**
+	 * Removes an Entity from Scene.entities at the given index
+	 * @param index 	The Index to remove at
+	 */
 	public removeAt(index:number):void
 	{
 		let entity = this.entities[index];
@@ -173,12 +214,19 @@ class Scene
 		this.entities.splice(index, 1);
 	}
 
+	/**
+	 * Removes every Entity from the Scene
+	 */
 	public removeAll():void
 	{
 		for (let i = this.entities.length - 1; i >= 0; i --)
 			this.entities.splice(i, 1);
 	}
 
+	/**
+	 * Destroys the given entity (calls Entity.destroy, sets Entity.instantiated to false)
+	 * @param entity 	The entity to destroy
+	 */
 	public destroy(entity:Entity):void
 	{
 		if (entity.scene != null)
