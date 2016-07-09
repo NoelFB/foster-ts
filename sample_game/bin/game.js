@@ -1,59 +1,57 @@
 /// <reference path="./../../bin/foster.d.ts"/>
-class Game {
-    static main() {
-        Engine.start("Game Title", 480, 270, 3, () => {
-            // load assets
-            new AssetLoader()
-                .addAtlas("gfx", "assets/atlas.png", "assets/atlas.json", AtlasType.ASEPRITE)
-                .load(() => {
-                var atlas = Assets.atlases["gfx"];
-                Engine.graphics.pixel = atlas.get("pixel");
-                Game.block = atlas.get("brick");
-                // player animation
-                AnimationBank.create("player")
-                    .add("idle", 0, [atlas.get("player 0")], false)
-                    .add("run", 10, atlas.list("player ", ["1", "2", "3", "0"]), true);
-                // dust particles
-                Game.dust = new ParticleTemplate()
-                    .speed(120, 20)
-                    .frictionX(300, 80)
-                    .accelY(-40, 10)
-                    .colors([new Color(0.8, 0.8, 0.8), new Color(1, 1, 1)])
-                    .alphaFrom(1, 0)
-                    .alphaTo(0, 0)
-                    .duration(1, 0.2)
-                    .scaleFrom(2, 0.2)
-                    .scaleTo(0, 0);
-                // begin game
-                Engine.scene = new GameScene();
-            });
+// entry point
+Engine.start("Game Title", 480, 270, 3, () => {
+    // load assets
+    new AssetLoader()
+        .addAtlas("gfx", "assets/atlas.png", "assets/atlas.json", AtlasType.ASEPRITE)
+        .load(() => {
+        var atlas = Assets.atlases["gfx"];
+        Engine.graphics.pixel = atlas.get("pixel");
+        // player animation
+        AnimationBank.create("player")
+            .add("idle", 0, [atlas.get("player 0")], false)
+            .add("run", 10, atlas.list("player ", ["1", "2", "3", "0"]), true);
+        // dust particles
+        new ParticleTemplate("dust")
+            .speed(120, 20)
+            .frictionX(300, 80)
+            .accelY(-40, 10)
+            .colors([new Color(0.8, 0.8, 0.8), new Color(1, 1, 1)])
+            .alphaFrom(1, 0)
+            .alphaTo(0, 0)
+            .duration(1, 0.2)
+            .scaleFrom(2, 0.2)
+            .scaleTo(0, 0);
+        // control mappings
+        Keys.maps({
+            "left": [Key.left, Key.a],
+            "right": [Key.right, Key.d],
+            "up": [Key.up, Key.w],
+            "down": [Key.down, Key.s]
         });
-    }
-}
+        // begin game
+        Engine.scene = new GameScene();
+    });
+});
 class GameScene extends Scene {
     begin() {
         super.begin();
-        //Engine.debugMode = true;
-        Keys.map("left", [Key.left]);
-        Keys.map("right", [Key.right]);
-        Keys.map("up", [Key.up]);
-        Keys.map("down", [Key.down]);
-        this.camera.origin = new Vector(Engine.width / 2, Engine.height / 2);
-        this.camera.position = new Vector(Engine.width / 2, Engine.height / 2);
-        this.add(this.blockEntity = new Entity());
-        this.blockEntity.add(new Hitgrid(16, 16, ["solid"]));
-        this.block(0, 0, 24, 1);
-        this.block(0, 1, 1, 12);
-        this.block(0, 13, 24, 1);
-        this.block(24, 0, 1, 14);
-        this.block(4, 5, 2, 3);
+        this.camera.origin.set(Engine.width / 2, Engine.height / 2);
+        this.camera.position.set(Engine.width / 2, Engine.height / 2);
+        this.add(this.brickEntity = new Entity());
+        this.brickEntity.add(new Hitgrid(16, 16, ["solid"]));
+        this.brick(0, 0, 24, 1);
+        this.brick(0, 1, 1, 12);
+        this.brick(0, 13, 24, 1);
+        this.brick(24, 0, 1, 14);
+        this.brick(4, 5, 2, 3);
         this.add(new Player());
     }
-    block(tx, ty, columns, rows) {
+    brick(tx, ty, columns, rows) {
         for (let x = tx; x < tx + columns; x++)
             for (let y = ty; y < ty + rows; y++) {
-                this.blockEntity.add(new Graphic(Game.block, new Vector(x * 16, y * 16)));
-                this.blockEntity.find(Hitgrid).set(true, x, y);
+                this.brickEntity.add(new Graphic(Assets.atlases["gfx"].get("brick"), new Vector(x * 16, y * 16)));
+                this.brickEntity.find(Hitgrid).set(true, x, y);
             }
     }
     update() {
@@ -62,6 +60,8 @@ class GameScene extends Scene {
             this.camera.rotation += Engine.delta;
     }
 }
+/// <reference path="./../../bin/foster.d.ts"/>
+/// <reference path="./../../bin/foster.d.ts"/>
 class Player extends Entity {
     constructor() {
         super();
@@ -70,12 +70,12 @@ class Player extends Entity {
         this.y = 200;
         // physics!
         this.add(this.physics = new Physics(-4, -8, 8, 8, null, ["solid"]));
-        this.physics.onCollideX = () => {
+        this.physics.onCollideX = (hit) => {
             if (Math.abs(this.physics.speed.x) > 50)
                 this.sprite.scale.x = Calc.sign(this.sprite.scale.x) * 0.75;
             this.physics.speed.x = 0;
         };
-        this.physics.onCollideY = () => {
+        this.physics.onCollideY = (hit) => {
             if (Math.abs(this.physics.speed.y) > 50)
                 this.sprite.scale.y = Calc.sign(this.sprite.scale.y) * 0.75;
             this.physics.speed.y = 0;
@@ -86,7 +86,7 @@ class Player extends Entity {
         this.sprite.origin.x = this.sprite.width / 2;
         this.sprite.origin.y = this.sprite.height;
         // dust
-        this.add(this.dust = new ParticleSystem(Game.dust));
+        this.add(this.dust = new ParticleSystem("dust"));
         // test coroutine
         this.add(new Coroutine(this.routine));
     }
@@ -140,4 +140,3 @@ class Player extends Entity {
         yield null;
     }
 }
-Game.main();

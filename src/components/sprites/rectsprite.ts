@@ -6,7 +6,7 @@ class Rectsprite extends Component
 	public scale:Vector = new Vector(1, 1);
 	public origin:Vector = new Vector(0, 0);
 	public rotation:number = 0;
-	public color:Color = Color.white;
+	public color:Color = Color.white.clone();
 	public alpha:number = 1;
 	
 	public get width():number { return this.size.x }
@@ -34,9 +34,9 @@ class Rectsprite extends Component
 				this.scenePosition.x,
 				this.scenePosition.y, 
 				null, 
-				this.color.mult(this.alpha), 
-				new Vector(this.origin.x / this.size.x, this.origin.y / this.size.y), 
-				Vector.mult(this.size, this.scale), 
+				Color.temp.copy(this.color).mult(this.alpha), 
+				Vector.temp0.copy(this.origin).div(this.size),
+				Vector.temp1.copy(this.size).mult(this.scale),
 				this.rotation
 			);
 		}
@@ -49,7 +49,7 @@ class Rectsprite extends Component
 				this.scenePosition.y,
 				this.size.x,
 				this.size.y,
-				this.color.mult(this.alpha),
+				Color.temp.copy(this.color).mult(this.alpha),
 				this.origin,
 				this.scale,
 				this.rotation

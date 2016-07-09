@@ -52,6 +52,17 @@ abstract class Collider extends Component
 		
 		return result;	
 	}
+
+	public collides(tags:string[], x?:number, y?:number):Collider
+	{
+		for (let i = 0; i < tags.length; i ++)
+		{
+			let hit = this.collide(tags[i], x, y);
+			if (hit != null)
+				return hit;
+		}
+		return null;
+	}
 	
 	public collideAll(tag:string, x?:number, y?:number):Collider[]
 	{

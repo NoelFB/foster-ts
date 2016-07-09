@@ -130,7 +130,7 @@ class Scene
 		this._insertEntityInto(entity, this.entities, false);
 
 		if (position != undefined)
-			entity.position = position;
+			entity.position.set(position.x, position.y);
 
 		// first time for this entity
 		if (!entity.instantiated)
@@ -235,18 +235,27 @@ class Scene
 		entity.instantiated = false;
 	}
 
+	public find<T extends Entity>(className:Function):T
+	{
+		for (let i = 0; i < this.entities.length; i ++)
+			if (this.entities[i] instanceof className)
+				return <T>this.entities[i];
+		return null;
+	}
+
+	public findAll<T extends Entity>(className:Function):T[]
+	{
+		let list:T[] = [];
+		for (let i = 0; i < this.entities.length; i ++)
+			if (this.entities[i] instanceof className)
+				list.push(<T>this.entities[i]);
+		return list;
+	}
+
 	public firstEntityInGroup(group:string):Entity
 	{
 		if (this.groups[group] != undefined && this.groups[group].length > 0)
 			return this.groups[group][0];
-		return null;
-	}
-
-	public firstEntityOfClass(classType:any):Entity
-	{
-		for (let i = 0; i < this.entities.length; i ++)
-			if (this.entities[i] instanceof classType)
-				return this.entities[i];
 		return null;
 	}
 
@@ -263,15 +272,6 @@ class Scene
 		for (let i = 0; i < groups.length; i ++)
 			lists.concat(this.allEntitiesInGroup(groups[i]));
 		return lists;
-	}
-
-	public allEntitiesOfClass(classType:any):Entity[]
-	{
-		let list:Entity[] = [];
-		for (let i = 0; i < this.entities.length; i ++)
-			if (this.entities[i] instanceof classType)
-				list.push(this.entities[i]);
-		return list;
 	}
 
 	public firstColliderInTag(tag:string):Collider

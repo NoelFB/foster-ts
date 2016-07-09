@@ -45,6 +45,13 @@ class Vector
 		this.y *= v.y;
 		return this;
 	}
+
+	public div(v:Vector):Vector
+	{
+		this.x /= v.x;
+		this.y /= v.y;
+		return this;
+	}
 	
 	public scale(s:number):Vector
 	{
@@ -92,29 +99,6 @@ class Vector
 		this.y /= dist;
 		return this;
 	}
-	
-	public static add(a:Vector, b:Vector):Vector
-	{
-		return new Vector(a.x + b.x, a.y + b.y);
-	}
-	
-	public static sub(a:Vector, b:Vector):Vector
-	{
-		return new Vector(a.x - b.x, a.y - b.y);
-	}
-	
-	public static mult(a:Vector, b:Vector):Vector
-	{
-		return new Vector(a.x * b.x, a.y * b.y);
-	}
-
-	public static transform(a:Vector, m:Matrix):Vector
-	{
-		let result:Vector = new Vector();
-		result.x = m.mat[0] * a.x + m.mat[3] * a.y + m.mat[6];
-		result.y = m.mat[1] * a.x + m.mat[4] * a.y + m.mat[7];
-		return result;
-	}
 
 	public static directions:Vector[] = 
 	[
@@ -123,5 +107,10 @@ class Vector
 		new Vector(1, 0),
 		new Vector(0, 1)
 	];
+
+	// temporary vectors used wherever
+	public static temp0:Vector = new Vector();
+	public static temp1:Vector = new Vector();
+	public static temp2:Vector = new Vector();
 
 }

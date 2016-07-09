@@ -187,41 +187,31 @@ class Matrix
 		return this;
 	}
 
-	public static fromRotation(rad:number, ref?:Matrix):Matrix
+	public fromRotation(rad:number):Matrix
 	{
-		if (ref == undefined)
-			ref = new Matrix();
-		else
-			ref.identity();
-		
 		var s = Math.sin(rad), c = Math.cos(rad);
-		ref.mat[0] = c;
-		ref.mat[1] = -s;
-		ref.mat[3] = s;
-		ref.mat[4] = c;
-		return ref;
+		this.identity();
+		this.mat[0] = c;
+		this.mat[1] = -s;
+		this.mat[3] = s;
+		this.mat[4] = c;
+		return this;
 	}
 
-	public static fromScale(x:number, y:number, ref?:Matrix):Matrix
+	public fromScale(x:number, y:number):Matrix
 	{
-		if (ref == undefined)
-			ref = new Matrix();
-		else
-			ref.identity();
-		ref.mat[0] = x;
-		ref.mat[4] = y;
-		return ref;
+		this.identity();
+		this.mat[0] = x;
+		this.mat[4] = y;
+		return this;
 	}
 
-	public static fromTranslation(x:number, y:number, ref?:Matrix):Matrix
+	public fromTranslation(x:number, y:number):Matrix
 	{
-		if (ref == undefined)
-			ref = new Matrix();
-		else
-			ref.identity();
-		ref.mat[6] = x;
-		ref.mat[7] = y;
-		return ref;
+		this.identity();
+		this.mat[6] = x;
+		this.mat[7] = y;
+		return this;
 	}
 
 }

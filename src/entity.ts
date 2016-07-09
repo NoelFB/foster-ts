@@ -189,23 +189,23 @@ class Entity
 	/**
 	 * Finds the first component in this Entity of the given Class
 	 */
-	find(className:any):any
+	find<T extends Component>(className:Function):T
 	{
 		for (let i = 0; i < this.components.length; i ++)
 			if (this.components[i] instanceof className)
-				return this.components[i];
+				return <T>this.components[i];
 		return null;
 	}
 
 	/**
 	 * Finds all components in this Entity of the given Class
 	 */
-	findAll(componentClassType:any):any[]
+	findAll<T extends Component>(className:Function):T[]
 	{
-		let list:any = [];
+		let list:T[] = [];
 		for (let i = 0; i < this.components.length; i ++)
-			if (this.components[i] instanceof componentClassType)
-				list.push(this.components[i]);
+			if (this.components[i] instanceof className)
+				list.push(<T>this.components[i]);
 		return list;
 	}
 

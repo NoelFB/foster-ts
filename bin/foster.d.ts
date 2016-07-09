@@ -185,11 +185,11 @@ declare class Entity {
     /**
      * Finds the first component in this Entity of the given Class
      */
-    find(className: any): any;
+    find<T extends Component>(className: Function): T;
     /**
      * Finds all components in this Entity of the given Class
      */
-    findAll(componentClassType: any): any[];
+    findAll<T extends Component>(className: Function): T[];
     /**
      * Groups this entity into the given Group
      */
@@ -426,11 +426,11 @@ declare class Scene {
      * @param entity 	The entity to destroy
      */
     destroy(entity: Entity): void;
+    find<T extends Entity>(className: Function): T;
+    findAll<T extends Entity>(className: Function): T[];
     firstEntityInGroup(group: string): Entity;
-    firstEntityOfClass(classType: any): Entity;
     allEntitiesInGroup(group: string): Entity[];
     allEntitiesInGroups(groups: string[]): Entity[];
-    allEntitiesOfClass(classType: any): Entity[];
     firstColliderInTag(tag: string): Collider;
     allCollidersInTag(tag: string): Collider[];
     addRenderer(renderer: Renderer): Renderer;
@@ -525,6 +525,7 @@ declare abstract class Collider extends Component {
     check(tag: string, x?: number, y?: number): boolean;
     checks(tags: string[], x?: number, y?: number): boolean;
     collide(tag: string, x: number, y: number): Collider;
+    collides(tags: string[], x?: number, y?: number): Collider;
     collideAll(tag: string, x?: number, y?: number): Collider[];
     static overlap(a: Collider, b: Collider): boolean;
     static overlap_hitbox_hitbox(a: Hitbox, b: Hitbox): boolean;
@@ -545,8 +546,8 @@ declare class Hitbox extends Collider {
 }
 declare class Physics extends Hitbox {
     solids: string[];
-    onCollideX: () => void;
-    onCollideY: () => void;
+    onCollideX: (hit: Collider) => void;
+    onCollideY: (hit: Collider) => void;
     speed: Vector;
     private remainder;
     constructor(left: number, top: number, width: number, height: number, tags?: string[], solids?: string[]);
@@ -587,6 +588,9 @@ declare class Keys {
     static pressed(key: Key): boolean;
     static released(key: Key): boolean;
     static map(name: string, keys: Key[]): void;
+    static maps(list: {
+        [name: string]: Key[];
+    }): void;
     static mapDown(key: string): boolean;
     static mapPressed(key: string): boolean;
     static mapReleased(key: string): boolean;
@@ -701,6 +705,7 @@ declare class Vector {
     add(v: Vector): Vector;
     sub(v: Vector): Vector;
     mult(v: Vector): Vector;
+    div(v: Vector): Vector;
     scale(s: number): Vector;
     rotate(sin: number, cos: number): Vector;
     transform(m: Matrix): Vector;
@@ -708,11 +713,10 @@ declare class Vector {
     length: number;
     normal: Vector;
     normalize(): Vector;
-    static add(a: Vector, b: Vector): Vector;
-    static sub(a: Vector, b: Vector): Vector;
-    static mult(a: Vector, b: Vector): Vector;
-    static transform(a: Vector, m: Matrix): Vector;
     static directions: Vector[];
+    static temp0: Vector;
+    static temp1: Vector;
+    static temp2: Vector;
 }
 declare class Mouse {
     private static _left;
@@ -778,13 +782,16 @@ declare class Color {
     rgba: number[];
     constructor(r?: number, g?: number, b?: number, a?: number);
     set(r: number, g: number, b: number, a: number): Color;
-    mult(alpha: number, out?: Color): Color;
-    static lerp(a: Color, b: Color, p: number, out?: Color): Color;
+    copy(color: Color): Color;
+    lerp(a: Color, b: Color, p: number): Color;
+    clone(): Color;
+    mult(alpha: number): Color;
     static white: Color;
     static black: Color;
     static red: Color;
     static green: Color;
     static blue: Color;
+    static temp: Color;
 }
 declare class Ease {
     static linear(t: number): number;
@@ -825,9 +832,9 @@ declare class Matrix {
     rotate(rad: number): Matrix;
     scale(x: number, y: number): Matrix;
     translate(x: number, y: number): Matrix;
-    static fromRotation(rad: number, ref?: Matrix): Matrix;
-    static fromScale(x: number, y: number, ref?: Matrix): Matrix;
-    static fromTranslation(x: number, y: number, ref?: Matrix): Matrix;
+    fromRotation(rad: number): Matrix;
+    fromScale(x: number, y: number): Matrix;
+    fromTranslation(x: number, y: number): Matrix;
 }
 declare class Rectangle {
     x: number;
@@ -841,9 +848,9 @@ declare class Rectangle {
     constructor(x?: number, y?: number, w?: number, h?: number);
     set(x: number, y: number, w: number, h: number): Rectangle;
     cropRect(r: Rectangle): Rectangle;
-    crop(x: number, y: number, w: number, h: number): Rectangle;
+    crop(x: number, y: number, w: number, h: number, ref?: Rectangle): Rectangle;
     clone(): Rectangle;
-    copyTo(out: Rectangle): void;
+    copy(from: Rectangle): Rectangle;
 }
 declare class Shader {
     program: WebGLProgram;
@@ -1013,12 +1020,16 @@ declare class ParticleSystem extends Component {
     private static color;
     private static origin;
     private static scale;
-    constructor(template: ParticleTemplate);
+    constructor(template: string);
     update(): void;
     render(camera: Camera): void;
     burst(x: number, y: number, direction: number, rangeX?: number, rangeY?: number, count?: number): void;
 }
 declare class ParticleTemplate {
+    static templates: {
+        [name: string]: ParticleTemplate;
+    };
+    name: string;
     speedBase: number;
     speedRange: number;
     accelBaseX: number;
@@ -1054,6 +1065,7 @@ declare class ParticleTemplate {
     scaleYEaser: (number) => number;
     durationBase: number;
     durationRange: number;
+    constructor(name: string);
     speed(Base: number, Range?: number): ParticleTemplate;
     accelX(Base: number, Range?: number): ParticleTemplate;
     accelY(Base: number, Range?: number): ParticleTemplate;
@@ -1095,7 +1107,6 @@ declare class Graphic extends Component {
     alpha: number;
     width: number;
     height: number;
-    private static tempColor;
     constructor(texture: Texture, position?: Vector);
     render(camera: Camera): void;
 }
@@ -1129,6 +1140,8 @@ declare class Tilemap extends Component {
     texture: Texture;
     tileWidth: number;
     tileHeight: number;
+    color: Color;
+    alpha: number;
     private map;
     private tileColumns;
     private crop;

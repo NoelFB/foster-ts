@@ -2,8 +2,8 @@
 class Physics extends Hitbox
 {
 	public solids:string[] = [];
-	public onCollideX:() => void;
-	public onCollideY:() => void;
+	public onCollideX:(hit:Collider) => void;
+	public onCollideY:(hit:Collider) => void;
 	public speed:Vector = new Vector(0, 0);
 	
 	private remainder:Vector = new Vector(0, 0);
@@ -51,11 +51,12 @@ class Physics extends Hitbox
 			
 			while (amount > 0)
 			{
-				if (this.checks(this.solids, sign, 0))
+				let hit = this.collides(this.solids, sign, 0);
+				if (hit != null)
 				{
 					this.remainder.x = 0;
 					if (this.onCollideX != null)
-						this.onCollideX();
+						this.onCollideX(hit);
 					return false;
 				}
 				else
@@ -90,11 +91,12 @@ class Physics extends Hitbox
 			
 			while (amount > 0)
 			{
-				if (this.checks(this.solids, 0, sign))
+				let hit = this.collides(this.solids, 0, sign);
+				if (hit != null)
 				{
 					this.remainder.y = 0;
 					if (this.onCollideY != null)
-						this.onCollideY();
+						this.onCollideY(hit);
 					return false;
 				}
 				else

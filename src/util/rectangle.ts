@@ -60,23 +60,26 @@ class Rectangle
 		return r;
 	}
 	
-	public crop(x:number, y:number, w:number, h:number):Rectangle
+	public crop(x:number, y:number, w:number, h:number, ref?:Rectangle):Rectangle
 	{
-		let out = new Rectangle(x, y, w, h);
-		this.cropRect(out);
-		return out;
+		if (ref == undefined)
+			ref = new Rectangle();
+		ref.set(x, y, w, h);
+		this.cropRect(ref);
+		return ref;
 	}
 	
 	public clone():Rectangle
 	{
-		return new Rectangle(this.x, this.y, this.width, this.height);
+		return new Rectangle().copy(this);
 	}
-	
-	public copyTo(out:Rectangle):void
+
+	public copy(from:Rectangle):Rectangle
 	{
-		out.x = this.x;
-		out.y = this.y;
-		out.width = this.width;
-		out.height = this.height;
+		this.x = from.x;
+		this.y = from.y;
+		this.width = from.width;
+		this.height = from.height;
+		return this;
 	}
 }

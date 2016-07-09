@@ -49,6 +49,12 @@ class Keys
 		for (let i = 0; i < keys.length; i ++)
 			Keys._map[name].push(keys[i]);
 	}
+
+	public static maps(list:{[name:string]: Key[]}):void
+	{
+		for (let name in list)
+			Keys.map(name, list[name]);
+	}
 	
 	public static mapDown(key:string):boolean
 	{

@@ -1,5 +1,9 @@
 class ParticleTemplate
 {
+
+	public static templates:{[name:string]:ParticleTemplate;} = {};
+
+	public name:string;
 	public speedBase:number = 0;
 	public speedRange:number = 0;
 	
@@ -43,6 +47,12 @@ class ParticleTemplate
 
 	public durationBase:number = 1;
 	public durationRange:number = 1;
+
+	constructor(name:string)
+	{
+		this.name = name;
+		ParticleTemplate.templates[name] = this;
+	}
 
 	public speed(Base:number, Range?:number):ParticleTemplate
 	{

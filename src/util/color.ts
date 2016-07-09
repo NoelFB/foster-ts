@@ -29,22 +29,32 @@ class Color
 		return this;
 	}
 	
-	public mult(alpha:number, out?:Color):Color
+	public copy(color:Color):Color
 	{
-		if (out == undefined)
-			out = new Color();
-		return out.set(this.r, this.g, this.b, this.a * alpha);
+		this.r = color.r;
+		this.g = color.g;
+		this.b = color.b;
+		this.a = color.a;
+		return this;
 	}
 
-	public static lerp(a:Color, b:Color, p:number, out?:Color):Color
+	public lerp(a:Color, b:Color, p:number):Color
 	{	
-		if (out == undefined)
-			out = new Color();
-		out.r  = a.r + (b.r - a.r) * p;
-		out.g  = a.g + (b.g - a.g) * p;
-		out.b  = a.b + (b.b - a.b) * p;
-		out.a  = a.a + (b.a - a.a) * p;
-		return out;
+		this.r  = a.r + (b.r - a.r) * p;
+		this.g  = a.g + (b.g - a.g) * p;
+		this.b  = a.b + (b.b - a.b) * p;
+		this.a  = a.a + (b.a - a.a) * p;
+		return this;
+	}
+
+	public clone():Color
+	{
+		return new Color().copy(this);
+	}
+
+	public mult(alpha:number):Color
+	{
+		return this.set(this.r, this.g, this.b, this.a * alpha);
 	}
 	
 	public static white:Color = new Color(1, 1, 1, 1);
@@ -52,4 +62,5 @@ class Color
 	public static red:Color = new Color(1, 0, 0, 1);
 	public static green:Color = new Color(0, 1, 0, 1);
 	public static blue:Color = new Color(0, 0, 1, 1);
+	public static temp:Color = new Color();
 }

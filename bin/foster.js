@@ -328,10 +328,10 @@ class Entity {
     /**
      * Finds all components in this Entity of the given Class
      */
-    findAll(componentClassType) {
+    findAll(className) {
         let list = [];
         for (let i = 0; i < this.components.length; i++)
-            if (this.components[i] instanceof componentClassType)
+            if (this.components[i] instanceof className)
                 list.push(this.components[i]);
         return list;
     }
@@ -1021,7 +1021,7 @@ class Scene {
         entity.scene = this;
         this._insertEntityInto(entity, this.entities, false);
         if (position != undefined)
-            entity.position = position;
+            entity.position.set(position.x, position.y);
         // first time for this entity
         if (!entity.instantiated) {
             entity.instantiated = true;
@@ -1104,15 +1104,22 @@ class Scene {
         entity.destroy();
         entity.instantiated = false;
     }
+    find(className) {
+        for (let i = 0; i < this.entities.length; i++)
+            if (this.entities[i] instanceof className)
+                return this.entities[i];
+        return null;
+    }
+    findAll(className) {
+        let list = [];
+        for (let i = 0; i < this.entities.length; i++)
+            if (this.entities[i] instanceof className)
+                list.push(this.entities[i]);
+        return list;
+    }
     firstEntityInGroup(group) {
         if (this.groups[group] != undefined && this.groups[group].length > 0)
             return this.groups[group][0];
-        return null;
-    }
-    firstEntityOfClass(classType) {
-        for (let i = 0; i < this.entities.length; i++)
-            if (this.entities[i] instanceof classType)
-                return this.entities[i];
         return null;
     }
     allEntitiesInGroup(group) {
@@ -1125,13 +1132,6 @@ class Scene {
         for (let i = 0; i < groups.length; i++)
             lists.concat(this.allEntitiesInGroup(groups[i]));
         return lists;
-    }
-    allEntitiesOfClass(classType) {
-        let list = [];
-        for (let i = 0; i < this.entities.length; i++)
-            if (this.entities[i] instanceof classType)
-                list.push(this.entities[i]);
-        return list;
     }
     firstColliderInTag(tag) {
         if (this.colliders[tag] != undefined && this.colliders[tag].length > 0)
@@ -1538,6 +1538,14 @@ class Collider extends Component {
         this.y -= y || 0;
         return result;
     }
+    collides(tags, x, y) {
+        for (let i = 0; i < tags.length; i++) {
+            let hit = this.collide(tags[i], x, y);
+            if (hit != null)
+                return hit;
+        }
+        return null;
+    }
     collideAll(tag, x, y) {
         var list = [];
         var against = this.entity.scene.allCollidersInTag(tag);
@@ -1634,10 +1642,11 @@ class Physics extends Hitbox {
             let sign = Calc.sign(amount);
             amount = Math.abs(Math.round(amount));
             while (amount > 0) {
-                if (this.checks(this.solids, sign, 0)) {
+                let hit = this.collides(this.solids, sign, 0);
+                if (hit != null) {
                     this.remainder.x = 0;
                     if (this.onCollideX != null)
-                        this.onCollideX();
+                        this.onCollideX(hit);
                     return false;
                 }
                 else {
@@ -1662,10 +1671,11 @@ class Physics extends Hitbox {
             let sign = Calc.sign(amount);
             amount = Math.abs(Math.round(amount));
             while (amount > 0) {
-                if (this.checks(this.solids, 0, sign)) {
+                let hit = this.collides(this.solids, 0, sign);
+                if (hit != null) {
                     this.remainder.y = 0;
                     if (this.onCollideY != null)
-                        this.onCollideY();
+                        this.onCollideY(hit);
                     return false;
                 }
                 else {
@@ -1780,6 +1790,10 @@ class Keys {
             Keys._map[name] = [];
         for (let i = 0; i < keys.length; i++)
             Keys._map[name].push(keys[i]);
+    }
+    static maps(list) {
+        for (let name in list)
+            Keys.map(name, list[name]);
     }
     static mapDown(key) {
         if (Keys._map[key] != undefined)
@@ -1943,6 +1957,11 @@ class Vector {
         this.y *= v.y;
         return this;
     }
+    div(v) {
+        this.x /= v.x;
+        this.y /= v.y;
+        return this;
+    }
     scale(s) {
         this.x *= s;
         this.y *= s;
@@ -1976,21 +1995,6 @@ class Vector {
         this.y /= dist;
         return this;
     }
-    static add(a, b) {
-        return new Vector(a.x + b.x, a.y + b.y);
-    }
-    static sub(a, b) {
-        return new Vector(a.x - b.x, a.y - b.y);
-    }
-    static mult(a, b) {
-        return new Vector(a.x * b.x, a.y * b.y);
-    }
-    static transform(a, m) {
-        let result = new Vector();
-        result.x = m.mat[0] * a.x + m.mat[3] * a.y + m.mat[6];
-        result.y = m.mat[1] * a.x + m.mat[4] * a.y + m.mat[7];
-        return result;
-    }
 }
 Vector.directions = [
     new Vector(-1, 0),
@@ -1998,6 +2002,10 @@ Vector.directions = [
     new Vector(1, 0),
     new Vector(0, 1)
 ];
+// temporary vectors used wherever
+Vector.temp0 = new Vector();
+Vector.temp1 = new Vector();
+Vector.temp2 = new Vector();
 /// <reference path="./../util/vector.ts"/>
 class Mouse {
     static get x() { return this._position.x; }
@@ -2169,19 +2177,25 @@ class Color {
         this.a = a;
         return this;
     }
-    mult(alpha, out) {
-        if (out == undefined)
-            out = new Color();
-        return out.set(this.r, this.g, this.b, this.a * alpha);
+    copy(color) {
+        this.r = color.r;
+        this.g = color.g;
+        this.b = color.b;
+        this.a = color.a;
+        return this;
     }
-    static lerp(a, b, p, out) {
-        if (out == undefined)
-            out = new Color();
-        out.r = a.r + (b.r - a.r) * p;
-        out.g = a.g + (b.g - a.g) * p;
-        out.b = a.b + (b.b - a.b) * p;
-        out.a = a.a + (b.a - a.a) * p;
-        return out;
+    lerp(a, b, p) {
+        this.r = a.r + (b.r - a.r) * p;
+        this.g = a.g + (b.g - a.g) * p;
+        this.b = a.b + (b.b - a.b) * p;
+        this.a = a.a + (b.a - a.a) * p;
+        return this;
+    }
+    clone() {
+        return new Color().copy(this);
+    }
+    mult(alpha) {
+        return this.set(this.r, this.g, this.b, this.a * alpha);
     }
 }
 Color.white = new Color(1, 1, 1, 1);
@@ -2189,6 +2203,7 @@ Color.black = new Color(0, 0, 0, 1);
 Color.red = new Color(1, 0, 0, 1);
 Color.green = new Color(0, 1, 0, 1);
 Color.blue = new Color(0, 0, 1, 1);
+Color.temp = new Color();
 class Ease {
     static linear(t) {
         return t;
@@ -2415,35 +2430,26 @@ class Matrix {
         this.mat[8] = x * a02 + y * a12 + a22;
         return this;
     }
-    static fromRotation(rad, ref) {
-        if (ref == undefined)
-            ref = new Matrix();
-        else
-            ref.identity();
+    fromRotation(rad) {
         var s = Math.sin(rad), c = Math.cos(rad);
-        ref.mat[0] = c;
-        ref.mat[1] = -s;
-        ref.mat[3] = s;
-        ref.mat[4] = c;
-        return ref;
+        this.identity();
+        this.mat[0] = c;
+        this.mat[1] = -s;
+        this.mat[3] = s;
+        this.mat[4] = c;
+        return this;
     }
-    static fromScale(x, y, ref) {
-        if (ref == undefined)
-            ref = new Matrix();
-        else
-            ref.identity();
-        ref.mat[0] = x;
-        ref.mat[4] = y;
-        return ref;
+    fromScale(x, y) {
+        this.identity();
+        this.mat[0] = x;
+        this.mat[4] = y;
+        return this;
     }
-    static fromTranslation(x, y, ref) {
-        if (ref == undefined)
-            ref = new Matrix();
-        else
-            ref.identity();
-        ref.mat[6] = x;
-        ref.mat[7] = y;
-        return ref;
+    fromTranslation(x, y) {
+        this.identity();
+        this.mat[6] = x;
+        this.mat[7] = y;
+        return this;
     }
 }
 class Rectangle {
@@ -2487,19 +2493,22 @@ class Rectangle {
             r.height = this.bottom - r.y;
         return r;
     }
-    crop(x, y, w, h) {
-        let out = new Rectangle(x, y, w, h);
-        this.cropRect(out);
-        return out;
+    crop(x, y, w, h, ref) {
+        if (ref == undefined)
+            ref = new Rectangle();
+        ref.set(x, y, w, h);
+        this.cropRect(ref);
+        return ref;
     }
     clone() {
-        return new Rectangle(this.x, this.y, this.width, this.height);
+        return new Rectangle().copy(this);
     }
-    copyTo(out) {
-        out.x = this.x;
-        out.y = this.y;
-        out.width = this.width;
-        out.height = this.height;
+    copy(from) {
+        this.x = from.x;
+        this.y = from.y;
+        this.width = from.width;
+        this.height = from.height;
+        return this;
     }
 }
 class Shader {
@@ -2911,7 +2920,7 @@ class ParticleSystem extends Component {
         super();
         this.renderRelativeToEntity = false;
         this.particles = [];
-        this.template = template;
+        this.template = ParticleTemplate.templates[template];
     }
     update() {
         let dt = Engine.delta;
@@ -2947,8 +2956,7 @@ class ParticleSystem extends Component {
             let scaleY = p.scaleFromY + (p.scaleToY - p.scaleFromY) * t.scaleYEaser(lerp);
             let rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
             let alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
-            let color = Color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp), ParticleSystem.color);
-            color = color.mult(alpha, color);
+            let color = ParticleSystem.color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp)).mult(alpha);
             Engine.graphics.texture(Engine.graphics.pixel, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
         }
     }
@@ -3005,7 +3013,7 @@ ParticleSystem.color = new Color();
 ParticleSystem.origin = new Vector(0.5, 0.5);
 ParticleSystem.scale = new Vector(0, 0);
 class ParticleTemplate {
-    constructor() {
+    constructor(name) {
         this.speedBase = 0;
         this.speedRange = 0;
         this.accelBaseX = 0;
@@ -3041,6 +3049,8 @@ class ParticleTemplate {
         this.scaleYEaser = Ease.linear;
         this.durationBase = 1;
         this.durationRange = 1;
+        this.name = name;
+        ParticleTemplate.templates[name] = this;
     }
     speed(Base, Range) {
         this.speedBase = Base;
@@ -3178,6 +3188,7 @@ class ParticleTemplate {
         return this;
     }
 }
+ParticleTemplate.templates = {};
 /// <reference path="./../../component.ts"/>
 class Graphic extends Component {
     constructor(texture, position) {
@@ -3187,7 +3198,7 @@ class Graphic extends Component {
         this.rotation = 0;
         this.flipX = false;
         this.flipY = false;
-        this.color = Color.white;
+        this.color = Color.white.clone();
         this.alpha = 1;
         if (texture != null) {
             this.texture = texture;
@@ -3199,10 +3210,9 @@ class Graphic extends Component {
     get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
     get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
     render(camera) {
-        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, this.color.mult(this.alpha, Graphic.tempColor), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
+        Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
 }
-Graphic.tempColor = new Color();
 /// <reference path="./../../component.ts"/>
 class Rectsprite extends Component {
     constructor(width, height, color) {
@@ -3211,7 +3221,7 @@ class Rectsprite extends Component {
         this.scale = new Vector(1, 1);
         this.origin = new Vector(0, 0);
         this.rotation = 0;
-        this.color = Color.white;
+        this.color = Color.white.clone();
         this.alpha = 1;
         this.size.x = width;
         this.size.y = height;
@@ -3224,10 +3234,10 @@ class Rectsprite extends Component {
     render() {
         // draw with a pixel texture (shader is using textures)
         if (Engine.graphics.shader.sampler2d != null && Engine.graphics.pixel != null) {
-            Engine.graphics.texture(Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, this.color.mult(this.alpha), new Vector(this.origin.x / this.size.x, this.origin.y / this.size.y), Vector.mult(this.size, this.scale), this.rotation);
+            Engine.graphics.texture(Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, Color.temp.copy(this.color).mult(this.alpha), Vector.temp0.copy(this.origin).div(this.size), Vector.temp1.copy(this.size).mult(this.scale), this.rotation);
         }
         else {
-            Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, this.color.mult(this.alpha), this.origin, this.scale, this.rotation);
+            Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation);
         }
     }
 }
@@ -3292,6 +3302,8 @@ class Sprite extends Graphic {
 class Tilemap extends Component {
     constructor(texture, tileWidth, tileHeight) {
         super();
+        this.color = Color.white.clone();
+        this.alpha = 1;
         this.map = {};
         this.crop = new Rectangle();
         this.texture = texture;
@@ -3346,7 +3358,7 @@ class Tilemap extends Component {
                 if (index != undefined) {
                     this.crop.x = (index % this.tileColumns) * this.tileWidth;
                     this.crop.y = Math.floor(index / this.tileColumns) * this.tileHeight;
-                    Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop);
+                    Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop, Color.temp.copy(this.color).mult(this.alpha));
                 }
             }
         }

@@ -4,6 +4,8 @@ class Tilemap extends Component
 	public texture:Texture;
 	public tileWidth:number;
 	public tileHeight:number;
+	public color:Color = Color.white.clone();
+	public alpha:number = 1;
 
 	private map:any = {};
 	private tileColumns:number;
@@ -86,7 +88,8 @@ class Tilemap extends Component
 					Engine.graphics.texture(
 						this.texture, 
 						pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, 
-						this.crop);
+						this.crop,
+						Color.temp.copy(this.color).mult(this.alpha));
 				}
 			}
 		}

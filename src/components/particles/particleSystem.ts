@@ -11,10 +11,10 @@ class ParticleSystem extends Component
 	private static origin:Vector = new Vector(0.5, 0.5);
 	private static scale:Vector = new Vector(0, 0);
 
-	constructor(template:ParticleTemplate)
+	constructor(template:string)
 	{
 		super();
-		this.template = template;
+		this.template = ParticleTemplate.templates[template];
 	}
 
 	public update():void
@@ -61,8 +61,7 @@ class ParticleSystem extends Component
 			let scaleY = p.scaleFromY + (p.scaleToY - p.scaleFromY) * t.scaleYEaser(lerp);
 			let rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
 			let alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
-			let color = Color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp), ParticleSystem.color);
-			color = color.mult(alpha, color);
+			let color = ParticleSystem.color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp)).mult(alpha);
 
 			Engine.graphics.texture(Engine.graphics.pixel, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
 		}
