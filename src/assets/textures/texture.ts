@@ -4,6 +4,21 @@ class FosterWebGLTexture
 	public webGLTexture:WebGLTexture;
 	public width:number;
 	public height:number;
+	public disposed:boolean = false;
+
+	public unload():void
+	{
+		if (!this.disposed)
+		{
+			let gl = Engine.graphics.gl;
+			gl.deleteTexture(this.webGLTexture);
+			this.path = "";
+			this.webGLTexture = null;
+			this.width = 1;
+			this.height = 1;
+			this.disposed = true;
+		}
+	}
 }
 
 class Texture
@@ -48,7 +63,7 @@ class Texture
 	{
 		return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
 	}
-
+	
 	public toString():string
 	{
 		return (this.texture.path + 

@@ -79,8 +79,10 @@ class GameScene extends Scene
 	{
 		super.update();
 
-		if(Keys.down(Key.r))
+		if (Keys.down(Key.r))
 			this.camera.rotation += Engine.delta;
+		if (Keys.pressed(Key.escape))
+			Engine.exit();
 	}
 	
 }

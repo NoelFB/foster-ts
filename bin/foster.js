@@ -125,6 +125,10 @@ class Engine {
                 ready();
         };
     }
+    static exit() {
+        if (Engine.started && !Engine.exiting)
+            Engine.instance.exit();
+    }
     /**
      * Resizes the game to the given size
      * @param width 	new Game Width
@@ -175,11 +179,23 @@ class Engine {
         this.graphics.flush();
         this.graphics.output();
         // do it all again!
-        requestAnimationFrame(this.step.bind(this));
+        if (!Engine.exiting)
+            requestAnimationFrame(this.step.bind(this));
+    }
+    exit() {
+        Engine.exiting = true;
+        Assets.unload();
+        Engine.graphics.unload();
+        if (Engine.client == Client.Desktop) {
+            var remote = require("electron").remote;
+            var win = remote.getCurrentWindow();
+            win.close();
+        }
     }
 }
 Engine.instance = null;
 Engine.started = false;
+Engine.exiting = false;
 class Entity {
     constructor() {
         /**
@@ -501,6 +517,16 @@ class Graphics {
             ];
     }
     get pixel() { return this._pixel; }
+    /**
+     * Unloads the Graphics and WebGL stuff
+     */
+    unload() {
+        this.screen.remove();
+        this.buffer.remove();
+        this.screen = null;
+        this.buffer = null;
+        // TODO: Implement this properly
+    }
     /**
      * Called when the Game resolution changes
      */
@@ -1396,6 +1422,23 @@ class AssetLoader {
     }
 }
 class Assets {
+    /**
+     * Unloads all the assets in the entire game
+     */
+    static unload() {
+        // most of these can just lose reference
+        Assets.json = {};
+        Assets.xml = {};
+        Assets.text = {};
+        Assets.atlases = {};
+        // textures actually need to be unloaded properly
+        for (var path in Assets.textures)
+            Assets.textures[path].texture.unload();
+        Assets.textures = {};
+        // TODO: implement sound unloading
+        // ...
+        Assets.sounds = {};
+    }
 }
 Assets.textures = {};
 Assets.json = {};
@@ -2814,6 +2857,20 @@ class Atlas {
     }
 }
 class FosterWebGLTexture {
+    constructor() {
+        this.disposed = false;
+    }
+    unload() {
+        if (!this.disposed) {
+            let gl = Engine.graphics.gl;
+            gl.deleteTexture(this.webGLTexture);
+            this.path = "";
+            this.webGLTexture = null;
+            this.width = 1;
+            this.height = 1;
+            this.disposed = true;
+        }
+    }
 }
 class Texture {
     constructor(texture, bounds, frame) {

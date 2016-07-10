@@ -96,6 +96,12 @@ class Engine
 		}
 	}
 
+	public static exit():void
+	{
+		if (Engine.started && !Engine.exiting)
+			Engine.instance.exit();
+	}
+
 	/**
 	 * Resizes the game to the given size
 	 * @param width 	new Game Width
@@ -120,6 +126,7 @@ class Engine
 
 	private static instance:Engine = null;
 	private static started:boolean = false;
+	private static exiting:boolean = false;
 	
 	private client:Client;
 	private scene:Scene = null;
@@ -190,7 +197,22 @@ class Engine
 		this.graphics.output();
 
 		// do it all again!
-		requestAnimationFrame(this.step.bind(this));
+		if (!Engine.exiting)
+			requestAnimationFrame(this.step.bind(this));
+	}
+
+	private exit()
+	{
+		Engine.exiting = true;
+		Assets.unload();
+		Engine.graphics.unload();
+
+		if (Engine.client == Client.Desktop)
+		{
+			var remote = require("electron").remote;
+			var win = remote.getCurrentWindow();
+			win.close();
+		}
 	}
 	
 }

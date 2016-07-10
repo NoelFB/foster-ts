@@ -94,6 +94,19 @@ class Graphics
 
 		this.resize();
 	}
+
+	/**
+	 * Unloads the Graphics and WebGL stuff
+	 */
+	public unload()
+	{
+		this.screen.remove();
+		this.buffer.remove();
+		this.screen = null;
+		this.buffer = null;
+		
+		// TODO: Implement this properly
+	}
     
 	/**
 	 * Called when the Game resolution changes

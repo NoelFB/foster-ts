@@ -67,6 +67,7 @@ declare class Engine {
      * @param ready 	Callback when the Engine is ready
      */
     static start(title: string, width: number, height: number, scale: number, ready: () => void): void;
+    static exit(): void;
     /**
      * Resizes the game to the given size
      * @param width 	new Game Width
@@ -79,6 +80,7 @@ declare class Engine {
     static assert(value: boolean, message: string): boolean;
     private static instance;
     private static started;
+    private static exiting;
     private client;
     private scene;
     private nextScene;
@@ -93,6 +95,7 @@ declare class Engine {
     private debuggerEnabled;
     constructor();
     private step();
+    private exit();
 }
 declare class Entity {
     /**
@@ -247,6 +250,10 @@ declare class Graphics {
      * Creates the Engine.Graphics
      */
     constructor(engine: Engine);
+    /**
+     * Unloads the Graphics and WebGL stuff
+     */
+    unload(): void;
     /**
      * Called when the Game resolution changes
      */
@@ -491,6 +498,10 @@ declare class Assets {
     static atlases: {
         [path: string]: Atlas;
     };
+    /**
+     * Unloads all the assets in the entire game
+     */
+    static unload(): void;
 }
 declare class Alarm extends Component {
     percent: number;
@@ -965,6 +976,8 @@ declare class FosterWebGLTexture {
     webGLTexture: WebGLTexture;
     width: number;
     height: number;
+    disposed: boolean;
+    unload(): void;
 }
 declare class Texture {
     bounds: Rectangle;
