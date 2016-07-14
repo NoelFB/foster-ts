@@ -224,23 +224,21 @@ declare class GameWindow {
 }
 declare class Graphics {
     private engine;
-    private screen;
-    private screenContext;
-    private buffer;
-    private bufferContext;
+    canvas: HTMLCanvasElement;
     gl: WebGLRenderingContext;
-    screenCanvas: HTMLCanvasElement;
-    private vertexBuffer;
-    private uvBuffer;
-    private colorBuffer;
+    buffer: RenderTarget;
     private vertices;
     private uvs;
     private colors;
+    private currentTarget;
+    private vertexBuffer;
+    private uvBuffer;
+    private colorBuffer;
     private currentShader;
     private nextShader;
     shader: Shader;
-    private orthoMatrix;
     orthographic: Matrix;
+    private toscreen;
     private _pixel;
     private _pixelUVs;
     pixel: Texture;
@@ -250,6 +248,10 @@ declare class Graphics {
      * Creates the Engine.Graphics
      */
     constructor(engine: Engine);
+    createTexture(image: HTMLImageElement): Texture;
+    createRenderTarget(width: number, height: number): RenderTarget;
+    disposeTexture(texture: Texture): void;
+    disposeRenderTarget(target: RenderTarget): void;
     /**
      * Unloads the Graphics and WebGL stuff
      */
@@ -263,21 +265,37 @@ declare class Graphics {
      */
     update(): void;
     /**
-     * Clears the screen
-     */
-    clear(color: Color): void;
-    /**
-     * Draws the game to the Screen canvas
-     */
-    output(): void;
-    /**
      * Gets the rectangle that the game buffer should be drawn to the screen with
      */
     getOutputBounds(): Rectangle;
     /**
+     * Clears the screen
+     */
+    clear(color: Color): void;
+    /**
      * Resets the Graphics rendering
      */
     reset(): void;
+    /**
+     * Sets the current Render Target
+     */
+    setRenderTarget(target: RenderTarget): void;
+    /**
+     * Sets the current texture on the shader (if the shader has a sampler2d uniform)
+     */
+    setShaderTexture(tex: Texture): void;
+    /**
+     * Checks if the shader was modified, and if so, flushes the current vertices & starts a new draw
+     */
+    checkState(): void;
+    /**
+     * Flushes the current vertices to the screen
+     */
+    flush(): void;
+    /**
+     * Draws the game to the Screen and does cleanup
+     */
+    finalize(): void;
     /**
      * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
      * @param x 	X position of the vertex
@@ -300,23 +318,11 @@ declare class Graphics {
      * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
      */
     pushList(pos: Vector[], uv: Vector[], color: Color[]): void;
-    /**
-     * Checks if the shader was modified, and if so, flushes the current vertices & starts a new draw
-     */
-    checkState(): void;
-    /**
-     * Flushes the current vertices to the screen
-     */
-    flush(): void;
     private topleft;
     private topright;
     private botleft;
     private botright;
     private texToDraw;
-    /**
-     * Sets the current texture on the shader (if the shader has a sampler2d uniform)
-     */
-    setShaderTexture(tex: Texture): void;
     /**
      * Draws a texture at the given position. If the current Shader does not take a texture, this will throw an error.
      */
@@ -350,11 +356,13 @@ declare class Graphics {
 }
 declare abstract class Renderer {
     visible: boolean;
+    target: RenderTarget;
+    clearTargetColor: Color;
     scene: Scene;
     camera: Camera;
     groupsMask: string[];
     shader: Shader;
-    shaderMatrixUniformName: string;
+    shaderCameraUniformName: string;
     update(): void;
     preRender(): void;
     render(): void;
@@ -977,7 +985,18 @@ declare class FosterWebGLTexture {
     width: number;
     height: number;
     disposed: boolean;
+    constructor(texture: WebGLTexture, width: number, height: number);
     unload(): void;
+}
+declare class RenderTarget {
+    texture: FosterWebGLTexture;
+    frameBuffer: WebGLFramebuffer;
+    vertexBuffer: WebGLBuffer;
+    uvBuffer: WebGLBuffer;
+    colorBuffer: WebGLBuffer;
+    width: number;
+    height: number;
+    constructor(buffer: WebGLFramebuffer, texture: FosterWebGLTexture, vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, uvBuffer: WebGLBuffer);
 }
 declare class Texture {
     bounds: Rectangle;

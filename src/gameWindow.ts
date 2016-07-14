@@ -47,7 +47,7 @@ class GameWindow
 		if (Engine.client == Client.Desktop)
 			return GameWindow.browserWindow.getPosition()[0];
 		else
-			return Engine.graphics.screenCanvas.getBoundingClientRect().left;
+			return Engine.graphics.canvas.getBoundingClientRect().left;
 	}
 	
 	public static get screenTop():number
@@ -55,7 +55,7 @@ class GameWindow
 		if (Engine.client == Client.Desktop)
 			return GameWindow.browserWindow.getPosition()[1];
 		else
-			return Engine.graphics.screenCanvas.getBoundingClientRect().top;
+			return Engine.graphics.canvas.getBoundingClientRect().top;
 	}
 	
 	public static get screenWidth():number 
@@ -63,7 +63,7 @@ class GameWindow
 		if (Engine.client == Client.Desktop)
 			return GameWindow.browserWindow.getContentSize()[0];
 		else
-			return Engine.graphics.screenCanvas.getBoundingClientRect().width;
+			return Engine.graphics.canvas.getBoundingClientRect().width;
 	}
 	
 	public static get screenHeight():number 
@@ -71,7 +71,7 @@ class GameWindow
 		if (Engine.client == Client.Desktop)
 			return GameWindow.browserWindow.getContentSize()[1]; 
 		else
-			return Engine.graphics.screenCanvas.getBoundingClientRect().height;
+			return Engine.graphics.canvas.getBoundingClientRect().height;
 	}
 	
 	public static resize(width:number, height:number):void

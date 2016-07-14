@@ -163,8 +163,7 @@ class Engine
 		this.dt = Math.floor(time - this.lastTime) / 1000;
 		this.lastTime = time;
 		
-		// reset graphics
-		this.graphics.clear(this.graphics.clearColor);
+		// update graphics
 		this.graphics.update();
 		
 		// update inputs
@@ -193,8 +192,7 @@ class Engine
 			this.scene.render();
 		
 		// final flush on graphics
-		this.graphics.flush();
-		this.graphics.output();
+		this.graphics.finalize();
 
 		// do it all again!
 		if (!Engine.exiting)

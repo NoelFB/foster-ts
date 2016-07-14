@@ -153,8 +153,7 @@ class Engine {
         this.elapsed = Math.floor(time - this.startTime) / 1000;
         this.dt = Math.floor(time - this.lastTime) / 1000;
         this.lastTime = time;
-        // reset graphics
-        this.graphics.clear(this.graphics.clearColor);
+        // update graphics
         this.graphics.update();
         // update inputs
         Mouse.update();
@@ -176,8 +175,7 @@ class Engine {
         if (this.scene != null)
             this.scene.render();
         // final flush on graphics
-        this.graphics.flush();
-        this.graphics.output();
+        this.graphics.finalize();
         // do it all again!
         if (!Engine.exiting)
             requestAnimationFrame(this.step.bind(this));
@@ -408,25 +406,25 @@ class GameWindow {
         if (Engine.client == Client.Desktop)
             return GameWindow.browserWindow.getPosition()[0];
         else
-            return Engine.graphics.screenCanvas.getBoundingClientRect().left;
+            return Engine.graphics.canvas.getBoundingClientRect().left;
     }
     static get screenTop() {
         if (Engine.client == Client.Desktop)
             return GameWindow.browserWindow.getPosition()[1];
         else
-            return Engine.graphics.screenCanvas.getBoundingClientRect().top;
+            return Engine.graphics.canvas.getBoundingClientRect().top;
     }
     static get screenWidth() {
         if (Engine.client == Client.Desktop)
             return GameWindow.browserWindow.getContentSize()[0];
         else
-            return Engine.graphics.screenCanvas.getBoundingClientRect().width;
+            return Engine.graphics.canvas.getBoundingClientRect().width;
     }
     static get screenHeight() {
         if (Engine.client == Client.Desktop)
             return GameWindow.browserWindow.getContentSize()[1];
         else
-            return Engine.graphics.screenCanvas.getBoundingClientRect().height;
+            return Engine.graphics.canvas.getBoundingClientRect().height;
     }
     static resize(width, height) {
         if (Engine.client == Client.Desktop)
@@ -453,12 +451,18 @@ class Graphics {
      * Creates the Engine.Graphics
      */
     constructor(engine) {
+        // vertices
         this.vertices = [];
         this.uvs = [];
         this.colors = [];
+        // current render target
+        this.currentTarget = null;
         // shader
         this.currentShader = null;
         this.nextShader = null;
+        // orthographic matrix
+        this.orthographic = new Matrix();
+        this.toscreen = new Matrix();
         // pixel drawing
         this._pixel = null;
         // utils
@@ -472,15 +476,12 @@ class Graphics {
         this.texToDraw = new Texture(null, new Rectangle(), new Rectangle());
         this.engine = engine;
         // create the screen
-        this.screen = document.createElement("canvas");
-        this.screenContext = this.screen.getContext('2d');
-        Engine.root.appendChild(this.screen);
-        // create the buffer
-        this.buffer = document.createElement("canvas");
-        this.bufferContext = this.buffer.getContext("experimental-webgl", {
+        this.canvas = document.createElement("canvas");
+        this.gl = this.canvas.getContext('experimental-webgl', {
             alpha: false,
             antialias: false
         });
+        Engine.root.appendChild(this.canvas);
         this.gl.enable(this.gl.BLEND);
         this.gl.disable(this.gl.DEPTH_TEST);
         this.gl.disable(this.gl.CULL_FACE);
@@ -490,8 +491,6 @@ class Graphics {
         this.colorBuffer = this.gl.createBuffer();
         this.resize();
     }
-    get gl() { return this.bufferContext; }
-    get screenCanvas() { return this.screen; }
     get shader() {
         if (this.nextShader != null)
             return this.nextShader;
@@ -501,7 +500,6 @@ class Graphics {
         if (this.shader != s && s != null)
             this.nextShader = s;
     }
-    get orthographic() { return this.orthoMatrix; }
     set pixel(p) {
         let minX = p.bounds.left / p.texture.width;
         let minY = p.bounds.top / p.texture.height;
@@ -517,14 +515,66 @@ class Graphics {
             ];
     }
     get pixel() { return this._pixel; }
+    createTexture(image) {
+        let gl = this.gl;
+        let tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
+    }
+    createRenderTarget(width, height) {
+        let gl = this.gl;
+        let frameBuffer = gl.createFramebuffer();
+        let tex = gl.createTexture();
+        let was = this.currentTarget;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+        let vertexBuffer = gl.createBuffer();
+        let uvBuffer = gl.createBuffer();
+        let colorBuffer = gl.createBuffer();
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        return new RenderTarget(frameBuffer, new FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
+    }
+    disposeTexture(texture) {
+        texture.texture.unload();
+        texture.texture = null;
+    }
+    disposeRenderTarget(target) {
+        target.texture.unload();
+        this.gl.deleteFramebuffer(target.frameBuffer);
+        this.gl.deleteBuffer(target.vertexBuffer);
+        this.gl.deleteBuffer(target.colorBuffer);
+        this.gl.deleteBuffer(target.uvBuffer);
+        target.frameBuffer = null;
+        target.texture = null;
+        target.vertexBuffer = null;
+        target.colorBuffer = null;
+        target.uvBuffer = null;
+    }
     /**
      * Unloads the Graphics and WebGL stuff
      */
     unload() {
-        this.screen.remove();
-        this.buffer.remove();
-        this.screen = null;
-        this.buffer = null;
+        this.gl.deleteBuffer(this.vertexBuffer);
+        this.gl.deleteBuffer(this.colorBuffer);
+        this.gl.deleteBuffer(this.uvBuffer);
+        this.disposeRenderTarget(this.buffer);
+        this.canvas.remove();
+        this.canvas = null;
         // TODO: Implement this properly
     }
     /**
@@ -532,23 +582,33 @@ class Graphics {
      */
     resize() {
         // buffer
-        this.buffer.width = Engine.width;
-        this.buffer.height = Engine.height;
-        this.gl.viewport(0, 0, this.buffer.width, this.buffer.height);
+        if (this.buffer != null)
+            this.disposeRenderTarget(this.buffer);
+        this.buffer = this.createRenderTarget(Engine.width, Engine.height);
         // orthographic matrix
-        this.orthoMatrix = new Matrix();
-        this.orthoMatrix.translate(-1, 1);
-        this.orthoMatrix.scale(1 / this.buffer.width * 2, -1 / this.buffer.height * 2);
+        this.orthographic
+            .identity()
+            .translate(-1, 1)
+            .scale(1 / this.buffer.width * 2, -1 / this.buffer.height * 2);
     }
     /**
      * Updates the Graphics
      */
     update() {
         // resizing
-        if (this.screen.width != Engine.root.clientWidth || this.screen.height != Engine.root.clientHeight) {
-            this.screen.width = Engine.root.clientWidth;
-            this.screen.height = Engine.root.clientHeight;
+        if (this.canvas.width != Engine.root.clientWidth || this.canvas.height != Engine.root.clientHeight) {
+            this.canvas.width = Engine.root.clientWidth;
+            this.canvas.height = Engine.root.clientHeight;
         }
+    }
+    /**
+     * Gets the rectangle that the game buffer should be drawn to the screen with
+     */
+    getOutputBounds() {
+        let scale = (Math.min(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
+        let width = this.buffer.width * scale;
+        let height = this.buffer.height * scale;
+        return new Rectangle((this.canvas.width - width) / 2, (this.canvas.height - height) / 2, width, height);
     }
     /**
      * Clears the screen
@@ -558,76 +618,41 @@ class Graphics {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     }
     /**
-     * Draws the game to the Screen canvas
-     */
-    output() {
-        this.screenContext.clearRect(0, 0, this.screen.width, this.screen.height);
-        this.screenContext.imageSmoothingEnabled = false;
-        let bounds = this.getOutputBounds();
-        this.screenContext.drawImage(this.buffer, bounds.x, bounds.y, bounds.width, bounds.height);
-    }
-    /**
-     * Gets the rectangle that the game buffer should be drawn to the screen with
-     */
-    getOutputBounds() {
-        let scale = (Math.min(this.screen.width / this.buffer.width, this.screen.height / this.buffer.height));
-        let width = this.buffer.width * scale;
-        let height = this.buffer.height * scale;
-        return new Rectangle((this.screen.width - width) / 2, (this.screen.height - height) / 2, width, height);
-    }
-    /**
      * Resets the Graphics rendering
      */
     reset() {
         this.drawCalls = 0;
         this.currentShader = null;
         this.nextShader = null;
+        this.vertices = [];
+        this.colors = [];
+        this.uvs = [];
+        this.setRenderTarget(this.buffer);
+        this.clear(this.clearColor);
     }
     /**
-     * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
-     * @param x 	X position of the vertex
-     * @param y		Y position of the vertex
-     * @param u		X position in the texture (u) (only used in shaders with sampler2d)
-     * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
-     * @param color optional color for the vertex
+     * Sets the current Render Target
      */
-    push(x, y, u, v, color) {
-        // shader was changed
-        this.checkState();
-        // append
-        this.vertices.push(x, y);
-        this.uvs.push(u, v);
-        if (color != undefined && color != null)
-            this.colors.push(color.r, color.g, color.b, color.a);
-    }
-    /**
-     * Same as Graphics.push, but this method assumes the shader was NOT modified. Don't use this unless you know what you're doing
-     * @param x 	X position of the vertex
-     * @param y		Y position of the vertex
-     * @param u		X position in the texture (u) (only used in shaders with sampler2d)
-     * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
-     * @param color optional color for the vertex
-     */
-    pushUnsafe(x, y, u, v, color) {
-        this.vertices.push(x, y);
-        this.uvs.push(u, v);
-        if (color != undefined && color != null)
-            this.colors.push(color.r, color.g, color.b, color.a);
-    }
-    /**
-     * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
-     */
-    pushList(pos, uv, color) {
-        this.checkState();
-        for (let i = 0; i < pos.length; i++) {
-            this.vertices.push(pos[i].x, pos[i].y);
-            if (uv != undefined && uv != null)
-                this.uvs.push(uv[i].x, uv[i].y);
-            if (color != undefined && color != null) {
-                let c = color[i];
-                this.colors.push(c.r, c.g, c.b, c.a);
+    setRenderTarget(target) {
+        if (this.currentTarget != target) {
+            this.flush();
+            if (target == null) {
+                this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+                this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
             }
+            else {
+                this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, target.frameBuffer);
+                this.gl.viewport(0, 0, target.width, target.height);
+            }
+            this.currentTarget = target;
         }
+    }
+    /**
+     * Sets the current texture on the shader (if the shader has a sampler2d uniform)
+     */
+    setShaderTexture(tex) {
+        if (Engine.assert(this.shader.sampler2d != null, "This shader has no Sampler2D to set the texture to"))
+            this.shader.sampler2d.value = tex.texture.webGLTexture;
     }
     /**
      * Checks if the shader was modified, and if so, flushes the current vertices & starts a new draw
@@ -674,7 +699,7 @@ class Graphics {
                         if (uniform.value instanceof Matrix)
                             this.gl.uniformMatrix3fv(location, false, uniform.value.mat);
                         else
-                            this.gl.uniformMatrix2fv(location, false, uniform.value);
+                            this.gl.uniformMatrix3fv(location, false, uniform.value);
                     }
                     uniform.dirty = false;
                 }
@@ -691,17 +716,17 @@ class Graphics {
             for (let i = 0; i < this.currentShader.attributes.length; i++) {
                 let attr = this.currentShader.attributes[i];
                 if (attr.type == ShaderAttributeType.Position) {
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.vertexBuffer : this.currentTarget.vertexBuffer));
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.vertices), this.gl.STATIC_DRAW);
                     this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
                 }
                 else if (attr.type == ShaderAttributeType.Uv) {
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.uvBuffer);
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.uvBuffer : this.currentTarget.uvBuffer));
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.uvs), this.gl.STATIC_DRAW);
                     this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
                 }
                 else if (attr.type == ShaderAttributeType.Color) {
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.colorBuffer : this.currentTarget.colorBuffer));
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.colors), this.gl.STATIC_DRAW);
                     this.gl.vertexAttribPointer(attr.attribute, 4, this.gl.FLOAT, false, 0, 0);
                 }
@@ -716,11 +741,76 @@ class Graphics {
         }
     }
     /**
-     * Sets the current texture on the shader (if the shader has a sampler2d uniform)
+     * Draws the game to the Screen and does cleanup
      */
-    setShaderTexture(tex) {
-        if (Engine.assert(this.shader.sampler2d != null, "This shader has no Sampler2D to set the texture to"))
-            this.shader.sampler2d.value = tex.texture.webGLTexture;
+    finalize() {
+        // set target back to the Screen Canvas (null)
+        this.setRenderTarget(null);
+        this.clear(Color.black);
+        // create the matrix for rendering back to the Screen
+        this.toscreen
+            .identity()
+            .translate(-1, -1)
+            .scale(1 / this.canvas.width * 2, 1 / this.canvas.height * 2);
+        // use the default texture shader
+        this.shader = Shaders.texture;
+        this.shader.sampler2d.value = this.buffer.texture.webGLTexture;
+        this.shader.set("matrix", this.toscreen);
+        // draw our buffer centered!
+        let bounds = this.getOutputBounds();
+        this.push(bounds.left, bounds.top, 0, 0, Color.white);
+        this.push(bounds.right, bounds.top, 1, 0, Color.white);
+        this.push(bounds.right, bounds.bottom, 1, 1, Color.white);
+        this.push(bounds.left, bounds.top, 0, 0, Color.white);
+        this.push(bounds.right, bounds.bottom, 1, 1, Color.white);
+        this.push(bounds.left, bounds.bottom, 0, 1, Color.white);
+        this.flush();
+    }
+    /**
+     * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
+     * @param x 	X position of the vertex
+     * @param y		Y position of the vertex
+     * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+     * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+     * @param color optional color for the vertex
+     */
+    push(x, y, u, v, color) {
+        // shader was changed
+        this.checkState();
+        // append
+        this.vertices.push(x, y);
+        this.uvs.push(u, v);
+        if (color != undefined && color != null)
+            this.colors.push(color.r, color.g, color.b, color.a);
+    }
+    /**
+     * Same as Graphics.push, but this method assumes the shader was NOT modified. Don't use this unless you know what you're doing
+     * @param x 	X position of the vertex
+     * @param y		Y position of the vertex
+     * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+     * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+     * @param color optional color for the vertex
+     */
+    pushUnsafe(x, y, u, v, color) {
+        this.vertices.push(x, y);
+        this.uvs.push(u, v);
+        if (color != undefined && color != null)
+            this.colors.push(color.r, color.g, color.b, color.a);
+    }
+    /**
+     * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
+     */
+    pushList(pos, uv, color) {
+        this.checkState();
+        for (let i = 0; i < pos.length; i++) {
+            this.vertices.push(pos[i].x, pos[i].y);
+            if (uv != undefined && uv != null)
+                this.uvs.push(uv[i].x, uv[i].y);
+            if (color != undefined && color != null) {
+                let c = color[i];
+                this.colors.push(c.r, c.g, c.b, c.a);
+            }
+        }
     }
     /**
      * Draws a texture at the given position. If the current Shader does not take a texture, this will throw an error.
@@ -930,16 +1020,25 @@ class Graphics {
 class Renderer {
     constructor() {
         this.visible = true;
+        this.target = null;
+        this.clearTargetColor = new Color(0, 0, 0, 0);
         this.scene = null;
         this.groupsMask = [];
     }
     update() { }
     preRender() { }
     render() {
-        let currentCamera = (this.camera || this.scene.camera);
+        // set target
+        if (this.target != null) {
+            Engine.graphics.setRenderTarget(this.target);
+            Engine.graphics.clear(this.clearTargetColor);
+        }
+        else
+            Engine.graphics.setRenderTarget(Engine.graphics.buffer);
         // set to our shader, and set main Matrix to the camera with fallback to Scene camera
+        let currentCamera = (this.camera || this.scene.camera);
         Engine.graphics.shader = this.shader;
-        Engine.graphics.shader.set(this.shaderMatrixUniformName, currentCamera.matrix);
+        Engine.graphics.shader.set(this.shaderCameraUniformName, currentCamera.matrix);
         // draw each entity
         let list = (this.groupsMask.length > 0 ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
         for (let i = list.length - 1; i >= 0; i--)
@@ -1031,6 +1130,7 @@ class Scene {
                 this.renderers[i].postRender();
         // debug render
         if (Engine.debugMode) {
+            Engine.graphics.setRenderTarget(Engine.graphics.buffer);
             Engine.graphics.shader = Shaders.primitive;
             Engine.graphics.shader.set("matrix", this.camera.matrix);
             for (let i = 0; i < this.entities.length; i++)
@@ -1336,27 +1436,16 @@ class AssetLoader {
     loadTexture(path, callback) {
         var self = this;
         let gl = Engine.graphics.gl;
-        let fglt = new FosterWebGLTexture();
         let img = new Image();
-        fglt.path = path;
         img.addEventListener('load', function () {
-            fglt.width = img.width;
-            fglt.height = img.height;
-            fglt.webGLTexture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, fglt.webGLTexture);
-            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.bindTexture(gl.TEXTURE_2D, null);
-            Assets.textures[fglt.path] = new Texture(fglt);
+            let tex = Engine.graphics.createTexture(img);
+            tex.texture.path = path;
+            Assets.textures[path] = tex;
             if (callback != undefined)
-                callback(Assets.textures[fglt.path]);
+                callback(tex);
             self.incrementLoader();
         });
-        img.src = fglt.path;
+        img.src = path;
     }
     loadJson(path, callback) {
         var self = this;
@@ -2102,7 +2191,7 @@ class Mouse {
         this._position = this._positionNext;
     }
     static setNextMouseTo(pageX, pageY) {
-        let screen = Engine.graphics.screenCanvas.getBoundingClientRect();
+        let screen = Engine.graphics.canvas.getBoundingClientRect();
         let scaled = Engine.graphics.getOutputBounds();
         let scale = new Vector(scaled.width / Engine.width, scaled.height / Engine.height);
         // mouse position in the gameplay view
@@ -2118,7 +2207,7 @@ class PrimitiveRenderer extends Renderer {
     constructor() {
         super();
         this.shader = Shaders.primitive;
-        this.shaderMatrixUniformName = "matrix";
+        this.shaderCameraUniformName = "matrix";
     }
 }
 /// <reference path="./../renderer.ts"/>
@@ -2126,7 +2215,7 @@ class SpriteRenderer extends Renderer {
     constructor() {
         super();
         this.shader = Shaders.texture;
-        this.shaderMatrixUniformName = "matrix";
+        this.shaderCameraUniformName = "matrix";
     }
 }
 class Calc {
@@ -2857,8 +2946,11 @@ class Atlas {
     }
 }
 class FosterWebGLTexture {
-    constructor() {
+    constructor(texture, width, height) {
         this.disposed = false;
+        this.webGLTexture = texture;
+        this.width = width;
+        this.height = height;
     }
     unload() {
         if (!this.disposed) {
@@ -2872,6 +2964,19 @@ class FosterWebGLTexture {
         }
     }
 }
+/// <reference path="./fosterWebGLTexture.ts"/>
+class RenderTarget {
+    constructor(buffer, texture, vertexBuffer, colorBuffer, uvBuffer) {
+        this.texture = texture;
+        this.frameBuffer = buffer;
+        this.vertexBuffer = vertexBuffer;
+        this.colorBuffer = colorBuffer;
+        this.uvBuffer = uvBuffer;
+    }
+    get width() { return this.texture.width; }
+    get height() { return this.texture.height; }
+}
+/// <reference path="./fosterWebGLTexture.ts"/>
 class Texture {
     constructor(texture, bounds, frame) {
         this.bounds = null;

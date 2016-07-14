@@ -1,0 +1,29 @@
+class FosterWebGLTexture
+{
+	public path:string;
+	public webGLTexture:WebGLTexture;
+	public width:number;
+	public height:number;
+	public disposed:boolean = false;
+
+	constructor(texture:WebGLTexture, width:number, height:number)
+	{
+		this.webGLTexture = texture;
+		this.width = width;
+		this.height = height;
+	}
+
+	public unload():void
+	{
+		if (!this.disposed)
+		{
+			let gl = Engine.graphics.gl;
+			gl.deleteTexture(this.webGLTexture);
+			this.path = "";
+			this.webGLTexture = null;
+			this.width = 1;
+			this.height = 1;
+			this.disposed = true;
+		}
+	}
+}

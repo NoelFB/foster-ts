@@ -6,6 +6,6 @@ class SpriteRenderer extends Renderer
 		super();
 		
 		this.shader = Shaders.texture;
-		this.shaderMatrixUniformName = "matrix";
+		this.shaderCameraUniformName = "matrix";
 	}
 }

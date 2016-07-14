@@ -6,6 +6,6 @@ class PrimitiveRenderer extends Renderer
 		super();
 		
 		this.shader = Shaders.primitive;
-		this.shaderMatrixUniformName = "matrix";
+		this.shaderCameraUniformName = "matrix";
 	}
 }

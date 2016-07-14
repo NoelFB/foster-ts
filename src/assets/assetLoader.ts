@@ -118,33 +118,20 @@ class AssetLoader
 		var self = this;
 
 		let gl = Engine.graphics.gl;
-		let fglt = new FosterWebGLTexture();
 		let img = new Image();
 
-		fglt.path = path;
 		img.addEventListener('load', function()
 		{
-			fglt.width = img.width;
-			fglt.height = img.height;
-			fglt.webGLTexture = gl.createTexture();
-			
-			gl.bindTexture(gl.TEXTURE_2D, fglt.webGLTexture);
-			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			gl.bindTexture(gl.TEXTURE_2D, null);
-			
-			Assets.textures[fglt.path] = new Texture(fglt);
+			let tex = Engine.graphics.createTexture(img);
+			tex.texture.path = path;
+			Assets.textures[path] = tex;
 			
 			if (callback != undefined)
-				callback(Assets.textures[fglt.path]);
+				callback(tex);
 
 			self.incrementLoader();
 		})
-		img.src = fglt.path;
+		img.src = path;
 	}
 
 	private loadJson(path:string, callback?:(json:Object)=>void):void

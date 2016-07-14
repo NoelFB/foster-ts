@@ -2,21 +2,23 @@ class Graphics
 {
 	// core
 	private engine:Engine;
-	private screen:HTMLCanvasElement;
-	private screenContext:CanvasRenderingContext2D;
-	private buffer:HTMLCanvasElement;
-	private bufferContext:WebGLRenderingContext;
-	public get gl():WebGLRenderingContext { return this.bufferContext; }
-	public get screenCanvas():HTMLCanvasElement { return this.screen; }
+	public canvas:HTMLCanvasElement;
+	public gl:WebGLRenderingContext;
+	public buffer:RenderTarget;
 	
 	// vertices
-	private vertexBuffer:WebGLBuffer;
-	private uvBuffer:WebGLBuffer;
-	private colorBuffer:WebGLBuffer;
 	private vertices:number[] = [];
 	private uvs:number[] = [];
 	private colors:number[] = [];
 	
+	// current render target
+	private currentTarget:RenderTarget = null;
+
+	// buffers for the NULL target (screen)
+	private vertexBuffer:WebGLBuffer;
+	private uvBuffer:WebGLBuffer;
+	private colorBuffer:WebGLBuffer;
+
 	// shader
 	private currentShader:Shader = null;
 	private nextShader:Shader = null;
@@ -34,8 +36,8 @@ class Graphics
 	}
 
 	// orthographic matrix
-	private orthoMatrix:Matrix;
-	public get orthographic():Matrix { return this.orthoMatrix; }
+	public orthographic:Matrix = new Matrix();
+	private toscreen:Matrix = new Matrix();
 
 	// pixel drawing
 	private _pixel:Texture = null;
@@ -71,17 +73,13 @@ class Graphics
 		this.engine = engine;
 
 		// create the screen
-		this.screen = document.createElement("canvas");
-		this.screenContext = this.screen.getContext('2d');
-		Engine.root.appendChild(this.screen);
-
-		// create the buffer
-		this.buffer = document.createElement("canvas");
-		this.bufferContext = this.buffer.getContext("experimental-webgl", 
+		this.canvas = document.createElement("canvas");
+		this.gl = this.canvas.getContext('experimental-webgl',
 		{
 			alpha: false, 
 			antialias: false
 		}) as WebGLRenderingContext;
+		Engine.root.appendChild(this.canvas);
 
 		this.gl.enable(this.gl.BLEND);
 		this.gl.disable(this.gl.DEPTH_TEST);
@@ -95,15 +93,82 @@ class Graphics
 		this.resize();
 	}
 
+	public createTexture(image:HTMLImageElement):Texture
+	{
+		let gl = this.gl;
+		let tex = gl.createTexture();
+			
+		gl.bindTexture(gl.TEXTURE_2D, tex);
+		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+
+		return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
+	}
+
+	public createRenderTarget(width:number, height:number):RenderTarget
+	{
+		let gl = this.gl;
+
+		let frameBuffer = gl.createFramebuffer();
+		let tex = gl.createTexture();
+		let was = this.currentTarget;
+		
+    	gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+		gl.bindTexture(gl.TEXTURE_2D, tex);
+		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+
+		let vertexBuffer = gl.createBuffer();
+		let uvBuffer = gl.createBuffer();
+		let colorBuffer = gl.createBuffer();
+
+		gl.bindTexture(gl.TEXTURE_2D, null);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+		return new RenderTarget(frameBuffer, new FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
+	}
+
+	public disposeTexture(texture:Texture)
+	{
+		texture.texture.unload();
+		texture.texture = null;
+	}
+
+	public disposeRenderTarget(target:RenderTarget)
+	{
+		target.texture.unload();
+		this.gl.deleteFramebuffer(target.frameBuffer);
+		this.gl.deleteBuffer(target.vertexBuffer);
+		this.gl.deleteBuffer(target.colorBuffer);
+		this.gl.deleteBuffer(target.uvBuffer);
+		target.frameBuffer = null;
+		target.texture = null;
+		target.vertexBuffer = null;
+		target.colorBuffer = null;
+		target.uvBuffer = null;
+	}
+
 	/**
 	 * Unloads the Graphics and WebGL stuff
 	 */
 	public unload()
 	{
-		this.screen.remove();
-		this.buffer.remove();
-		this.screen = null;
-		this.buffer = null;
+		this.gl.deleteBuffer(this.vertexBuffer);
+		this.gl.deleteBuffer(this.colorBuffer);
+		this.gl.deleteBuffer(this.uvBuffer);
+		this.disposeRenderTarget(this.buffer);
+		this.canvas.remove();
+		this.canvas = null;
 		
 		// TODO: Implement this properly
 	}
@@ -114,14 +179,15 @@ class Graphics
 	public resize():void
 	{
 		// buffer
-		this.buffer.width = Engine.width;
-		this.buffer.height = Engine.height;
-		this.gl.viewport(0, 0, this.buffer.width, this.buffer.height);
+		if (this.buffer != null)
+			this.disposeRenderTarget(this.buffer);
+		this.buffer = this.createRenderTarget(Engine.width, Engine.height);
 
 		// orthographic matrix
-		this.orthoMatrix = new Matrix();
-		this.orthoMatrix.translate(-1, 1);
-		this.orthoMatrix.scale(1 / this.buffer.width * 2, -1 / this.buffer.height * 2);
+		this.orthographic
+			.identity()
+			.translate(-1, 1)
+			.scale(1 / this.buffer.width * 2, -1 / this.buffer.height * 2);
 	}
 	
 	/**
@@ -130,11 +196,23 @@ class Graphics
 	public update():void
 	{
 		// resizing
-		if (this.screen.width != Engine.root.clientWidth || this.screen.height != Engine.root.clientHeight)
+		if (this.canvas.width != Engine.root.clientWidth || this.canvas.height != Engine.root.clientHeight)
 		{
-			this.screen.width = Engine.root.clientWidth;
-			this.screen.height = Engine.root.clientHeight;
+			this.canvas.width = Engine.root.clientWidth;
+			this.canvas.height = Engine.root.clientHeight;
 		}
+	}
+
+	/**
+	 * Gets the rectangle that the game buffer should be drawn to the screen with
+	 */
+	public getOutputBounds():Rectangle
+	{	
+		let scale = (Math.min(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
+		let width = this.buffer.width * scale;
+		let height = this.buffer.height * scale;
+		
+		return new Rectangle((this.canvas.width - width) / 2, (this.canvas.height - height) / 2, width, height);
 	}
 	
 	/**
@@ -147,30 +225,6 @@ class Graphics
 	}
 	
 	/**
-	 * Draws the game to the Screen canvas
-	 */
-	public output()
-	{
-		this.screenContext.clearRect(0, 0, this.screen.width, this.screen.height);
-		(this.screenContext as any).imageSmoothingEnabled = false;
-		
-		let bounds = this.getOutputBounds();
-		this.screenContext.drawImage(this.buffer, bounds.x, bounds.y, bounds.width, bounds.height);
-	}
-	
-	/**
-	 * Gets the rectangle that the game buffer should be drawn to the screen with
-	 */
-	public getOutputBounds():Rectangle
-	{	
-		let scale = (Math.min(this.screen.width / this.buffer.width, this.screen.height / this.buffer.height));
-		let width = this.buffer.width * scale;
-		let height = this.buffer.height * scale;
-		
-		return new Rectangle((this.screen.width - width) / 2, (this.screen.height - height) / 2, width, height);
-	}
-	
-	/**
 	 * Resets the Graphics rendering
 	 */
 	public reset()
@@ -178,64 +232,44 @@ class Graphics
 		this.drawCalls = 0;
 		this.currentShader = null;
 		this.nextShader = null;
-	}
-	
-	/**
-	 * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
-	 * @param x 	X position of the vertex
-	 * @param y		Y position of the vertex
-	 * @param u		X position in the texture (u) (only used in shaders with sampler2d)
-	 * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
-	 * @param color optional color for the vertex
-	 */
-	public push(x:number, y:number, u:number, v:number, color?:Color)
-	{
-		// shader was changed
-		this.checkState();
-		
-		// append
-		this.vertices.push(x, y);
-		this.uvs.push(u, v);
-		if (color != undefined && color != null)
-			this.colors.push(color.r, color.g, color.b, color.a);
+		this.vertices = [];
+		this.colors = [];
+		this.uvs = [];
+		this.setRenderTarget(this.buffer);
+		this.clear(this.clearColor);
 	}
 
 	/**
-	 * Same as Graphics.push, but this method assumes the shader was NOT modified. Don't use this unless you know what you're doing
-	 * @param x 	X position of the vertex
-	 * @param y		Y position of the vertex
-	 * @param u		X position in the texture (u) (only used in shaders with sampler2d)
-	 * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
-	 * @param color optional color for the vertex
+	 * Sets the current Render Target
 	 */
-	public pushUnsafe(x:number, y:number, u:number, v:number, color?:Color)
+	public setRenderTarget(target:RenderTarget):void
 	{
-		this.vertices.push(x, y);
-		this.uvs.push(u, v);
-		if (color != undefined && color != null)
-			this.colors.push(color.r, color.g, color.b, color.a);
-	}
-	
-	/**
-	 * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
-	 */
-	public pushList(pos:Vector[], uv:Vector[], color:Color[])
-	{
-		this.checkState();
-		
-		for (let i = 0; i < pos.length; i ++)
+		if (this.currentTarget != target)
 		{
-			this.vertices.push(pos[i].x, pos[i].y);
-			if (uv != undefined && uv != null)
-				this.uvs.push(uv[i].x, uv[i].y);
-			if (color != undefined && color != null)
+			this.flush();
+			if (target == null)
 			{
-				let c = color[i];
-				this.colors.push(c.r, c.g, c.b, c.a);
+				this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+				this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 			}
+			else
+			{
+				this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, target.frameBuffer);
+				this.gl.viewport(0, 0, target.width, target.height);
+			}
+			this.currentTarget = target;
 		}
 	}
-	
+
+	/**
+	 * Sets the current texture on the shader (if the shader has a sampler2d uniform)
+	 */
+	public setShaderTexture(tex:Texture):void
+	{
+		if (Engine.assert(this.shader.sampler2d != null, "This shader has no Sampler2D to set the texture to"))
+			this.shader.sampler2d.value = tex.texture.webGLTexture;
+	}
+
 	/**
 	 * Checks if the shader was modified, and if so, flushes the current vertices & starts a new draw
 	 */
@@ -294,7 +328,7 @@ class Graphics
 						if (uniform.value instanceof Matrix)
 							this.gl.uniformMatrix3fv(location, false, (uniform.value as Matrix).mat);
 						else
-							this.gl.uniformMatrix2fv(location, false, uniform.value);
+							this.gl.uniformMatrix3fv(location, false, uniform.value);
 					}
 					
 					uniform.dirty = false;
@@ -318,19 +352,19 @@ class Graphics
 				let attr = this.currentShader.attributes[i];
 				if (attr.type == ShaderAttributeType.Position)
 				{
-					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.vertexBuffer : this.currentTarget.vertexBuffer));
 					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.vertices), this.gl.STATIC_DRAW);
 					this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
 				}
 				else if (attr.type == ShaderAttributeType.Uv)
 				{
-					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.uvBuffer);
+					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.uvBuffer : this.currentTarget.uvBuffer));
 					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.uvs), this.gl.STATIC_DRAW);
 					this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
 				}
 				else if (attr.type == ShaderAttributeType.Color)
 				{
-					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.colorBuffer : this.currentTarget.colorBuffer));
 					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.colors), this.gl.STATIC_DRAW);
 					this.gl.vertexAttribPointer(attr.attribute, 4, this.gl.FLOAT, false, 0, 0);
 				}
@@ -346,6 +380,93 @@ class Graphics
 			this.colors = [];
 		}
 	}
+
+	/**
+	 * Draws the game to the Screen and does cleanup
+	 */
+	public finalize()
+	{
+		// set target back to the Screen Canvas (null)
+		this.setRenderTarget(null);
+		this.clear(Color.black);
+
+		// create the matrix for rendering back to the Screen
+		this.toscreen
+			.identity()
+			.translate(-1, -1)
+			.scale(1 / this.canvas.width * 2, 1 / this.canvas.height * 2);
+
+		// use the default texture shader
+		this.shader = Shaders.texture;
+		this.shader.sampler2d.value = this.buffer.texture.webGLTexture;
+		this.shader.set("matrix", this.toscreen);
+		
+		// draw our buffer centered!
+		let bounds = this.getOutputBounds();
+		this.push(bounds.left, bounds.top, 0, 0, Color.white);
+		this.push(bounds.right, bounds.top, 1, 0, Color.white);
+		this.push(bounds.right, bounds.bottom, 1, 1, Color.white);
+		this.push(bounds.left, bounds.top, 0, 0, Color.white);
+		this.push(bounds.right, bounds.bottom, 1, 1, Color.white);
+		this.push(bounds.left, bounds.bottom, 0, 1, Color.white);
+		this.flush();
+	}
+	
+	/**
+	 * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
+	 * @param x 	X position of the vertex
+	 * @param y		Y position of the vertex
+	 * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+	 * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+	 * @param color optional color for the vertex
+	 */
+	public push(x:number, y:number, u:number, v:number, color?:Color)
+	{
+		// shader was changed
+		this.checkState();
+		
+		// append
+		this.vertices.push(x, y);
+		this.uvs.push(u, v);
+		if (color != undefined && color != null)
+			this.colors.push(color.r, color.g, color.b, color.a);
+	}
+
+	/**
+	 * Same as Graphics.push, but this method assumes the shader was NOT modified. Don't use this unless you know what you're doing
+	 * @param x 	X position of the vertex
+	 * @param y		Y position of the vertex
+	 * @param u		X position in the texture (u) (only used in shaders with sampler2d)
+	 * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
+	 * @param color optional color for the vertex
+	 */
+	public pushUnsafe(x:number, y:number, u:number, v:number, color?:Color)
+	{
+		this.vertices.push(x, y);
+		this.uvs.push(u, v);
+		if (color != undefined && color != null)
+			this.colors.push(color.r, color.g, color.b, color.a);
+	}
+	
+	/**
+	 * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
+	 */
+	public pushList(pos:Vector[], uv:Vector[], color:Color[])
+	{
+		this.checkState();
+		
+		for (let i = 0; i < pos.length; i ++)
+		{
+			this.vertices.push(pos[i].x, pos[i].y);
+			if (uv != undefined && uv != null)
+				this.uvs.push(uv[i].x, uv[i].y);
+			if (color != undefined && color != null)
+			{
+				let c = color[i];
+				this.colors.push(c.r, c.g, c.b, c.a);
+			}
+		}
+	}
 	
 	// temp. vars used for drawing
 	private topleft:Vector = new Vector();
@@ -353,15 +474,6 @@ class Graphics
 	private botleft:Vector = new Vector();
 	private botright:Vector = new Vector();
 	private texToDraw:Texture = new Texture(null, new Rectangle(), new Rectangle());
-	
-	/**
-	 * Sets the current texture on the shader (if the shader has a sampler2d uniform)
-	 */
-	public setShaderTexture(tex:Texture):void
-	{
-		if (Engine.assert(this.shader.sampler2d != null, "This shader has no Sampler2D to set the texture to"))
-			this.shader.sampler2d.value = tex.texture.webGLTexture;
-	}
 	
 	/**
 	 * Draws a texture at the given position. If the current Shader does not take a texture, this will throw an error.

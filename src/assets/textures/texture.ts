@@ -1,26 +1,4 @@
-class FosterWebGLTexture
-{
-	public path:string;
-	public webGLTexture:WebGLTexture;
-	public width:number;
-	public height:number;
-	public disposed:boolean = false;
-
-	public unload():void
-	{
-		if (!this.disposed)
-		{
-			let gl = Engine.graphics.gl;
-			gl.deleteTexture(this.webGLTexture);
-			this.path = "";
-			this.webGLTexture = null;
-			this.width = 1;
-			this.height = 1;
-			this.disposed = true;
-		}
-	}
-}
-
+/// <reference path="./fosterWebGLTexture.ts"/>
 class Texture
 {
 	public bounds:Rectangle = null;

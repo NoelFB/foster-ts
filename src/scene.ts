@@ -110,6 +110,7 @@ class Scene
 		// debug render
 		if (Engine.debugMode)
 		{
+			Engine.graphics.setRenderTarget(Engine.graphics.buffer);
 			Engine.graphics.shader = Shaders.primitive;
 			Engine.graphics.shader.set("matrix", this.camera.matrix);
 			

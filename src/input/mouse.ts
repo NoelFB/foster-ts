@@ -77,7 +77,7 @@ class Mouse
 	
 	private static setNextMouseTo(pageX:number, pageY:number)
 	{
-		let screen = Engine.graphics.screenCanvas.getBoundingClientRect();
+		let screen = Engine.graphics.canvas.getBoundingClientRect();
 		let scaled = Engine.graphics.getOutputBounds();
 		let scale = new Vector(scaled.width / Engine.width, scaled.height / Engine.height);
 		
