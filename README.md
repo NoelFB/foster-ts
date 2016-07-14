@@ -15,7 +15,6 @@ and am only working on this in my spare time!
  
 #### Todo
  - Implement Audio stuff
- - Add render-target support, so that Renderers (or draw calls in general) can be drawn to a specific render target. Renderers should then have an optional variable for drawing to a Render Target instead of the Screen
  - Comment everything (and generate Docs somehow?)
  - Maybe put it in  `Foster Namespace`? I find it really annoying to type "`new Foster.Entity`" and etc, all the time though
  
