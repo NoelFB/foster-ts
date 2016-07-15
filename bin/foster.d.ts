@@ -246,11 +246,11 @@ declare class Graphics {
     borderColor: Color;
     clearColor: Color;
     private vertices;
-    private uvs;
+    private texcoords;
     private colors;
     private currentTarget;
     private vertexBuffer;
-    private uvBuffer;
+    private texcoordBuffer;
     private colorBuffer;
     private currentShader;
     private nextShader;
@@ -934,7 +934,7 @@ declare class ShaderUniform {
 }
 declare enum ShaderAttributeType {
     Position = 0,
-    Uv = 1,
+    Texcoord = 1,
     Color = 2,
 }
 declare class ShaderAttribute {
@@ -1015,11 +1015,11 @@ declare class RenderTarget {
     texture: FosterWebGLTexture;
     frameBuffer: WebGLFramebuffer;
     vertexBuffer: WebGLBuffer;
-    uvBuffer: WebGLBuffer;
+    texcoordBuffer: WebGLBuffer;
     colorBuffer: WebGLBuffer;
     width: number;
     height: number;
-    constructor(buffer: WebGLFramebuffer, texture: FosterWebGLTexture, vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, uvBuffer: WebGLBuffer);
+    constructor(buffer: WebGLFramebuffer, texture: FosterWebGLTexture, vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, texcoordBuffer: WebGLBuffer);
     dispose(): void;
     static create(width: number, height: number): RenderTarget;
 }

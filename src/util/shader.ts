@@ -130,7 +130,7 @@ class ShaderUniform
 enum ShaderAttributeType
 {
 	Position,
-	Uv,
+	Texcoord,
 	Color
 }
 

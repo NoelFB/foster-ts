@@ -5,19 +5,19 @@ class RenderTarget
 	public texture:FosterWebGLTexture;
 	public frameBuffer:WebGLFramebuffer;
 	public vertexBuffer:WebGLBuffer;
-	public uvBuffer:WebGLBuffer;
+	public texcoordBuffer:WebGLBuffer;
 	public colorBuffer:WebGLBuffer;
 
 	public get width():number { return this.texture.width; }
 	public get height():number { return this.texture.height; }
 
-	public constructor(buffer:WebGLFramebuffer, texture:FosterWebGLTexture, vertexBuffer:WebGLBuffer, colorBuffer:WebGLBuffer, uvBuffer:WebGLBuffer)
+	public constructor(buffer:WebGLFramebuffer, texture:FosterWebGLTexture, vertexBuffer:WebGLBuffer, colorBuffer:WebGLBuffer, texcoordBuffer:WebGLBuffer)
 	{
 		this.texture = texture;
 		this.frameBuffer = buffer;
 		this.vertexBuffer = vertexBuffer;
 		this.colorBuffer = colorBuffer;
-		this.uvBuffer = uvBuffer;
+		this.texcoordBuffer = texcoordBuffer;
 	}
 
 	public dispose():void
@@ -28,11 +28,11 @@ class RenderTarget
 		let gl = Engine.graphics.gl;
 		gl.deleteFramebuffer(this.frameBuffer);
 		gl.deleteBuffer(this.vertexBuffer);
-		gl.deleteBuffer(this.uvBuffer);
+		gl.deleteBuffer(this.texcoordBuffer);
 		gl.deleteBuffer(this.colorBuffer);
 		this.frameBuffer = null;
 		this.vertexBuffer = null;
-		this.uvBuffer = null;
+		this.texcoordBuffer = null;
 		this.colorBuffer = null;
 	}
 

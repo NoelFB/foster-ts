@@ -28,7 +28,7 @@ class Graphics
 	
 	// vertices
 	private vertices:number[] = [];
-	private uvs:number[] = [];
+	private texcoords:number[] = [];
 	private colors:number[] = [];
 	
 	// current render target
@@ -36,7 +36,7 @@ class Graphics
 
 	// buffers for the NULL target (screen)
 	private vertexBuffer:WebGLBuffer;
-	private uvBuffer:WebGLBuffer;
+	private texcoordBuffer:WebGLBuffer;
 	private colorBuffer:WebGLBuffer;
 
 	// shader
@@ -106,7 +106,7 @@ class Graphics
 		this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
 
 		this.vertexBuffer = this.gl.createBuffer();
-		this.uvBuffer = this.gl.createBuffer();
+		this.texcoordBuffer = this.gl.createBuffer();
 		this.colorBuffer = this.gl.createBuffer();
 	}
 
@@ -117,7 +117,7 @@ class Graphics
 	{
 		this.gl.deleteBuffer(this.vertexBuffer);
 		this.gl.deleteBuffer(this.colorBuffer);
-		this.gl.deleteBuffer(this.uvBuffer);
+		this.gl.deleteBuffer(this.texcoordBuffer);
 		this.buffer.dispose();
 		this.buffer = null;
 		this.canvas.remove();
@@ -211,7 +211,7 @@ class Graphics
 		this.nextShader = null;
 		this.vertices = [];
 		this.colors = [];
-		this.uvs = [];
+		this.texcoords = [];
 		this.setRenderTarget(this.buffer);
 		this.clear(this.clearColor);
 	}
@@ -328,10 +328,10 @@ class Graphics
 					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.vertices), this.gl.STATIC_DRAW);
 					this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
 				}
-				else if (attr.type == ShaderAttributeType.Uv)
+				else if (attr.type == ShaderAttributeType.Texcoord)
 				{
-					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.uvBuffer : this.currentTarget.uvBuffer));
-					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.uvs), this.gl.STATIC_DRAW);
+					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.texcoordBuffer : this.currentTarget.texcoordBuffer));
+					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.texcoords), this.gl.STATIC_DRAW);
 					this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
 				}
 				else if (attr.type == ShaderAttributeType.Color)
@@ -348,7 +348,7 @@ class Graphics
 			
 			// clear	
 			this.vertices = [];
-			this.uvs = [];
+			this.texcoords = [];
 			this.colors = [];
 		}
 	}
@@ -399,7 +399,7 @@ class Graphics
 		
 		// append
 		this.vertices.push(x, y);
-		this.uvs.push(u, v);
+		this.texcoords.push(u, v);
 		if (color != undefined && color != null)
 			this.colors.push(color.r, color.g, color.b, color.a);
 	}
@@ -415,7 +415,7 @@ class Graphics
 	public pushUnsafe(x:number, y:number, u:number, v:number, color?:Color)
 	{
 		this.vertices.push(x, y);
-		this.uvs.push(u, v);
+		this.texcoords.push(u, v);
 		if (color != undefined && color != null)
 			this.colors.push(color.r, color.g, color.b, color.a);
 	}
@@ -431,7 +431,7 @@ class Graphics
 		{
 			this.vertices.push(pos[i].x, pos[i].y);
 			if (uv != undefined && uv != null)
-				this.uvs.push(uv[i].x, uv[i].y);
+				this.texcoords.push(uv[i].x, uv[i].y);
 			if (color != undefined && color != null)
 			{
 				let c = color[i];

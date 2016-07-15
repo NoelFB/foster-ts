@@ -479,7 +479,7 @@ class Graphics {
         this.clearColor = new Color(0.1, 0.1, 0.3, 1);
         // vertices
         this.vertices = [];
-        this.uvs = [];
+        this.texcoords = [];
         this.colors = [];
         // current render target
         this.currentTarget = null;
@@ -512,7 +512,7 @@ class Graphics {
         this.gl.disable(this.gl.CULL_FACE);
         this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
         this.vertexBuffer = this.gl.createBuffer();
-        this.uvBuffer = this.gl.createBuffer();
+        this.texcoordBuffer = this.gl.createBuffer();
         this.colorBuffer = this.gl.createBuffer();
     }
     get shader() {
@@ -545,7 +545,7 @@ class Graphics {
     unload() {
         this.gl.deleteBuffer(this.vertexBuffer);
         this.gl.deleteBuffer(this.colorBuffer);
-        this.gl.deleteBuffer(this.uvBuffer);
+        this.gl.deleteBuffer(this.texcoordBuffer);
         this.buffer.dispose();
         this.buffer = null;
         this.canvas.remove();
@@ -618,7 +618,7 @@ class Graphics {
         this.nextShader = null;
         this.vertices = [];
         this.colors = [];
-        this.uvs = [];
+        this.texcoords = [];
         this.setRenderTarget(this.buffer);
         this.clear(this.clearColor);
     }
@@ -707,9 +707,9 @@ class Graphics {
                     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.vertices), this.gl.STATIC_DRAW);
                     this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
                 }
-                else if (attr.type == ShaderAttributeType.Uv) {
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.uvBuffer : this.currentTarget.uvBuffer));
-                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.uvs), this.gl.STATIC_DRAW);
+                else if (attr.type == ShaderAttributeType.Texcoord) {
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.texcoordBuffer : this.currentTarget.texcoordBuffer));
+                    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.texcoords), this.gl.STATIC_DRAW);
                     this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
                 }
                 else if (attr.type == ShaderAttributeType.Color) {
@@ -723,7 +723,7 @@ class Graphics {
             this.drawCalls++;
             // clear	
             this.vertices = [];
-            this.uvs = [];
+            this.texcoords = [];
             this.colors = [];
         }
     }
@@ -766,7 +766,7 @@ class Graphics {
         this.checkState();
         // append
         this.vertices.push(x, y);
-        this.uvs.push(u, v);
+        this.texcoords.push(u, v);
         if (color != undefined && color != null)
             this.colors.push(color.r, color.g, color.b, color.a);
     }
@@ -780,7 +780,7 @@ class Graphics {
      */
     pushUnsafe(x, y, u, v, color) {
         this.vertices.push(x, y);
-        this.uvs.push(u, v);
+        this.texcoords.push(u, v);
         if (color != undefined && color != null)
             this.colors.push(color.r, color.g, color.b, color.a);
     }
@@ -792,7 +792,7 @@ class Graphics {
         for (let i = 0; i < pos.length; i++) {
             this.vertices.push(pos[i].x, pos[i].y);
             if (uv != undefined && uv != null)
-                this.uvs.push(uv[i].x, uv[i].y);
+                this.texcoords.push(uv[i].x, uv[i].y);
             if (color != undefined && color != null) {
                 let c = color[i];
                 this.colors.push(c.r, c.g, c.b, c.a);
@@ -2745,7 +2745,7 @@ class ShaderUniform {
 var ShaderAttributeType;
 (function (ShaderAttributeType) {
     ShaderAttributeType[ShaderAttributeType["Position"] = 0] = "Position";
-    ShaderAttributeType[ShaderAttributeType["Uv"] = 1] = "Uv";
+    ShaderAttributeType[ShaderAttributeType["Texcoord"] = 1] = "Texcoord";
     ShaderAttributeType[ShaderAttributeType["Color"] = 2] = "Color";
 })(ShaderAttributeType || (ShaderAttributeType = {}));
 class ShaderAttribute {
@@ -2875,7 +2875,7 @@ class Shaders {
             new ShaderUniform("texture", ShaderUniformType.sampler2D)
         ], [
             new ShaderAttribute('a_position', ShaderAttributeType.Position),
-            new ShaderAttribute('a_texcoord', ShaderAttributeType.Uv),
+            new ShaderAttribute('a_texcoord', ShaderAttributeType.Texcoord),
             new ShaderAttribute('a_color', ShaderAttributeType.Color)
         ]);
         // solid color shader over texture
@@ -2906,7 +2906,7 @@ class Shaders {
             new ShaderUniform("texture", ShaderUniformType.sampler2D)
         ], [
             new ShaderAttribute('a_position', ShaderAttributeType.Position),
-            new ShaderAttribute('a_texcoord', ShaderAttributeType.Uv),
+            new ShaderAttribute('a_texcoord', ShaderAttributeType.Texcoord),
             new ShaderAttribute('a_color', ShaderAttributeType.Color)
         ]);
         // Primitive texture
@@ -3061,12 +3061,12 @@ class FosterWebGLTexture {
 }
 /// <reference path="./fosterWebGLTexture.ts"/>
 class RenderTarget {
-    constructor(buffer, texture, vertexBuffer, colorBuffer, uvBuffer) {
+    constructor(buffer, texture, vertexBuffer, colorBuffer, texcoordBuffer) {
         this.texture = texture;
         this.frameBuffer = buffer;
         this.vertexBuffer = vertexBuffer;
         this.colorBuffer = colorBuffer;
-        this.uvBuffer = uvBuffer;
+        this.texcoordBuffer = texcoordBuffer;
     }
     get width() { return this.texture.width; }
     get height() { return this.texture.height; }
@@ -3076,11 +3076,11 @@ class RenderTarget {
         let gl = Engine.graphics.gl;
         gl.deleteFramebuffer(this.frameBuffer);
         gl.deleteBuffer(this.vertexBuffer);
-        gl.deleteBuffer(this.uvBuffer);
+        gl.deleteBuffer(this.texcoordBuffer);
         gl.deleteBuffer(this.colorBuffer);
         this.frameBuffer = null;
         this.vertexBuffer = null;
-        this.uvBuffer = null;
+        this.texcoordBuffer = null;
         this.colorBuffer = null;
     }
     static create(width, height) {

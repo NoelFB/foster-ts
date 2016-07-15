@@ -44,7 +44,7 @@ class Shaders
 			],
 			[
 				new ShaderAttribute('a_position', ShaderAttributeType.Position),
-				new ShaderAttribute('a_texcoord', ShaderAttributeType.Uv),
+				new ShaderAttribute('a_texcoord', ShaderAttributeType.Texcoord),
 				new ShaderAttribute('a_color', ShaderAttributeType.Color)
 			]
 		);
@@ -84,7 +84,7 @@ class Shaders
 			],
 			[
 				new ShaderAttribute('a_position', ShaderAttributeType.Position),
-				new ShaderAttribute('a_texcoord', ShaderAttributeType.Uv),
+				new ShaderAttribute('a_texcoord', ShaderAttributeType.Texcoord),
 				new ShaderAttribute('a_color', ShaderAttributeType.Color)
 			]
 		);
