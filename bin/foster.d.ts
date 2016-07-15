@@ -223,11 +223,28 @@ declare class GameWindow {
     static toggleDevTools(): void;
     static screenMouse: Vector;
 }
+declare enum ResolutionStyle {
+    /** Renders the buffer at the Center of the Screen with no scaling */
+    None = 0,
+    /** Renders the buffer to an exact fit of the Screen (stretching) */
+    Exact = 1,
+    /** Renders the buffer so that it is contained within the Screen */
+    Contain = 2,
+    /** Renders the buffer so that it is contained within the Screen, rounded to an Integer scale */
+    ContainInteger = 3,
+    /** Renders the buffer so that it fills the Screen (cropping the buffer) */
+    Fill = 4,
+    /** Renders the buffer so that it fills the Screen (cropping the buffer), rounded to an Integer scale */
+    FillInteger = 5,
+}
 declare class Graphics {
     private engine;
     canvas: HTMLCanvasElement;
     gl: WebGLRenderingContext;
     buffer: RenderTarget;
+    resolutionStyle: ResolutionStyle;
+    borderColor: Color;
+    clearColor: Color;
     private vertices;
     private uvs;
     private colors;
@@ -243,7 +260,6 @@ declare class Graphics {
     private _pixel;
     private _pixelUVs;
     pixel: Texture;
-    clearColor: Color;
     drawCalls: number;
     /**
      * Creates the Engine.Graphics

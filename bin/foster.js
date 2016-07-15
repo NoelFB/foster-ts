@@ -454,11 +454,29 @@ class GameWindow {
         return Mouse.absolute;
     }
 }
+var ResolutionStyle;
+(function (ResolutionStyle) {
+    /** Renders the buffer at the Center of the Screen with no scaling */
+    ResolutionStyle[ResolutionStyle["None"] = 0] = "None";
+    /** Renders the buffer to an exact fit of the Screen (stretching) */
+    ResolutionStyle[ResolutionStyle["Exact"] = 1] = "Exact";
+    /** Renders the buffer so that it is contained within the Screen */
+    ResolutionStyle[ResolutionStyle["Contain"] = 2] = "Contain";
+    /** Renders the buffer so that it is contained within the Screen, rounded to an Integer scale */
+    ResolutionStyle[ResolutionStyle["ContainInteger"] = 3] = "ContainInteger";
+    /** Renders the buffer so that it fills the Screen (cropping the buffer) */
+    ResolutionStyle[ResolutionStyle["Fill"] = 4] = "Fill";
+    /** Renders the buffer so that it fills the Screen (cropping the buffer), rounded to an Integer scale */
+    ResolutionStyle[ResolutionStyle["FillInteger"] = 5] = "FillInteger";
+})(ResolutionStyle || (ResolutionStyle = {}));
 class Graphics {
     /**
      * Creates the Engine.Graphics
      */
     constructor(engine) {
+        this.resolutionStyle = ResolutionStyle.Contain;
+        this.borderColor = Color.black.clone();
+        this.clearColor = new Color(0.1, 0.1, 0.3, 1);
         // vertices
         this.vertices = [];
         this.uvs = [];
@@ -474,7 +492,6 @@ class Graphics {
         // pixel drawing
         this._pixel = null;
         // utils
-        this.clearColor = new Color(0.1, 0.1, 0.3, 1);
         this.drawCalls = 0;
         // temp. vars used for drawing
         this.topleft = new Vector();
@@ -563,9 +580,26 @@ class Graphics {
      * Gets the rectangle that the game buffer should be drawn to the screen with
      */
     getOutputBounds() {
-        let scale = (Math.min(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
-        let width = this.buffer.width * scale;
-        let height = this.buffer.height * scale;
+        let scaleX = 1;
+        let scaleY = 1;
+        if (this.resolutionStyle == ResolutionStyle.Exact) {
+            scaleX = this.canvas.width / this.buffer.width;
+            scaleY = this.canvas.height / this.buffer.height;
+        }
+        else if (this.resolutionStyle == ResolutionStyle.Contain) {
+            scaleX = scaleY = (Math.min(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
+        }
+        else if (this.resolutionStyle == ResolutionStyle.ContainInteger) {
+            scaleX = scaleY = Math.floor(Math.min(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
+        }
+        else if (this.resolutionStyle == ResolutionStyle.Fill) {
+            scaleX = scaleY = (Math.max(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
+        }
+        else if (this.resolutionStyle == ResolutionStyle.FillInteger) {
+            scaleX = scaleY = Math.ceil(Math.max(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
+        }
+        let width = this.buffer.width * scaleX;
+        let height = this.buffer.height * scaleY;
         return new Rectangle((this.canvas.width - width) / 2, (this.canvas.height - height) / 2, width, height);
     }
     /**
@@ -704,7 +738,7 @@ class Graphics {
     finalize() {
         // set target back to the Screen Canvas (null)
         this.setRenderTarget(null);
-        this.clear(Color.black);
+        this.clear(this.borderColor);
         // create the matrix for rendering back to the Screen
         this.toscreen
             .identity()
