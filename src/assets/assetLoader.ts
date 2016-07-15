@@ -122,7 +122,7 @@ class AssetLoader
 
 		img.addEventListener('load', function()
 		{
-			let tex = Engine.graphics.createTexture(img);
+			let tex = Texture.create(img);
 			tex.texture.path = path;
 			Assets.textures[path] = tex;
 			

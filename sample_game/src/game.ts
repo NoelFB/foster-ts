@@ -38,7 +38,7 @@ Engine.start("Game Title", 480, 270, 3, () =>
 			});
 
 			// begin game
-			Engine.scene = new GameScene();
+			Engine.goto(new GameScene(), false);
 		});
 });
 

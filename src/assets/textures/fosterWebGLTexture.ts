@@ -13,7 +13,7 @@ class FosterWebGLTexture
 		this.height = height;
 	}
 
-	public unload():void
+	public dispose():void
 	{
 		if (!this.disposed)
 		{

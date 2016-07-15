@@ -89,73 +89,6 @@ class Graphics
 		this.vertexBuffer = this.gl.createBuffer();
 		this.uvBuffer = this.gl.createBuffer();
 		this.colorBuffer = this.gl.createBuffer();
-
-		this.resize();
-	}
-
-	public createTexture(image:HTMLImageElement):Texture
-	{
-		let gl = this.gl;
-		let tex = gl.createTexture();
-			
-		gl.bindTexture(gl.TEXTURE_2D, tex);
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.bindTexture(gl.TEXTURE_2D, null);
-
-		return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
-	}
-
-	public createRenderTarget(width:number, height:number):RenderTarget
-	{
-		let gl = this.gl;
-
-		let frameBuffer = gl.createFramebuffer();
-		let tex = gl.createTexture();
-		let was = this.currentTarget;
-		
-    	gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-		gl.bindTexture(gl.TEXTURE_2D, tex);
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-
-		let vertexBuffer = gl.createBuffer();
-		let uvBuffer = gl.createBuffer();
-		let colorBuffer = gl.createBuffer();
-
-		gl.bindTexture(gl.TEXTURE_2D, null);
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-		return new RenderTarget(frameBuffer, new FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
-	}
-
-	public disposeTexture(texture:Texture)
-	{
-		texture.texture.unload();
-		texture.texture = null;
-	}
-
-	public disposeRenderTarget(target:RenderTarget)
-	{
-		target.texture.unload();
-		this.gl.deleteFramebuffer(target.frameBuffer);
-		this.gl.deleteBuffer(target.vertexBuffer);
-		this.gl.deleteBuffer(target.colorBuffer);
-		this.gl.deleteBuffer(target.uvBuffer);
-		target.frameBuffer = null;
-		target.texture = null;
-		target.vertexBuffer = null;
-		target.colorBuffer = null;
-		target.uvBuffer = null;
 	}
 
 	/**
@@ -166,7 +99,8 @@ class Graphics
 		this.gl.deleteBuffer(this.vertexBuffer);
 		this.gl.deleteBuffer(this.colorBuffer);
 		this.gl.deleteBuffer(this.uvBuffer);
-		this.disposeRenderTarget(this.buffer);
+		this.buffer.dispose();
+		this.buffer = null;
 		this.canvas.remove();
 		this.canvas = null;
 		
@@ -180,8 +114,8 @@ class Graphics
 	{
 		// buffer
 		if (this.buffer != null)
-			this.disposeRenderTarget(this.buffer);
-		this.buffer = this.createRenderTarget(Engine.width, Engine.height);
+			this.buffer.dispose();
+		this.buffer = RenderTarget.create(Engine.width, Engine.height);
 
 		// orthographic matrix
 		this.orthographic

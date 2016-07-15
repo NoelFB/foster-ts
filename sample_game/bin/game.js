@@ -30,7 +30,7 @@ Engine.start("Game Title", 480, 270, 3, () => {
             "down": [Key.down, Key.s]
         });
         // begin game
-        Engine.scene = new GameScene();
+        Engine.goto(new GameScene(), false);
     });
 });
 class GameScene extends Scene {

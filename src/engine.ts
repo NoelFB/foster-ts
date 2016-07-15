@@ -17,10 +17,12 @@ class Engine
 	public static get client():Client { return Engine.instance.client; }
 
 	/**
-	 * The current game Scene
+	 * Gets the current game Scene
 	 */
-	public static get scene():Scene { return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene); }
-	public static set scene(val:Scene) { Engine.instance.nextScene = val; }
+	public static get scene():Scene 
+	{ 
+		return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene);
+	}
 
 	/**
 	 * Gets the Game Width, before being scaled up / down to fit in the screen
@@ -94,6 +96,15 @@ class Engine
 			if (ready != undefined)
 				ready();
 		}
+	}
+
+	public static goto(scene:Scene, disposeLastScene:boolean):Scene
+	{
+		let lastScene = Engine.scene;
+		Engine.instance.nextScene = scene;
+		if (disposeLastScene && lastScene != null)
+			lastScene.dispose();
+		return scene;
 	}
 
 	public static exit():void

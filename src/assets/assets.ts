@@ -18,9 +18,9 @@ class Assets
 		Assets.text = {};
 		Assets.atlases = {};
 
-		// textures actually need to be unloaded properly
+		// textures actually need to be unloaded
 		for (var path in Assets.textures)
-			Assets.textures[path].texture.unload();
+			Assets.textures[path].dispose();
 		Assets.textures = {};
 
 		// TODO: implement sound unloading

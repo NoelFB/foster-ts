@@ -11,9 +11,9 @@ abstract class Renderer
 	public shader:Shader;
 	public shaderCameraUniformName:string;
 	
-	public update() {}
-	public preRender() {}
-	public render()
+	public update():void {}
+	public preRender():void {}
+	public render():void
 	{
 		// set target
 		if (this.target != null)
@@ -35,5 +35,12 @@ abstract class Renderer
 			if (list[i].visible)
 				list[i].render(currentCamera);
 	}
-	public postRender() {}
+	public postRender():void {}
+
+	public dispose():void
+	{
+		if (this.target != null)
+			this.target.dispose();
+		this.target = null;
+	}
 }

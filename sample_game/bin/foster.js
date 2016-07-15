@@ -61,10 +61,11 @@ class Engine {
      */
     static get client() { return Engine.instance.client; }
     /**
-     * The current game Scene
+     * Gets the current game Scene
      */
-    static get scene() { return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene); }
-    static set scene(val) { Engine.instance.nextScene = val; }
+    static get scene() {
+        return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene);
+    }
     /**
      * Gets the Game Width, before being scaled up / down to fit in the screen
      */
@@ -124,6 +125,13 @@ class Engine {
             if (ready != undefined)
                 ready();
         };
+    }
+    static goto(scene, disposeLastScene) {
+        let lastScene = Engine.scene;
+        Engine.instance.nextScene = scene;
+        if (disposeLastScene && lastScene != null)
+            lastScene.dispose();
+        return scene;
     }
     static exit() {
         if (Engine.started && !Engine.exiting)
@@ -489,7 +497,6 @@ class Graphics {
         this.vertexBuffer = this.gl.createBuffer();
         this.uvBuffer = this.gl.createBuffer();
         this.colorBuffer = this.gl.createBuffer();
-        this.resize();
     }
     get shader() {
         if (this.nextShader != null)
@@ -515,56 +522,6 @@ class Graphics {
             ];
     }
     get pixel() { return this._pixel; }
-    createTexture(image) {
-        let gl = this.gl;
-        let tex = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
-    }
-    createRenderTarget(width, height) {
-        let gl = this.gl;
-        let frameBuffer = gl.createFramebuffer();
-        let tex = gl.createTexture();
-        let was = this.currentTarget;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-        let vertexBuffer = gl.createBuffer();
-        let uvBuffer = gl.createBuffer();
-        let colorBuffer = gl.createBuffer();
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        return new RenderTarget(frameBuffer, new FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
-    }
-    disposeTexture(texture) {
-        texture.texture.unload();
-        texture.texture = null;
-    }
-    disposeRenderTarget(target) {
-        target.texture.unload();
-        this.gl.deleteFramebuffer(target.frameBuffer);
-        this.gl.deleteBuffer(target.vertexBuffer);
-        this.gl.deleteBuffer(target.colorBuffer);
-        this.gl.deleteBuffer(target.uvBuffer);
-        target.frameBuffer = null;
-        target.texture = null;
-        target.vertexBuffer = null;
-        target.colorBuffer = null;
-        target.uvBuffer = null;
-    }
     /**
      * Unloads the Graphics and WebGL stuff
      */
@@ -572,7 +529,8 @@ class Graphics {
         this.gl.deleteBuffer(this.vertexBuffer);
         this.gl.deleteBuffer(this.colorBuffer);
         this.gl.deleteBuffer(this.uvBuffer);
-        this.disposeRenderTarget(this.buffer);
+        this.buffer.dispose();
+        this.buffer = null;
         this.canvas.remove();
         this.canvas = null;
         // TODO: Implement this properly
@@ -583,8 +541,8 @@ class Graphics {
     resize() {
         // buffer
         if (this.buffer != null)
-            this.disposeRenderTarget(this.buffer);
-        this.buffer = this.createRenderTarget(Engine.width, Engine.height);
+            this.buffer.dispose();
+        this.buffer = RenderTarget.create(Engine.width, Engine.height);
         // orthographic matrix
         this.orthographic
             .identity()
@@ -1046,6 +1004,11 @@ class Renderer {
                 list[i].render(currentCamera);
     }
     postRender() { }
+    dispose() {
+        if (this.target != null)
+            this.target.dispose();
+        this.target = null;
+    }
 }
 class Scene {
     constructor() {
@@ -1080,6 +1043,19 @@ class Scene {
      * Called when this Scene ends (Engine.scene is going to a new scene)
      */
     ended() {
+    }
+    /**
+     * Disposes this scene
+     */
+    dispose() {
+        for (let i = 0; i < this.renderers.length; i++)
+            this.renderers[i].dispose();
+        this.entities = [];
+        this.sorting = [];
+        this.renderers = [];
+        this.colliders = {};
+        this.groups = {};
+        this.cache = {};
     }
     /**
      * Called every frame and updates the Scene
@@ -1274,10 +1250,12 @@ class Scene {
         this.renderers.push(renderer);
         return renderer;
     }
-    removeRenderer(renderer) {
+    removeRenderer(renderer, dispose) {
         let index = this.renderers.indexOf(renderer);
         if (index >= 0)
             this.renderers.splice(index, 1);
+        if (dispose)
+            renderer.dispose();
         renderer.scene = null;
         return renderer;
     }
@@ -1438,7 +1416,7 @@ class AssetLoader {
         let gl = Engine.graphics.gl;
         let img = new Image();
         img.addEventListener('load', function () {
-            let tex = Engine.graphics.createTexture(img);
+            let tex = Texture.create(img);
             tex.texture.path = path;
             Assets.textures[path] = tex;
             if (callback != undefined)
@@ -1520,9 +1498,9 @@ class Assets {
         Assets.xml = {};
         Assets.text = {};
         Assets.atlases = {};
-        // textures actually need to be unloaded properly
+        // textures actually need to be unloaded
         for (var path in Assets.textures)
-            Assets.textures[path].texture.unload();
+            Assets.textures[path].dispose();
         Assets.textures = {};
         // TODO: implement sound unloading
         // ...
@@ -2952,7 +2930,7 @@ class FosterWebGLTexture {
         this.width = width;
         this.height = height;
     }
-    unload() {
+    dispose() {
         if (!this.disposed) {
             let gl = Engine.graphics.gl;
             gl.deleteTexture(this.webGLTexture);
@@ -2975,6 +2953,39 @@ class RenderTarget {
     }
     get width() { return this.texture.width; }
     get height() { return this.texture.height; }
+    dispose() {
+        this.texture.dispose();
+        this.texture = null;
+        let gl = Engine.graphics.gl;
+        gl.deleteFramebuffer(this.frameBuffer);
+        gl.deleteBuffer(this.vertexBuffer);
+        gl.deleteBuffer(this.uvBuffer);
+        gl.deleteBuffer(this.colorBuffer);
+        this.frameBuffer = null;
+        this.vertexBuffer = null;
+        this.uvBuffer = null;
+        this.colorBuffer = null;
+    }
+    static create(width, height) {
+        let gl = Engine.graphics.gl;
+        let frameBuffer = gl.createFramebuffer();
+        let tex = gl.createTexture();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+        let vertexBuffer = gl.createBuffer();
+        let uvBuffer = gl.createBuffer();
+        let colorBuffer = gl.createBuffer();
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        return new RenderTarget(frameBuffer, new FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
+    }
 }
 /// <reference path="./fosterWebGLTexture.ts"/>
 class Texture {
@@ -3012,6 +3023,23 @@ class Texture {
         return (this.texture.path +
             ": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
             "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
+    }
+    dispose() {
+        this.texture.dispose();
+        this.texture = null;
+    }
+    static create(image) {
+        let gl = Engine.graphics.gl;
+        let tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
     }
 }
 /// <reference path="./collider.ts"/>

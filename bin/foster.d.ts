@@ -31,7 +31,7 @@ declare class Engine {
      */
     static client: Client;
     /**
-     * The current game Scene
+     * Gets the current game Scene
      */
     static scene: Scene;
     /**
@@ -67,6 +67,7 @@ declare class Engine {
      * @param ready 	Callback when the Engine is ready
      */
     static start(title: string, width: number, height: number, scale: number, ready: () => void): void;
+    static goto(scene: Scene, disposeLastScene: boolean): Scene;
     static exit(): void;
     /**
      * Resizes the game to the given size
@@ -248,10 +249,6 @@ declare class Graphics {
      * Creates the Engine.Graphics
      */
     constructor(engine: Engine);
-    createTexture(image: HTMLImageElement): Texture;
-    createRenderTarget(width: number, height: number): RenderTarget;
-    disposeTexture(texture: Texture): void;
-    disposeRenderTarget(target: RenderTarget): void;
     /**
      * Unloads the Graphics and WebGL stuff
      */
@@ -367,6 +364,7 @@ declare abstract class Renderer {
     preRender(): void;
     render(): void;
     postRender(): void;
+    dispose(): void;
 }
 declare class Scene {
     /**
@@ -397,6 +395,10 @@ declare class Scene {
      * Called when this Scene ends (Engine.scene is going to a new scene)
      */
     ended(): void;
+    /**
+     * Disposes this scene
+     */
+    dispose(): void;
     /**
      * Called every frame and updates the Scene
      */
@@ -449,7 +451,7 @@ declare class Scene {
     firstColliderInTag(tag: string): Collider;
     allCollidersInTag(tag: string): Collider[];
     addRenderer(renderer: Renderer): Renderer;
-    removeRenderer(renderer: Renderer): Renderer;
+    removeRenderer(renderer: Renderer, dispose: boolean): Renderer;
     _insertEntityInto(entity: Entity, list: Entity[], removeFrom: boolean): void;
     _groupEntity(entity: Entity, group: string): void;
     _ungroupEntity(entity: Entity, group: string): void;
@@ -986,7 +988,7 @@ declare class FosterWebGLTexture {
     height: number;
     disposed: boolean;
     constructor(texture: WebGLTexture, width: number, height: number);
-    unload(): void;
+    dispose(): void;
 }
 declare class RenderTarget {
     texture: FosterWebGLTexture;
@@ -997,6 +999,8 @@ declare class RenderTarget {
     width: number;
     height: number;
     constructor(buffer: WebGLFramebuffer, texture: FosterWebGLTexture, vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, uvBuffer: WebGLBuffer);
+    dispose(): void;
+    static create(width: number, height: number): RenderTarget;
 }
 declare class Texture {
     bounds: Rectangle;
@@ -1010,6 +1014,8 @@ declare class Texture {
     getSubtexture(clip: Rectangle, sub?: Texture): Texture;
     clone(): Texture;
     toString(): string;
+    dispose(): void;
+    static create(image: HTMLImageElement): Texture;
 }
 declare class Hitgrid extends Collider {
     tileWidth: number;

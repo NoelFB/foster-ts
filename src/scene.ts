@@ -34,7 +34,7 @@ class Scene
 	/**
 	 * Called when this Scene begins (after Engine.scene has been set)
 	 */
-	public begin()
+	public begin():void
 	{
 
 	}
@@ -42,15 +42,30 @@ class Scene
 	/**
 	 * Called when this Scene ends (Engine.scene is going to a new scene)
 	 */
-	public ended()
+	public ended():void
 	{
 
 	}
 
 	/**
+	 * Disposes this scene
+	 */
+	public dispose():void
+	{
+		for (let i = 0; i < this.renderers.length; i ++)
+			this.renderers[i].dispose();
+		this.entities = [];
+		this.sorting = [];
+		this.renderers = [];
+		this.colliders = {};
+		this.groups = {};
+		this.cache = {};
+	}
+
+	/**
 	 * Called every frame and updates the Scene
 	 */
-	public update()
+	public update():void
 	{
 		// update entities
 		let lengthWas = this.entities.length;
@@ -77,7 +92,7 @@ class Scene
 	/**
 	 * Called when the Scene should be rendered, and renders each of its Renderers
 	 */
-	public render()
+	public render():void
 	{
 		// sort entities
 		for (let i = 0; i < this.sorting.length; i ++)
@@ -296,11 +311,13 @@ class Scene
 		return renderer;
 	}
 
-	public removeRenderer(renderer:Renderer):Renderer
+	public removeRenderer(renderer:Renderer, dispose:boolean):Renderer
 	{
 		let index = this.renderers.indexOf(renderer);
 		if (index >= 0)
 			this.renderers.splice(index, 1);
+		if (dispose)
+			renderer.dispose();
 		renderer.scene = null;
 		return renderer;
 	}
