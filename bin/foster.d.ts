@@ -920,7 +920,6 @@ declare enum ShaderUniformType {
     int4 = 17,
     int4Array = 18,
     sampler2D = 19,
-    cameraMatrix3d = 20,
 }
 declare class ShaderUniform {
     private _shader;
@@ -944,6 +943,12 @@ declare class ShaderAttribute {
     attribute: number;
     constructor(name: string, type: ShaderAttributeType);
 }
+/**
+ * Dictionary of Methods to handle setting GL Uniform Values
+ */
+declare var setGLUniformValue: {
+    [type: number]: (gl: WebGLRenderingContext, location: WebGLUniformLocation, value: any) => void;
+};
 declare class Shaders {
     static texture: Shader;
     static solid: Shader;

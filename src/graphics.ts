@@ -286,26 +286,21 @@ class Graphics
 				
 				if (swapped || uniform.dirty)
 				{
-					if (uniform.type == ShaderUniformType.float)
-					{
-						this.gl.uniform1f(location, uniform.value);
-					}
-					else if (uniform.type == ShaderUniformType.sampler2D)
+					// special case for Sampler2D
+					if (uniform.type == ShaderUniformType.sampler2D)
 					{
 						this.gl.activeTexture((<any>this.gl)["TEXTURE" + textureCounter]);
 						if (uniform.value instanceof Texture)
 							this.gl.bindTexture(this.gl.TEXTURE_2D, (<Texture>uniform.value).texture.webGLTexture);
 						else
 							this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
-						this.gl.uniform1i(location, 0);
+						this.gl.uniform1i(location, textureCounter);
 						textureCounter += 1;
 					}
-					else if (uniform.type == ShaderUniformType.matrix3d)
+					// otherwise use normal Uniform Set Method
+					else
 					{
-						if (uniform.value instanceof Matrix)
-							this.gl.uniformMatrix3fv(location, false, (uniform.value as Matrix).mat);
-						else
-							this.gl.uniformMatrix3fv(location, false, uniform.value);
+						setGLUniformValue[uniform.type](this.gl, uniform.uniform, uniform.value);
 					}
 					
 					uniform.dirty = false;

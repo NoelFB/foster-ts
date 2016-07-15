@@ -87,9 +87,8 @@ enum ShaderUniformType
 	int4,
 	int4Array,
 	
-	// special cases
-	sampler2D,
-	cameraMatrix3d
+	// special case for sampler2D
+	sampler2D
 }
 
 class ShaderUniform
@@ -147,3 +146,131 @@ class ShaderAttribute
 		this.type = type;
 	}
 }
+
+/**
+ * Dictionary of Methods to handle setting GL Uniform Values
+ */
+var setGLUniformValue:{[type:number]:(gl:WebGLRenderingContext, location:WebGLUniformLocation, value:any)=>void} = {};
+
+// float
+setGLUniformValue[ShaderUniformType.float] = (gl, location, value) => 
+	{ 
+		gl.uniform1f(location, value); 
+	}
+
+// float 2
+setGLUniformValue[ShaderUniformType.float2] = (gl, location, value) =>
+	{
+		if (value instanceof Vector)
+			gl.uniform2f(location, value.x, value.y);
+		else
+			gl.uniform2f(location, value[0], value[1]);
+	}
+
+// float 3
+setGLUniformValue[ShaderUniformType.float3] = (gl, location, value) =>
+	{
+		gl.uniform3f(location, value[0], value[1], value[2]);
+	}
+
+// float 4
+setGLUniformValue[ShaderUniformType.float4] = (gl, location, value) =>
+	{
+		gl.uniform4f(location, value[0], value[1], value[2], value[3]);
+	}
+
+// float array
+setGLUniformValue[ShaderUniformType.floatArray] = (gl, location, value) =>
+	{
+		gl.uniform1fv(location, value);
+	}
+
+// float 2 array
+setGLUniformValue[ShaderUniformType.float2Array] = (gl, location, value) =>
+	{
+		gl.uniform2fv(location, value);
+	}
+
+// float 3 array
+setGLUniformValue[ShaderUniformType.float3Array] = (gl, location, value) =>
+	{
+		gl.uniform3fv(location, value);
+	}
+
+// float 4 array
+setGLUniformValue[ShaderUniformType.float4Array] = (gl, location, value) =>
+	{
+		gl.uniform4fv(location, value);
+	}
+
+// int
+setGLUniformValue[ShaderUniformType.int] = (gl, location, value) => 
+	{ 
+		gl.uniform1i(location, value); 
+	}
+
+// int 2
+setGLUniformValue[ShaderUniformType.int2] = (gl, location, value) =>
+	{
+		if (value instanceof Vector)
+			gl.uniform2i(location, Math.round(value.x), Math.round(value.y));
+		else
+			gl.uniform2i(location, value[0], value[1]);
+	}
+
+// int 3
+setGLUniformValue[ShaderUniformType.int3] = (gl, location, value) =>
+	{
+		gl.uniform3i(location, value[0], value[1], value[2]);
+	}
+
+// int 4
+setGLUniformValue[ShaderUniformType.int4] = (gl, location, value) =>
+	{
+		gl.uniform4i(location, value[0], value[1], value[2], value[3]);
+	}
+
+// int array
+setGLUniformValue[ShaderUniformType.intArray] = (gl, location, value) =>
+	{
+		gl.uniform1iv(location, value);
+	}
+
+// int 2 array
+setGLUniformValue[ShaderUniformType.int2Array] = (gl, location, value) =>
+	{
+		gl.uniform2iv(location, value);
+	}
+
+// int 3 array
+setGLUniformValue[ShaderUniformType.int3Array] = (gl, location, value) =>
+	{
+		gl.uniform3iv(location, value);
+	}
+
+// int 4 array
+setGLUniformValue[ShaderUniformType.int4Array] = (gl, location, value) =>
+	{
+		gl.uniform4iv(location, value);
+	}
+
+// matrix 2d
+setGLUniformValue[ShaderUniformType.matrix2d] = (gl, location, value) =>
+	{
+		gl.uniformMatrix2fv(location, false, value);
+	}
+
+// matrix 3d
+setGLUniformValue[ShaderUniformType.matrix3d] = (gl, location, value) =>
+	{
+		if (value instanceof Matrix)
+			gl.uniformMatrix3fv(location, false, (value as Matrix).mat);
+		else
+			gl.uniformMatrix3fv(location, false, value);
+	}
+
+// matrix 4d
+setGLUniformValue[ShaderUniformType.matrix4d] = (gl, location, value) =>
+	{
+		gl.uniformMatrix2fv(location, false, value);
+	}
