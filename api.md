@@ -1,5 +1,5 @@
 # Foster API Documentation
-This is very work in progress and incomplete (and not sure a giant .md file is ultimately the best place for it?)
+Work in Progress documentation, that should eventually probably be moved out of a giant.md file
 
 ||||||
 |---|---|---|---|---|
@@ -15,6 +15,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
 | [Shaders](#class-shaders) | [Sprite](#class-sprite) | [SpriteRenderer](#class-spriterenderer) | [Texture](#class-texture) | [Tilemap](#class-tilemap) |
 | [Tween](#class-tween) | [Vector](#class-vector) | [setGLUniformValue](#var-setgluniformvalue) |||
 # class Alarm
+##### extends [Component](#class-component)
 ### Members
  - **percent**:`number`
  - **duration**:`number`
@@ -137,6 +138,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **Web** = `1`	Running on the Web
 
 # class Collider
+##### extends [Component](#class-component)
 ### Members
  - **tags**:`string[]`
 
@@ -195,6 +197,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **debugRender**(`camera?:Camera`):`void`
 
 # class Coroutine
+##### extends [Component](#class-component)
 	Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
 
 ### Members
@@ -439,6 +442,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **GameWindow.toggleDevTools**():`void`
 
 # class Graphic
+##### extends [Component](#class-component)
 ### Members
  - **texture**:`Texture`
  - **crop**:`Rectangle`
@@ -572,6 +576,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
 
 
 # class Hitbox
+##### extends [Collider](#class-collider)
 ### Members
  - **left**:`number`
  - **top**:`number`
@@ -588,6 +593,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **debugRender**():`void`
 
 # class Hitgrid
+##### extends [Collider](#class-collider)
 ### Members
  - **tileWidth**:`number`
  - **tileHeight**:`number`
@@ -774,6 +780,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **frictionY**:`number`
 
 # class ParticleSystem
+##### extends [Component](#class-component)
 ### Members
  - **template**:`ParticleTemplate`
  - **renderRelativeToEntity**:`boolean`
@@ -856,6 +863,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **duration**(`Base:number, Range?:number`):`ParticleTemplate`
 
 # class Physics
+##### extends [Hitbox](#class-hitbox)
 ### Members
  - **solids**:`string[]`
  - **onCollideX**:`(hit:Collider)=>void`
@@ -876,6 +884,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **stop**():`void`
 
 # class PrimitiveRenderer
+##### extends [Renderer](#class-renderer)
 ### Methods
  - **constructor**():`void`
 
@@ -899,6 +908,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **copy**(`from:Rectangle`):`Rectangle`
 
 # class Rectsprite
+##### extends [Component](#class-component)
 ### Members
  - **size**:`Vector`
  - **scale**:`Vector`
@@ -1111,6 +1121,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **Shaders.init**():`void`
 
 # class Sprite
+##### extends [Graphic](#class-graphic)
 ### Members
  - **animation**:`AnimationSet`
  - **playing**:`AnimationTemplate`
@@ -1125,6 +1136,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **render**(`camera:Camera`):`void`
 
 # class SpriteRenderer
+##### extends [Renderer](#class-renderer)
 ### Methods
  - **constructor**():`void`
 
@@ -1147,6 +1159,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **Texture.create**(`image:HTMLImageElement`):`Texture`
 
 # class Tilemap
+##### extends [Component](#class-component)
 ### Members
  - **texture**:`Texture`
  - **tileWidth**:`number`
@@ -1163,6 +1176,7 @@ This is very work in progress and incomplete (and not sure a giant .md file is u
  - **render**(`camera:Camera`):`void`
 
 # class Tween
+##### extends [Component](#class-component)
 ### Members
  - **percent**:`number`
  - **duration**:`number`
