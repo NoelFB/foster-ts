@@ -17,10 +17,22 @@ declare abstract class Component {
     render(camera?: Camera): void;
     debugRender(camera?: Camera): void;
 }
+/**
+ * Current game Client
+ */
 declare enum Client {
+    /**
+     * Running on the desktop (in Electron)
+     */
     Desktop = 0,
+    /**
+     * Running on the Web
+     */
     Web = 1,
 }
+/**
+ * Core of the Foster Engine. Initializes and Runs the game.
+ */
 declare class Engine {
     /**
      * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
@@ -985,6 +997,17 @@ declare class AnimationBank {
     static get(name: string): AnimationSet;
     static has(name: string): boolean;
 }
+declare class Hitgrid extends Collider {
+    tileWidth: number;
+    tileHeight: number;
+    private map;
+    constructor(tileWidth: number, tileHeight: number, tags?: string[]);
+    set(solid: boolean, tx: number, ty: number, columns?: number, rows?: number): void;
+    has(tx: number, ty: number, columns?: number, rows?: number): boolean;
+    private debugRect;
+    private debugSub;
+    debugRender(camera: Camera): void;
+}
 declare enum AtlasType {
     ASEPRITE = 0,
 }
@@ -1037,17 +1060,6 @@ declare class Texture {
     toString(): string;
     dispose(): void;
     static create(image: HTMLImageElement): Texture;
-}
-declare class Hitgrid extends Collider {
-    tileWidth: number;
-    tileHeight: number;
-    private map;
-    constructor(tileWidth: number, tileHeight: number, tags?: string[]);
-    set(solid: boolean, tx: number, ty: number, columns?: number, rows?: number): void;
-    has(tx: number, ty: number, columns?: number, rows?: number): boolean;
-    private debugRect;
-    private debugSub;
-    debugRender(camera: Camera): void;
 }
 declare class Particle {
     x: number;

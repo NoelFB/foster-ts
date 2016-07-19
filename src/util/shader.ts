@@ -17,23 +17,23 @@ class Shader
 		gl.shaderSource(vertexShader, vertex);
 		gl.compileShader(vertexShader);
 		if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))
-            throw "An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertexShader);
+			throw "An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertexShader);
 			
 		// fragment shader
 		let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 		gl.shaderSource(fragmentShader, fragment);
 		gl.compileShader(fragmentShader);
 		if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))
-            throw "An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragmentShader);
+			throw "An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragmentShader);
 			
 		// program
 		this.program = gl.createProgram();
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
-        gl.linkProgram(this.program);
+		gl.attachShader(this.program, vertexShader);
+		gl.attachShader(this.program, fragmentShader);
+		gl.linkProgram(this.program);
 		
 		if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
-        	throw "Unable to initialize the shader program.";
+			throw "Unable to initialize the shader program.";
 			
 		gl.deleteShader(vertexShader);
 		gl.deleteShader(fragmentShader);

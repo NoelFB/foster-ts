@@ -21,7 +21,7 @@ var gulp = require("gulp"),
 
 	gulp.task("default", function()
 	{
-		gulp.start(["ts"]);
+		return gulp.start(["ts"]);
 	});
 }
 
@@ -59,6 +59,6 @@ var gulp = require("gulp"),
 	// compiles the sample game
 	gulp.task("sample_game", ["sg_clean"], function()
 	{
-		gulp.start(["sg_assets", "sg_app", "sg_ts"]);
+		return gulp.start(["sg_assets", "sg_app", "sg_ts"]);
 	});
 }

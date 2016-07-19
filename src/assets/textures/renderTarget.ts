@@ -42,7 +42,7 @@ class RenderTarget
 		let frameBuffer = gl.createFramebuffer();
 		let tex = gl.createTexture();
 		
-    	gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
 		gl.bindTexture(gl.TEXTURE_2D, tex);
 		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);

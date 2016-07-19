@@ -1,9 +1,21 @@
+/**
+ * Current game Client
+ */
 enum Client
 {
+	/**
+	 * Running on the desktop (in Electron)
+	 */
 	Desktop,
+	/**
+	 * Running on the Web
+	 */
 	Web
 }
 
+/**
+ * Core of the Foster Engine. Initializes and Runs the game.
+ */
 class Engine
 {	
 	/**
