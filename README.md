@@ -19,10 +19,13 @@ and am only working on this in my spare time!
  - Maybe put it in  `Foster Namespace`? I find it really annoying to type "`new Foster.Entity`" and etc, all the time though
  
 #### Builds
- - [foster.js](https://raw.githubusercontent.com/Drazzke/foster/master/bin/foster.js) : compiled JS file
- - [foster.d.ts](https://raw.githubusercontent.com/Drazzke/foster/master/bin/foster.d.ts) : typescript definition file to reference from your game (ex. `/// <reference path="foster.d.ts"/>`)
+ - [foster.js](bin/foster.js) : compiled JS file
+ - [foster.d.ts](bin/foster.d.ts) : typescript definition file to reference from your game (ex. `/// <reference path="foster.d.ts"/>`)
+
+#### API
+Unfinished but can be [found here](api.md).
 
 #### Sample Games
- - [sample_game](https://github.com/Drazzke/foster/tree/master/sample_game) - [online demo](http://noelfb.com/foster/sample_game/)
+ - [sample_game](sample_game) - [online demo](http://noelfb.com/foster/sample_game/)
 
-#### [MIT License](https://github.com/Drazzke/foster/blob/master/license.md)
+#### [MIT License](license.md)
