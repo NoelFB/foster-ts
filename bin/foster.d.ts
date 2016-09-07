@@ -558,7 +558,8 @@ declare class Alarm extends Component {
 declare class Coroutine extends Component {
     wait: number;
     private iterator;
-    constructor(call?: any);
+    private arg;
+    constructor(call?: any, arg?: any);
     start(call: any): Coroutine;
     resume(): Coroutine;
     pause(): Coroutine;
@@ -610,6 +611,14 @@ declare class Physics extends Hitbox {
     maxspeed(mx?: number, my?: number): Physics;
     circularMaxspeed(length: number): Physics;
     stop(): void;
+}
+declare class Sound extends Component {
+    private audio;
+    private audioFile;
+    private isInitialized;
+    constructor(fileName: string);
+    initialize(): void;
+    play(): void;
 }
 declare class Tween extends Component {
     percent: number;
@@ -997,17 +1006,6 @@ declare class AnimationBank {
     static get(name: string): AnimationSet;
     static has(name: string): boolean;
 }
-declare class Hitgrid extends Collider {
-    tileWidth: number;
-    tileHeight: number;
-    private map;
-    constructor(tileWidth: number, tileHeight: number, tags?: string[]);
-    set(solid: boolean, tx: number, ty: number, columns?: number, rows?: number): void;
-    has(tx: number, ty: number, columns?: number, rows?: number): boolean;
-    private debugRect;
-    private debugSub;
-    debugRender(camera: Camera): void;
-}
 declare enum AtlasType {
     ASEPRITE = 0,
 }
@@ -1060,6 +1058,17 @@ declare class Texture {
     toString(): string;
     dispose(): void;
     static create(image: HTMLImageElement): Texture;
+}
+declare class Hitgrid extends Collider {
+    tileWidth: number;
+    tileHeight: number;
+    private map;
+    constructor(tileWidth: number, tileHeight: number, tags?: string[]);
+    set(solid: boolean, tx: number, ty: number, columns?: number, rows?: number): void;
+    has(tx: number, ty: number, columns?: number, rows?: number): boolean;
+    private debugRect;
+    private debugSub;
+    debugRender(camera: Camera): void;
 }
 declare class Particle {
     x: number;
