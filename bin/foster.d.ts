@@ -626,6 +626,62 @@ declare class Tween extends Component {
     pause(): Tween;
     update(): void;
 }
+declare class Vector {
+    x: number;
+    y: number;
+    constructor(x?: number, y?: number);
+    set(x: number, y: number): Vector;
+    copy(v: Vector): Vector;
+    add(v: Vector): Vector;
+    sub(v: Vector): Vector;
+    mult(v: Vector): Vector;
+    div(v: Vector): Vector;
+    scale(s: number): Vector;
+    rotate(sin: number, cos: number): Vector;
+    transform(m: Matrix): Vector;
+    clone(): Vector;
+    length: number;
+    normal: Vector;
+    normalize(): Vector;
+    static directions: Vector[];
+    static temp0: Vector;
+    static temp1: Vector;
+    static temp2: Vector;
+}
+declare class GamepadManager {
+    static defaultDeadzone: number;
+    private static controllers;
+    static init(): void;
+    static onAddController(event: any): void;
+    private static onRemoveController(event);
+    static getController(index: number): ControllerInput;
+    static numControllers(): number;
+    static setRemoveControllerBehavior(handler: any): void;
+}
+declare class ControllerInput extends Component {
+    gamepad: Gamepad;
+    private deadzone;
+    private leftStick;
+    private rightStick;
+    private buttons;
+    constructor(pad: Gamepad, deadzone?: number);
+    update(): void;
+    getButton(index: number): ButtonState;
+    getLeftStick(): Vector;
+    getRightStick(): Vector;
+    getRawLeftStick(): Vector;
+    getRawRightStick(): Vector;
+    private queryGamepad();
+}
+declare class ButtonState {
+    private _last;
+    private _next;
+    constructor();
+    update(val: boolean): void;
+    down(): boolean;
+    pressed(): boolean;
+    released(): boolean;
+}
 declare class Keys {
     private static _down;
     private static _last;
@@ -744,28 +800,6 @@ declare enum Key {
     backSlash = 220,
     closeBraket = 221,
     singleQuote = 222,
-}
-declare class Vector {
-    x: number;
-    y: number;
-    constructor(x?: number, y?: number);
-    set(x: number, y: number): Vector;
-    copy(v: Vector): Vector;
-    add(v: Vector): Vector;
-    sub(v: Vector): Vector;
-    mult(v: Vector): Vector;
-    div(v: Vector): Vector;
-    scale(s: number): Vector;
-    rotate(sin: number, cos: number): Vector;
-    transform(m: Matrix): Vector;
-    clone(): Vector;
-    length: number;
-    normal: Vector;
-    normalize(): Vector;
-    static directions: Vector[];
-    static temp0: Vector;
-    static temp1: Vector;
-    static temp2: Vector;
 }
 declare class Mouse {
     private static _left;
@@ -997,17 +1031,6 @@ declare class AnimationBank {
     static get(name: string): AnimationSet;
     static has(name: string): boolean;
 }
-declare class Hitgrid extends Collider {
-    tileWidth: number;
-    tileHeight: number;
-    private map;
-    constructor(tileWidth: number, tileHeight: number, tags?: string[]);
-    set(solid: boolean, tx: number, ty: number, columns?: number, rows?: number): void;
-    has(tx: number, ty: number, columns?: number, rows?: number): boolean;
-    private debugRect;
-    private debugSub;
-    debugRender(camera: Camera): void;
-}
 declare enum AtlasType {
     ASEPRITE = 0,
 }
@@ -1060,6 +1083,17 @@ declare class Texture {
     toString(): string;
     dispose(): void;
     static create(image: HTMLImageElement): Texture;
+}
+declare class Hitgrid extends Collider {
+    tileWidth: number;
+    tileHeight: number;
+    private map;
+    constructor(tileWidth: number, tileHeight: number, tags?: string[]);
+    set(solid: boolean, tx: number, ty: number, columns?: number, rows?: number): void;
+    has(tx: number, ty: number, columns?: number, rows?: number): boolean;
+    private debugRect;
+    private debugSub;
+    debugRender(camera: Camera): void;
 }
 declare class Particle {
     x: number;

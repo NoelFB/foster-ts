@@ -17,7 +17,7 @@ enum Client
  * Core of the Foster Engine. Initializes and Runs the game.
  */
 class Engine
-{	
+{
 	/**
 	 * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
 	 */
@@ -31,8 +31,8 @@ class Engine
 	/**
 	 * Gets the current game Scene
 	 */
-	public static get scene():Scene 
-	{ 
+	public static get scene():Scene
+	{
 		return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene);
 	}
 
@@ -93,13 +93,14 @@ class Engine
 			var c = String.fromCharCode(0x25cf);
 			console.log("%c " + c + " ENGINE START " + c + " ", "background: #222; color: #ff44aa;");
 			Engine.instance.root = document.getElementsByTagName("body")[0];
-			
+
 			// init
 			Engine.instance.graphics = new Graphics(Engine.instance);
 			Engine.resize(width, height);
 			Shaders.init();
 			Mouse.init();
 			Keys.init();
+			GamepadManager.init();
 
 			// start update loop
 			Engine.instance.step();
@@ -136,7 +137,7 @@ class Engine
 		Engine.instance.height = height;
 		Engine.instance.graphics.resize();
 	}
-	
+
 	/**
 	 * Checks that the given value is true, otherwise throws an error
 	 */
@@ -150,7 +151,7 @@ class Engine
 	private static instance:Engine = null;
 	private static started:boolean = false;
 	private static exiting:boolean = false;
-	
+
 	private client:Client;
 	private scene:Scene = null;
 	private nextScene:Scene = null;
@@ -185,10 +186,10 @@ class Engine
 		this.elapsed = Math.floor(time - this.startTime) / 1000;
 		this.dt = Math.floor(time - this.lastTime) / 1000;
 		this.lastTime = time;
-		
+
 		// update graphics
 		this.graphics.update();
-		
+
 		// update inputs
 		Mouse.update();
 		Keys.update();
@@ -209,11 +210,11 @@ class Engine
 
 		// begin drawing
 		this.graphics.reset();
-		
+
 		// render current scene
 		if (this.scene != null)
 			this.scene.render();
-		
+
 		// final flush on graphics
 		this.graphics.finalize();
 
@@ -235,5 +236,5 @@ class Engine
 			win.close();
 		}
 	}
-	
+
 }
