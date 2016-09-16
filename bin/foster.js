@@ -131,6 +131,7 @@ class Engine {
             Shaders.init();
             Mouse.init();
             Keys.init();
+            GamepadManager.init();
             // start update loop
             Engine.instance.step();
             // ready callback for game
@@ -1912,6 +1913,190 @@ class Tween extends Component {
         }
     }
 }
+class Vector {
+    constructor(x, y) {
+        this.x = 0;
+        this.y = 0;
+        if (x != undefined)
+            this.x = x;
+        if (y != undefined)
+            this.y = y;
+    }
+    set(x, y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+    copy(v) {
+        this.x = v.x;
+        this.y = v.y;
+        return this;
+    }
+    add(v) {
+        this.x += v.x;
+        this.y += v.y;
+        return this;
+    }
+    sub(v) {
+        this.x -= v.x;
+        this.y -= v.y;
+        return this;
+    }
+    mult(v) {
+        this.x *= v.x;
+        this.y *= v.y;
+        return this;
+    }
+    div(v) {
+        this.x /= v.x;
+        this.y /= v.y;
+        return this;
+    }
+    scale(s) {
+        this.x *= s;
+        this.y *= s;
+        return this;
+    }
+    rotate(sin, cos) {
+        let ox = this.x, oy = this.y;
+        this.x = ox * cos - oy * sin;
+        this.y = ox * sin + oy * cos;
+        return this;
+    }
+    transform(m) {
+        let ax = this.x, ay = this.y;
+        this.x = m.mat[0] * ax + m.mat[3] * ay + m.mat[6];
+        this.y = m.mat[1] * ax + m.mat[4] * ay + m.mat[7];
+        return this;
+    }
+    clone() {
+        return new Vector(this.x, this.y);
+    }
+    get length() {
+        return Math.sqrt((this.x * this.x) + (this.y * this.y));
+    }
+    get normal() {
+        let dist = this.length;
+        return new Vector(this.x / dist, this.y / dist);
+    }
+    normalize() {
+        let dist = this.length;
+        this.x /= dist;
+        this.y /= dist;
+        return this;
+    }
+}
+Vector.directions = [
+    new Vector(-1, 0),
+    new Vector(0, -1),
+    new Vector(1, 0),
+    new Vector(0, 1)
+];
+// temporary vectors used wherever
+Vector.temp0 = new Vector();
+Vector.temp1 = new Vector();
+Vector.temp2 = new Vector();
+/// <reference path="./../component.ts"/>
+/// <reference path="./../util/vector.ts"/>
+class GamepadManager {
+    static init() {
+        window.addEventListener("gamepadconnected", GamepadManager.onAddController, false);
+        window.addEventListener("gamepaddisconnected", GamepadManager.onRemoveController, false);
+    }
+    static onAddController(event) {
+        for (var i = 0; i < GamepadManager.controllers.length; i++) {
+            if (GamepadManager.controllers[i].gamepad == event.gamepad) {
+                return; // We already have this controller, must be a reconnect.
+            }
+        }
+        if (event.gamepad.id.includes("Unknown Gamepad")) {
+            return; // On some platforms each x360 controller was showing up twice and only one of them was queryable. -_-
+        }
+        GamepadManager.controllers.push(new ControllerInput(event.gamepad));
+    }
+    static onRemoveController(event) {
+        console.log("A gamepad was disconnected, please reconnect.");
+    }
+    static getController(index) {
+        return GamepadManager.controllers[index];
+    }
+    static numControllers() {
+        return GamepadManager.controllers.length;
+    }
+    static setRemoveControllerBehavior(handler) {
+        // let the dev decide how to act when controllers are removed.
+        GamepadManager.onRemoveController = handler;
+    }
+}
+GamepadManager.defaultDeadzone = 0.3;
+GamepadManager.controllers = [];
+class ControllerInput extends Component {
+    constructor(pad, deadzone = GamepadManager.defaultDeadzone) {
+        super();
+        // actual state of the gamepad
+        this.leftStick = new Vector();
+        this.rightStick = new Vector();
+        this.buttons = [];
+        this.gamepad = pad;
+        this.deadzone = deadzone;
+        for (var i = 0; i < pad.buttons.length; i++) {
+            this.buttons.push(new ButtonState());
+        }
+    }
+    update() {
+        var gamepad = this.queryGamepad();
+        this.leftStick.x = gamepad.axes[0];
+        this.leftStick.y = gamepad.axes[1];
+        this.rightStick.x = gamepad.axes[2];
+        this.rightStick.y = gamepad.axes[3];
+        for (var i = 0; i < this.buttons.length; i++) {
+            this.buttons[i].update(gamepad.buttons[i].pressed);
+        }
+    }
+    getButton(index) {
+        return this.buttons[index];
+    }
+    getLeftStick() {
+        if (this.leftStick.length > this.deadzone) {
+            return this.leftStick.clone();
+        }
+        return new Vector();
+    }
+    getRightStick() {
+        if (this.rightStick.length > this.deadzone) {
+            return this.rightStick.clone();
+        }
+        return new Vector();
+    }
+    getRawLeftStick() {
+        return this.leftStick.clone();
+    }
+    getRawRightStick() {
+        return this.rightStick.clone();
+    }
+    queryGamepad() {
+        return navigator.getGamepads()[this.gamepad.index];
+    }
+}
+class ButtonState {
+    constructor() {
+        this._last = false;
+        this._next = false;
+    }
+    update(val) {
+        this._last = this._next;
+        this._next = val;
+    }
+    down() {
+        return this._next;
+    }
+    pressed() {
+        return this._next && !this._last;
+    }
+    released() {
+        return this._last && !this._next;
+    }
+}
 class Keys {
     static init() {
         window.addEventListener("keydown", function (e) {
@@ -2074,89 +2259,6 @@ var Key;
     Key[Key["closeBraket"] = 221] = "closeBraket";
     Key[Key["singleQuote"] = 222] = "singleQuote";
 })(Key || (Key = {}));
-class Vector {
-    constructor(x, y) {
-        this.x = 0;
-        this.y = 0;
-        if (x != undefined)
-            this.x = x;
-        if (y != undefined)
-            this.y = y;
-    }
-    set(x, y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    copy(v) {
-        this.x = v.x;
-        this.y = v.y;
-        return this;
-    }
-    add(v) {
-        this.x += v.x;
-        this.y += v.y;
-        return this;
-    }
-    sub(v) {
-        this.x -= v.x;
-        this.y -= v.y;
-        return this;
-    }
-    mult(v) {
-        this.x *= v.x;
-        this.y *= v.y;
-        return this;
-    }
-    div(v) {
-        this.x /= v.x;
-        this.y /= v.y;
-        return this;
-    }
-    scale(s) {
-        this.x *= s;
-        this.y *= s;
-        return this;
-    }
-    rotate(sin, cos) {
-        let ox = this.x, oy = this.y;
-        this.x = ox * cos - oy * sin;
-        this.y = ox * sin + oy * cos;
-        return this;
-    }
-    transform(m) {
-        let ax = this.x, ay = this.y;
-        this.x = m.mat[0] * ax + m.mat[3] * ay + m.mat[6];
-        this.y = m.mat[1] * ax + m.mat[4] * ay + m.mat[7];
-        return this;
-    }
-    clone() {
-        return new Vector(this.x, this.y);
-    }
-    get length() {
-        return Math.sqrt((this.x * this.x) + (this.y * this.y));
-    }
-    get normal() {
-        let dist = this.length;
-        return new Vector(this.x / dist, this.y / dist);
-    }
-    normalize() {
-        let dist = this.length;
-        this.x /= dist;
-        this.y /= dist;
-        return this;
-    }
-}
-Vector.directions = [
-    new Vector(-1, 0),
-    new Vector(0, -1),
-    new Vector(1, 0),
-    new Vector(0, 1)
-];
-// temporary vectors used wherever
-Vector.temp0 = new Vector();
-Vector.temp1 = new Vector();
-Vector.temp2 = new Vector();
 /// <reference path="./../util/vector.ts"/>
 class Mouse {
     static get x() { return this._position.x; }
@@ -3009,66 +3111,6 @@ class AnimationBank {
     }
 }
 AnimationBank.bank = {};
-/// <reference path="./collider.ts"/>
-class Hitgrid extends Collider {
-    constructor(tileWidth, tileHeight, tags) {
-        super();
-        this.map = {};
-        this.debugRect = new Rectangle();
-        this.debugSub = new Color(200, 200, 200, 0.5);
-        this.tileWidth = tileWidth;
-        this.tileHeight = tileHeight;
-        if (tags != undefined)
-            for (let i = 0; i < tags.length; i++)
-                this.tag(tags[i]);
-    }
-    set(solid, tx, ty, columns, rows) {
-        for (let x = tx; x < tx + (columns || 1); x++) {
-            if (this.map[x] == undefined)
-                this.map[x] = {};
-            for (let y = ty; y < ty + (rows || 1); y++)
-                if (solid)
-                    this.map[x][y] = solid;
-                else
-                    delete this.map[x][y];
-        }
-    }
-    has(tx, ty, columns, rows) {
-        for (let x = tx; x < tx + (columns || 1); x++)
-            if (this.map[x] != undefined)
-                for (let y = ty; y < ty + (rows || 1); y++)
-                    if (this.map[x][y] == true)
-                        return true;
-        return false;
-    }
-    debugRender(camera) {
-        // get bounds of rendering
-        let bounds = camera.extents;
-        let pos = this.scenePosition;
-        let left = Math.floor((bounds.left - pos.x) / this.tileWidth) - 1;
-        let right = Math.ceil((bounds.right - pos.x) / this.tileWidth) + 1;
-        let top = Math.floor((bounds.top - pos.y) / this.tileHeight) - 1;
-        let bottom = Math.ceil((bounds.bottom - pos.y) / this.tileHeight) + 1;
-        for (let tx = left; tx < right; tx++) {
-            if (this.map[tx] == undefined)
-                continue;
-            for (let ty = top; ty < bottom; ty++) {
-                if (this.map[tx][ty] == true) {
-                    let l = this.has(tx - 1, ty);
-                    let r = this.has(tx + 1, ty);
-                    let u = this.has(tx, ty - 1);
-                    let d = this.has(tx, ty + 1);
-                    let px = pos.x + tx * this.tileWidth;
-                    let py = pos.y + ty * this.tileHeight;
-                    Engine.graphics.rect(this.debugRect.set(px, py, 1, this.tileHeight), l ? Color.red : this.debugSub);
-                    Engine.graphics.rect(this.debugRect.set(px, py, this.tileWidth, 1), u ? Color.red : this.debugSub);
-                    Engine.graphics.rect(this.debugRect.set(px + this.tileWidth - 1, py, 1, this.tileHeight), r ? Color.red : this.debugSub);
-                    Engine.graphics.rect(this.debugRect.set(px, py + this.tileHeight - 1, this.tileWidth, 1), d ? Color.red : this.debugSub);
-                }
-            }
-        }
-    }
-}
 var AtlasType;
 (function (AtlasType) {
     AtlasType[AtlasType["ASEPRITE"] = 0] = "ASEPRITE";
@@ -3229,6 +3271,66 @@ class Texture {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.bindTexture(gl.TEXTURE_2D, null);
         return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
+    }
+}
+/// <reference path="./collider.ts"/>
+class Hitgrid extends Collider {
+    constructor(tileWidth, tileHeight, tags) {
+        super();
+        this.map = {};
+        this.debugRect = new Rectangle();
+        this.debugSub = new Color(200, 200, 200, 0.5);
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
+        if (tags != undefined)
+            for (let i = 0; i < tags.length; i++)
+                this.tag(tags[i]);
+    }
+    set(solid, tx, ty, columns, rows) {
+        for (let x = tx; x < tx + (columns || 1); x++) {
+            if (this.map[x] == undefined)
+                this.map[x] = {};
+            for (let y = ty; y < ty + (rows || 1); y++)
+                if (solid)
+                    this.map[x][y] = solid;
+                else
+                    delete this.map[x][y];
+        }
+    }
+    has(tx, ty, columns, rows) {
+        for (let x = tx; x < tx + (columns || 1); x++)
+            if (this.map[x] != undefined)
+                for (let y = ty; y < ty + (rows || 1); y++)
+                    if (this.map[x][y] == true)
+                        return true;
+        return false;
+    }
+    debugRender(camera) {
+        // get bounds of rendering
+        let bounds = camera.extents;
+        let pos = this.scenePosition;
+        let left = Math.floor((bounds.left - pos.x) / this.tileWidth) - 1;
+        let right = Math.ceil((bounds.right - pos.x) / this.tileWidth) + 1;
+        let top = Math.floor((bounds.top - pos.y) / this.tileHeight) - 1;
+        let bottom = Math.ceil((bounds.bottom - pos.y) / this.tileHeight) + 1;
+        for (let tx = left; tx < right; tx++) {
+            if (this.map[tx] == undefined)
+                continue;
+            for (let ty = top; ty < bottom; ty++) {
+                if (this.map[tx][ty] == true) {
+                    let l = this.has(tx - 1, ty);
+                    let r = this.has(tx + 1, ty);
+                    let u = this.has(tx, ty - 1);
+                    let d = this.has(tx, ty + 1);
+                    let px = pos.x + tx * this.tileWidth;
+                    let py = pos.y + ty * this.tileHeight;
+                    Engine.graphics.rect(this.debugRect.set(px, py, 1, this.tileHeight), l ? Color.red : this.debugSub);
+                    Engine.graphics.rect(this.debugRect.set(px, py, this.tileWidth, 1), u ? Color.red : this.debugSub);
+                    Engine.graphics.rect(this.debugRect.set(px + this.tileWidth - 1, py, 1, this.tileHeight), r ? Color.red : this.debugSub);
+                    Engine.graphics.rect(this.debugRect.set(px, py + this.tileHeight - 1, this.tileWidth, 1), d ? Color.red : this.debugSub);
+                }
+            }
+        }
     }
 }
 class Particle {
