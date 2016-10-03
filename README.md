@@ -22,10 +22,8 @@ and am only working on this in my spare time!
  - [foster.js](bin/foster.js) : compiled JS file
  - [foster.d.ts](bin/foster.d.ts) : typescript definition file to reference from your game (ex. `/// <reference path="foster.d.ts"/>`)
 
-#### API
-Unfinished but can be [found here](api.md).
-
 #### Sample Games
  - [sample_game](sample_game) - [online demo](http://noelfb.com/foster/sample_game/)
 
+#### [API Documentation](api.md) (incomplete)
 #### [MIT License](license.md)
