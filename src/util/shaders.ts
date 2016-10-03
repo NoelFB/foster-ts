@@ -89,7 +89,7 @@ class Shaders
 			]
 		);
 		
-		// Primitive texture
+		// Primitive shader (no texture)
 		Shaders.primitive = new Shader
 		(
 			// vertex shader

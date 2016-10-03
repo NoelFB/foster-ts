@@ -4,7 +4,8 @@ class Texture
 	public bounds:Rectangle = null;
 	public frame:Rectangle = null;
 	public texture:FosterWebGLTexture = null;
-	
+	public center:Vector;
+
 	public get width():number { return this.frame.width; }
 	public get height():number { return this.frame.height; }
 	public get clippedWidth():number { return this.bounds.width; }
@@ -15,6 +16,7 @@ class Texture
 		this.texture = texture;
 		this.bounds = bounds || new Rectangle(0, 0, texture.width, texture.height);
 		this.frame = frame || new Rectangle(0, 0, this.bounds.width, this.bounds.height);
+		this.center = new Vector(this.frame.width / 2, this.frame.height / 2);
 	}
 
 	public getSubtexture(clip:Rectangle, sub?:Texture):Texture
@@ -33,6 +35,7 @@ class Texture
 		sub.frame.y = Math.min(0, this.frame.y + clip.y);
 		sub.frame.width = clip.width;
 		sub.frame.height = clip.height;
+		sub.center = new Vector(sub.frame.width / 2, sub.frame.height / 2);
 
 		return sub;
 	}
@@ -47,6 +50,36 @@ class Texture
 		return (this.texture.path + 
 		": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" + 
 		"frame["+ this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height +"]");
+	}
+
+	public draw(position:Vector, origin?:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
+	{
+		Engine.graphics.texture(this, position.x, position.y, null, color, origin, scale, rotation, flipX, flipY);
+	}
+
+	public drawCropped(position:Vector, crop:Rectangle, origin?:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
+	{
+		Engine.graphics.texture(this, position.x, position.y, crop, color, origin, scale, rotation, flipX, flipY);
+	}
+
+	public drawCenter(position:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
+	{
+		Engine.graphics.texture(this, position.x, position.y, null, color, this.center, scale, rotation, flipX, flipY);
+	}
+
+	public drawCenterCropped(position:Vector, crop:Rectangle, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
+	{
+		Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width / 2, crop.height / 2), scale, rotation, flipX, flipY);
+	}
+
+	public drawJustify(position:Vector, justify:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
+	{
+		Engine.graphics.texture(this, position.x, position.y, null, color, new Vector(this.width * justify.x, this.height * justify.y), scale, rotation, flipX, flipY);
+	}
+
+	public drawJustifyCropped(position:Vector, crop:Rectangle, justify:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
+	{
+		Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width * justify.x, crop.height * justify.y), scale, rotation, flipX, flipY);
 	}
 
 	public dispose():void
