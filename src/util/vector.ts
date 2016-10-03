@@ -113,4 +113,7 @@ class Vector
 	public static temp1:Vector = new Vector();
 	public static temp2:Vector = new Vector();
 
+	private static _zero:Vector = new Vector();
+	public static get zero():Vector { return Vector._zero.set(0, 0); }
+
 }
