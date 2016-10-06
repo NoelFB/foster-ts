@@ -97,6 +97,7 @@ declare class Engine {
     private client;
     private scene;
     private nextScene;
+    private disposeLastScene;
     private width;
     private height;
     private dt;
@@ -171,7 +172,7 @@ declare class Entity {
      */
     recycled(): void;
     /**
-     * Called when an entity is perminantely destroyed
+     * Called when an entity is permanently destroyed
      */
     destroy(): void;
     /**
@@ -488,59 +489,6 @@ declare class Scene {
     _trackCollider(collider: Collider, tag: string): void;
     _untrackCollider(collider: Collider, tag: string): void;
 }
-declare class AssetLoader {
-    loading: boolean;
-    loaded: boolean;
-    callback: () => void;
-    percent: number;
-    private assets;
-    private assetsLoaded;
-    private textures;
-    private jsons;
-    private xmls;
-    private sounds;
-    private atlases;
-    private texts;
-    addTexture(path: string): AssetLoader;
-    addJson(path: string): AssetLoader;
-    addXml(path: string): AssetLoader;
-    addText(path: string): AssetLoader;
-    addSound(path: string): AssetLoader;
-    addAtlas(name: string, image: string, data: string, type: AtlasType): AssetLoader;
-    load(callback?: () => void): void;
-    unload(): void;
-    private loadTexture(path, callback?);
-    private loadJson(path, callback?);
-    private loadXml(path, callback?);
-    private loadText(path, callback?);
-    private loadSound(path, callback?);
-    private loadAtlas(data);
-    private incrementLoader();
-}
-declare class Assets {
-    static textures: {
-        [path: string]: Texture;
-    };
-    static json: {
-        [path: string]: Object;
-    };
-    static xml: {
-        [path: string]: Object;
-    };
-    static text: {
-        [path: string]: string;
-    };
-    static sounds: {
-        [path: string]: HTMLAudioElement;
-    };
-    static atlases: {
-        [path: string]: Atlas;
-    };
-    /**
-     * Unloads all the assets in the entire game
-     */
-    static unload(): void;
-}
 declare class Alarm extends Component {
     percent: number;
     duration: number;
@@ -625,6 +573,60 @@ declare class Tween extends Component {
     resume(): Tween;
     pause(): Tween;
     update(): void;
+    static create(on: Entity): Tween;
+}
+declare class AssetLoader {
+    loading: boolean;
+    loaded: boolean;
+    callback: () => void;
+    percent: number;
+    private assets;
+    private assetsLoaded;
+    private textures;
+    private jsons;
+    private xmls;
+    private sounds;
+    private atlases;
+    private texts;
+    addTexture(path: string): AssetLoader;
+    addJson(path: string): AssetLoader;
+    addXml(path: string): AssetLoader;
+    addText(path: string): AssetLoader;
+    addSound(path: string): AssetLoader;
+    addAtlas(name: string, image: string, data: string, type: AtlasType): AssetLoader;
+    load(callback?: () => void): void;
+    unload(): void;
+    private loadTexture(path, callback?);
+    private loadJson(path, callback?);
+    private loadXml(path, callback?);
+    private loadText(path, callback?);
+    private loadSound(path, callback?);
+    private loadAtlas(data);
+    private incrementLoader();
+}
+declare class Assets {
+    static textures: {
+        [path: string]: Texture;
+    };
+    static json: {
+        [path: string]: Object;
+    };
+    static xml: {
+        [path: string]: Object;
+    };
+    static text: {
+        [path: string]: string;
+    };
+    static sounds: {
+        [path: string]: HTMLAudioElement;
+    };
+    static atlases: {
+        [path: string]: Atlas;
+    };
+    /**
+     * Unloads all the assets in the entire game
+     */
+    static unload(): void;
 }
 declare class Vector {
     x: number;
@@ -647,6 +649,8 @@ declare class Vector {
     static temp0: Vector;
     static temp1: Vector;
     static temp2: Vector;
+    private static _zero;
+    static zero: Vector;
 }
 declare class GamepadManager {
     static defaultDeadzone: number;
@@ -1001,89 +1005,6 @@ declare class Shaders {
     static primitive: Shader;
     static init(): void;
 }
-declare class AnimationTemplate {
-    name: string;
-    speed: number;
-    frames: Texture[];
-    origin: Vector;
-    position: Vector;
-    loops: boolean;
-    goto: string[];
-    constructor(name: string, speed: number, frames: Texture[], loops?: boolean, position?: Vector, origin?: Vector);
-}
-declare class AnimationSet {
-    name: string;
-    animations: {
-        [name: string]: AnimationTemplate;
-    };
-    first: AnimationTemplate;
-    constructor(name: string);
-    add(name: string, speed: number, frames: Texture[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
-    addFrameAnimation(name: string, speed: number, tex: Texture, frameWidth: number, frameHeight: number, frames: number[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
-    get(name: string): AnimationTemplate;
-    has(name: string): boolean;
-}
-declare class AnimationBank {
-    static bank: {
-        [name: string]: AnimationSet;
-    };
-    static create(name: string): AnimationSet;
-    static get(name: string): AnimationSet;
-    static has(name: string): boolean;
-}
-declare enum AtlasType {
-    ASEPRITE = 0,
-}
-declare class Atlas {
-    name: string;
-    texture: Texture;
-    data: Object;
-    type: AtlasType;
-    subtextures: {
-        [path: string]: Texture;
-    };
-    constructor(name: string, texture: Texture, data: Object, type: AtlasType);
-    get(name: string): Texture;
-    has(name: string): boolean;
-    list(prefix: string, names: string[]): Texture[];
-    private loadAsepriteAtlas();
-}
-declare class FosterWebGLTexture {
-    path: string;
-    webGLTexture: WebGLTexture;
-    width: number;
-    height: number;
-    disposed: boolean;
-    constructor(texture: WebGLTexture, width: number, height: number);
-    dispose(): void;
-}
-declare class RenderTarget {
-    texture: FosterWebGLTexture;
-    frameBuffer: WebGLFramebuffer;
-    vertexBuffer: WebGLBuffer;
-    texcoordBuffer: WebGLBuffer;
-    colorBuffer: WebGLBuffer;
-    width: number;
-    height: number;
-    constructor(buffer: WebGLFramebuffer, texture: FosterWebGLTexture, vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, texcoordBuffer: WebGLBuffer);
-    dispose(): void;
-    static create(width: number, height: number): RenderTarget;
-}
-declare class Texture {
-    bounds: Rectangle;
-    frame: Rectangle;
-    texture: FosterWebGLTexture;
-    width: number;
-    height: number;
-    clippedWidth: number;
-    clippedHeight: number;
-    constructor(texture: FosterWebGLTexture, bounds?: Rectangle, frame?: Rectangle);
-    getSubtexture(clip: Rectangle, sub?: Texture): Texture;
-    clone(): Texture;
-    toString(): string;
-    dispose(): void;
-    static create(image: HTMLImageElement): Texture;
-}
 declare class Hitgrid extends Collider {
     tileWidth: number;
     tileHeight: number;
@@ -1213,6 +1134,8 @@ declare class Graphic extends Component {
     width: number;
     height: number;
     constructor(texture: Texture, position?: Vector);
+    center(): void;
+    justify(x: number, y: number): void;
     render(camera: Camera): void;
 }
 declare class Rectsprite extends Component {
@@ -1256,4 +1179,94 @@ declare class Tilemap extends Component {
     has(mapX: number, mapY: number): boolean;
     get(mapX: number, mapY: number): Vector;
     render(camera: Camera): void;
+}
+declare class AnimationTemplate {
+    name: string;
+    speed: number;
+    frames: Texture[];
+    origin: Vector;
+    position: Vector;
+    loops: boolean;
+    goto: string[];
+    constructor(name: string, speed: number, frames: Texture[], loops?: boolean, position?: Vector, origin?: Vector);
+}
+declare class AnimationSet {
+    name: string;
+    animations: {
+        [name: string]: AnimationTemplate;
+    };
+    first: AnimationTemplate;
+    constructor(name: string);
+    add(name: string, speed: number, frames: Texture[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
+    addFrameAnimation(name: string, speed: number, tex: Texture, frameWidth: number, frameHeight: number, frames: number[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
+    get(name: string): AnimationTemplate;
+    has(name: string): boolean;
+}
+declare class AnimationBank {
+    static bank: {
+        [name: string]: AnimationSet;
+    };
+    static create(name: string): AnimationSet;
+    static get(name: string): AnimationSet;
+    static has(name: string): boolean;
+}
+declare enum AtlasType {
+    ASEPRITE = 0,
+}
+declare class Atlas {
+    name: string;
+    texture: Texture;
+    data: Object;
+    type: AtlasType;
+    subtextures: {
+        [path: string]: Texture;
+    };
+    constructor(name: string, texture: Texture, data: Object, type: AtlasType);
+    get(name: string): Texture;
+    has(name: string): boolean;
+    list(prefix: string, names: string[]): Texture[];
+    private loadAsepriteAtlas();
+}
+declare class FosterWebGLTexture {
+    path: string;
+    webGLTexture: WebGLTexture;
+    width: number;
+    height: number;
+    disposed: boolean;
+    constructor(texture: WebGLTexture, width: number, height: number);
+    dispose(): void;
+}
+declare class RenderTarget {
+    texture: FosterWebGLTexture;
+    frameBuffer: WebGLFramebuffer;
+    vertexBuffer: WebGLBuffer;
+    texcoordBuffer: WebGLBuffer;
+    colorBuffer: WebGLBuffer;
+    width: number;
+    height: number;
+    constructor(buffer: WebGLFramebuffer, texture: FosterWebGLTexture, vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, texcoordBuffer: WebGLBuffer);
+    dispose(): void;
+    static create(width: number, height: number): RenderTarget;
+}
+declare class Texture {
+    bounds: Rectangle;
+    frame: Rectangle;
+    texture: FosterWebGLTexture;
+    center: Vector;
+    width: number;
+    height: number;
+    clippedWidth: number;
+    clippedHeight: number;
+    constructor(texture: FosterWebGLTexture, bounds?: Rectangle, frame?: Rectangle);
+    getSubtexture(clip: Rectangle, sub?: Texture): Texture;
+    clone(): Texture;
+    toString(): string;
+    draw(position: Vector, origin?: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    drawCropped(position: Vector, crop: Rectangle, origin?: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    drawCenter(position: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    drawCenterCropped(position: Vector, crop: Rectangle, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    drawJustify(position: Vector, justify: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    drawJustifyCropped(position: Vector, crop: Rectangle, justify: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    dispose(): void;
+    static create(image: HTMLImageElement): Texture;
 }

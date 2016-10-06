@@ -28,6 +28,16 @@ class Graphic extends Component
 		if (position)
 			this.position = position;
 	}
+
+	public center():void
+	{
+		this.justify(0.5, 0.5);
+	}
+
+	public justify(x:number, y:number):void
+	{
+		this.origin.set(this.width * x, this.height * y);
+	}
 	
 	public render(camera:Camera):void
 	{

@@ -115,7 +115,7 @@ abstract class Collider extends Component
 		for (let x = left; x < right; x++)
 			for (let y = top; y < bottom; y++)
 				if (b.has(x, y))
-				return true;
+					return true;
 		return false;
 	}
 }

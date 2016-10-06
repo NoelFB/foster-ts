@@ -65,4 +65,11 @@ class Tween extends Component
 				this.step(this.from + (this.to - this.from) * this.ease(this.percent));
 		}
 	}
+
+	public static create(on:Entity):Tween
+	{
+		let tween = new Tween();
+		on.add(tween);
+		return tween;
+	}
 }

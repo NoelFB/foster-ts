@@ -5,7 +5,7 @@ abstract class Component
 	get entity():Entity { return this._entity; }
 	set entity(val:Entity)
 	{
-		if (this._entity != null)
+		if (this._entity != null && val != null)
 			throw "This Component is already attached to an Entity";
 		this._entity = val;
 	}
@@ -14,7 +14,7 @@ abstract class Component
 	get scene() { return this._scene; }
 	set scene(val:Scene)
 	{
-		if (this._scene != null)
+		if (this._scene != null && val != null)
 			throw "This Component is already attached to a Scene";
 		this._scene = val;
 	}

@@ -54,6 +54,8 @@ class Scene
 	{
 		for (let i = 0; i < this.renderers.length; i ++)
 			this.renderers[i].dispose();
+		while (this.entities.length > 0)
+			this.destroy(this.entities[0]);
 		this.entities = [];
 		this.sorting = [];
 		this.renderers = [];
@@ -236,7 +238,7 @@ class Scene
 	public removeAll():void
 	{
 		for (let i = this.entities.length - 1; i >= 0; i --)
-			this.entities.splice(i, 1);
+			this.removeAt(i);
 	}
 
 	/**

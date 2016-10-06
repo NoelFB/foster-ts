@@ -115,8 +115,7 @@ class Engine
 	{
 		let lastScene = Engine.scene;
 		Engine.instance.nextScene = scene;
-		if (disposeLastScene && lastScene != null)
-			lastScene.dispose();
+		Engine.instance.disposeLastScene = disposeLastScene;
 		return scene;
 	}
 
@@ -155,6 +154,7 @@ class Engine
 	private client:Client;
 	private scene:Scene = null;
 	private nextScene:Scene = null;
+	private disposeLastScene:boolean;
 	private width:number;
 	private height:number;
 	private dt:number;
@@ -198,7 +198,11 @@ class Engine
 		if (this.nextScene != null)
 		{
 			if (this.scene != null)
+			{
 				this.scene.ended();
+				if (this.disposeLastScene)
+					this.scene.dispose();
+			}
 			this.scene = this.nextScene;
 			this.nextScene = null;
 			this.scene.begin();

@@ -8,13 +8,13 @@ class Component {
     }
     get entity() { return this._entity; }
     set entity(val) {
-        if (this._entity != null)
+        if (this._entity != null && val != null)
             throw "This Component is already attached to an Entity";
         this._entity = val;
     }
     get scene() { return this._scene; }
     set scene(val) {
-        if (this._scene != null)
+        if (this._scene != null && val != null)
             throw "This Component is already attached to a Scene";
         this._scene = val;
     }
@@ -142,8 +142,7 @@ class Engine {
     static goto(scene, disposeLastScene) {
         let lastScene = Engine.scene;
         Engine.instance.nextScene = scene;
-        if (disposeLastScene && lastScene != null)
-            lastScene.dispose();
+        Engine.instance.disposeLastScene = disposeLastScene;
         return scene;
     }
     static exit() {
@@ -181,8 +180,11 @@ class Engine {
         Keys.update();
         // swap scenes
         if (this.nextScene != null) {
-            if (this.scene != null)
+            if (this.scene != null) {
                 this.scene.ended();
+                if (this.disposeLastScene)
+                    this.scene.dispose();
+            }
             this.scene = this.nextScene;
             this.nextScene = null;
             this.scene.begin();
@@ -292,7 +294,7 @@ class Entity {
     recycled() {
     }
     /**
-     * Called when an entity is perminantely destroyed
+     * Called when an entity is permanently destroyed
      */
     destroy() {
     }
@@ -1092,6 +1094,8 @@ class Scene {
     dispose() {
         for (let i = 0; i < this.renderers.length; i++)
             this.renderers[i].dispose();
+        while (this.entities.length > 0)
+            this.destroy(this.entities[0]);
         this.entities = [];
         this.sorting = [];
         this.renderers = [];
@@ -1236,7 +1240,7 @@ class Scene {
      */
     removeAll() {
         for (let i = this.entities.length - 1; i >= 0; i--)
-            this.entities.splice(i, 1);
+            this.removeAt(i);
     }
     /**
      * Destroys the given entity (calls Entity.destroy, sets Entity.instantiated to false)
@@ -1365,196 +1369,6 @@ class Scene {
         }
     }
 }
-class AssetLoader {
-    constructor() {
-        this.loading = false;
-        this.loaded = false;
-        this.assets = 0;
-        this.assetsLoaded = 0;
-        this.textures = [];
-        this.jsons = [];
-        this.xmls = [];
-        this.sounds = [];
-        this.atlases = [];
-        this.texts = [];
-    }
-    get percent() { return this.assetsLoaded / this.assets; }
-    addTexture(path) {
-        if (this.loading || this.loaded)
-            throw "Cannot add more assets when already loaded";
-        this.textures.push(path);
-        this.assets++;
-        return this;
-    }
-    addJson(path) {
-        if (this.loading || this.loaded)
-            throw "Cannot add more assets when already loaded";
-        this.jsons.push(path);
-        this.assets++;
-        return this;
-    }
-    addXml(path) {
-        if (this.loading || this.loaded)
-            throw "Cannot add more assets when already loaded";
-        this.xmls.push(path);
-        this.assets++;
-        return this;
-    }
-    addText(path) {
-        if (this.loading || this.loaded)
-            throw "Cannot add more assets when already loaded";
-        this.texts.push(path);
-        this.assets++;
-        return this;
-    }
-    addSound(path) {
-        throw "Audio not implemented yet";
-        /*
-        if (this.loading || this.loaded)
-            throw "Cannot add more assets when already loaded";
-        this.sounds.push(path);
-        this.assets ++;
-        return this;*/
-    }
-    addAtlas(name, image, data, type) {
-        if (this.loading || this.loaded)
-            throw "Cannot add more assets when already loaded";
-        this.atlases.push({ name: name, image: image, data: data, type: type });
-        this.assets += 3;
-        return this;
-    }
-    load(callback) {
-        this.loading = true;
-        this.callback = callback;
-        // textures
-        for (let i = 0; i < this.textures.length; i++)
-            this.loadTexture(this.textures[i]);
-        // json files
-        for (let i = 0; i < this.jsons.length; i++)
-            this.loadJson(this.jsons[i]);
-        // xml files
-        for (let i = 0; i < this.xmls.length; i++)
-            this.loadXml(this.xmls[i]);
-        // text files
-        for (let i = 0; i < this.texts.length; i++)
-            this.loadText(this.texts[i]);
-        // sounds
-        for (let i = 0; i < this.sounds.length; i++)
-            this.loadSound(this.sounds[i]);
-        // atlases
-        for (let i = 0; i < this.atlases.length; i++)
-            this.loadAtlas(this.atlases[i]);
-    }
-    unload() {
-        if (this.loading)
-            throw "Cannot unload until finished loading";
-        if (!this.loaded)
-            throw "Cannot unload before loading";
-        // TODO: IMPLEMENT THIS
-        throw "Asset Unloading not Implemented";
-    }
-    loadTexture(path, callback) {
-        var self = this;
-        let gl = Engine.graphics.gl;
-        let img = new Image();
-        img.addEventListener('load', function () {
-            let tex = Texture.create(img);
-            tex.texture.path = path;
-            Assets.textures[path] = tex;
-            if (callback != undefined)
-                callback(tex);
-            self.incrementLoader();
-        });
-        img.src = path;
-    }
-    loadJson(path, callback) {
-        var self = this;
-        FosterIO.read(path, (data) => {
-            Assets.json[path] = JSON.parse(data);
-            if (callback != undefined)
-                callback(Assets.json[path]);
-            self.incrementLoader();
-        });
-    }
-    loadXml(path, callback) {
-        var self = this;
-        FosterIO.read(path, (data) => {
-            Assets.xml[path] = (new DOMParser()).parseFromString(data, "text/xml");
-            if (callback != undefined)
-                callback(Assets.xml[path]);
-            self.incrementLoader();
-        });
-    }
-    loadText(path, callback) {
-        var self = this;
-        FosterIO.read(path, (data) => {
-            Assets.text[path] = data;
-            if (callback != undefined)
-                callback(Assets.text[path]);
-            self.incrementLoader();
-        });
-    }
-    loadSound(path, callback) {
-        var self = this;
-        // todo: LOAD SOUND
-        self.incrementLoader();
-    }
-    loadAtlas(data) {
-        var self = this;
-        var texture = null;
-        var atlasdata = null;
-        // check to see if both the texture and data file are done
-        // if they are, then create the atlas object
-        function check() {
-            if (texture == null || atlasdata == null)
-                return;
-            let atlas = new Atlas(data.name, texture, atlasdata, data.type);
-            Assets.atlases[atlas.name] = atlas;
-            self.incrementLoader();
-        }
-        // load atlas data file  (XML or JSON)
-        if ((/(?:\.([^.]+))?$/).exec(data.data)[1] == "xml")
-            this.loadXml(data.data, (xml) => { atlasdata = xml; check(); });
-        else
-            this.loadJson(data.data, (j) => { atlasdata = j; check(); });
-        // load atlas texture file
-        this.loadTexture(data.image, (tex) => { texture = tex; check(); });
-    }
-    incrementLoader() {
-        this.assetsLoaded++;
-        if (this.assetsLoaded == this.assets) {
-            this.loaded = true;
-            this.loading = false;
-            if (this.callback != undefined)
-                this.callback();
-        }
-    }
-}
-class Assets {
-    /**
-     * Unloads all the assets in the entire game
-     */
-    static unload() {
-        // most of these can just lose reference
-        Assets.json = {};
-        Assets.xml = {};
-        Assets.text = {};
-        Assets.atlases = {};
-        // textures actually need to be unloaded
-        for (var path in Assets.textures)
-            Assets.textures[path].dispose();
-        Assets.textures = {};
-        // TODO: implement sound unloading
-        // ...
-        Assets.sounds = {};
-    }
-}
-Assets.textures = {};
-Assets.json = {};
-Assets.xml = {};
-Assets.text = {};
-Assets.sounds = {};
-Assets.atlases = {};
 /// <reference path="./../component.ts"/>
 class Alarm extends Component {
     constructor() {
@@ -1912,7 +1726,202 @@ class Tween extends Component {
                 this.step(this.from + (this.to - this.from) * this.ease(this.percent));
         }
     }
+    static create(on) {
+        let tween = new Tween();
+        on.add(tween);
+        return tween;
+    }
 }
+class AssetLoader {
+    constructor() {
+        this.loading = false;
+        this.loaded = false;
+        this.assets = 0;
+        this.assetsLoaded = 0;
+        this.textures = [];
+        this.jsons = [];
+        this.xmls = [];
+        this.sounds = [];
+        this.atlases = [];
+        this.texts = [];
+    }
+    get percent() { return this.assetsLoaded / this.assets; }
+    addTexture(path) {
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.textures.push(path);
+        this.assets++;
+        return this;
+    }
+    addJson(path) {
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.jsons.push(path);
+        this.assets++;
+        return this;
+    }
+    addXml(path) {
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.xmls.push(path);
+        this.assets++;
+        return this;
+    }
+    addText(path) {
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.texts.push(path);
+        this.assets++;
+        return this;
+    }
+    addSound(path) {
+        throw "Audio not implemented yet";
+        /*
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.sounds.push(path);
+        this.assets ++;
+        return this;*/
+    }
+    addAtlas(name, image, data, type) {
+        if (this.loading || this.loaded)
+            throw "Cannot add more assets when already loaded";
+        this.atlases.push({ name: name, image: image, data: data, type: type });
+        this.assets += 3;
+        return this;
+    }
+    load(callback) {
+        this.loading = true;
+        this.callback = callback;
+        // textures
+        for (let i = 0; i < this.textures.length; i++)
+            this.loadTexture(this.textures[i]);
+        // json files
+        for (let i = 0; i < this.jsons.length; i++)
+            this.loadJson(this.jsons[i]);
+        // xml files
+        for (let i = 0; i < this.xmls.length; i++)
+            this.loadXml(this.xmls[i]);
+        // text files
+        for (let i = 0; i < this.texts.length; i++)
+            this.loadText(this.texts[i]);
+        // sounds
+        for (let i = 0; i < this.sounds.length; i++)
+            this.loadSound(this.sounds[i]);
+        // atlases
+        for (let i = 0; i < this.atlases.length; i++)
+            this.loadAtlas(this.atlases[i]);
+    }
+    unload() {
+        if (this.loading)
+            throw "Cannot unload until finished loading";
+        if (!this.loaded)
+            throw "Cannot unload before loading";
+        // TODO: IMPLEMENT THIS
+        throw "Asset Unloading not Implemented";
+    }
+    loadTexture(path, callback) {
+        var self = this;
+        let gl = Engine.graphics.gl;
+        let img = new Image();
+        img.addEventListener('load', function () {
+            let tex = Texture.create(img);
+            tex.texture.path = path;
+            Assets.textures[path] = tex;
+            if (callback != undefined)
+                callback(tex);
+            self.incrementLoader();
+        });
+        img.src = path;
+    }
+    loadJson(path, callback) {
+        var self = this;
+        FosterIO.read(path, (data) => {
+            Assets.json[path] = JSON.parse(data);
+            if (callback != undefined)
+                callback(Assets.json[path]);
+            self.incrementLoader();
+        });
+    }
+    loadXml(path, callback) {
+        var self = this;
+        FosterIO.read(path, (data) => {
+            Assets.xml[path] = (new DOMParser()).parseFromString(data, "text/xml");
+            if (callback != undefined)
+                callback(Assets.xml[path]);
+            self.incrementLoader();
+        });
+    }
+    loadText(path, callback) {
+        var self = this;
+        FosterIO.read(path, (data) => {
+            Assets.text[path] = data;
+            if (callback != undefined)
+                callback(Assets.text[path]);
+            self.incrementLoader();
+        });
+    }
+    loadSound(path, callback) {
+        var self = this;
+        // todo: LOAD SOUND
+        self.incrementLoader();
+    }
+    loadAtlas(data) {
+        var self = this;
+        var texture = null;
+        var atlasdata = null;
+        // check to see if both the texture and data file are done
+        // if they are, then create the atlas object
+        function check() {
+            if (texture == null || atlasdata == null)
+                return;
+            let atlas = new Atlas(data.name, texture, atlasdata, data.type);
+            Assets.atlases[atlas.name] = atlas;
+            self.incrementLoader();
+        }
+        // load atlas data file  (XML or JSON)
+        if ((/(?:\.([^.]+))?$/).exec(data.data)[1] == "xml")
+            this.loadXml(data.data, (xml) => { atlasdata = xml; check(); });
+        else
+            this.loadJson(data.data, (j) => { atlasdata = j; check(); });
+        // load atlas texture file
+        this.loadTexture(data.image, (tex) => { texture = tex; check(); });
+    }
+    incrementLoader() {
+        this.assetsLoaded++;
+        if (this.assetsLoaded == this.assets) {
+            this.loaded = true;
+            this.loading = false;
+            if (this.callback != undefined)
+                this.callback();
+        }
+    }
+}
+class Assets {
+    /**
+     * Unloads all the assets in the entire game
+     */
+    static unload() {
+        // most of these can just lose reference
+        Assets.json = {};
+        Assets.xml = {};
+        Assets.text = {};
+        Assets.atlases = {};
+        // textures actually need to be unloaded
+        for (var path in Assets.textures)
+            Assets.textures[path].dispose();
+        Assets.textures = {};
+        // TODO: implement sound unloading
+        // ...
+        Assets.sounds = {};
+    }
+}
+Assets.textures = {};
+Assets.json = {};
+Assets.xml = {};
+Assets.text = {};
+Assets.sounds = {};
+Assets.atlases = {};
 class Vector {
     constructor(x, y) {
         this.x = 0;
@@ -1985,6 +1994,7 @@ class Vector {
         this.y /= dist;
         return this;
     }
+    static get zero() { return Vector._zero.set(0, 0); }
 }
 Vector.directions = [
     new Vector(-1, 0),
@@ -1996,6 +2006,7 @@ Vector.directions = [
 Vector.temp0 = new Vector();
 Vector.temp1 = new Vector();
 Vector.temp2 = new Vector();
+Vector._zero = new Vector();
 /// <reference path="./../component.ts"/>
 /// <reference path="./../util/vector.ts"/>
 class GamepadManager {
@@ -2005,13 +2016,11 @@ class GamepadManager {
     }
     static onAddController(event) {
         for (var i = 0; i < GamepadManager.controllers.length; i++) {
-            if (GamepadManager.controllers[i].gamepad == event.gamepad) {
+            if (GamepadManager.controllers[i].gamepad == event.gamepad)
                 return; // We already have this controller, must be a reconnect.
-            }
         }
-        if (event.gamepad.id.includes("Unknown Gamepad")) {
+        if (event.gamepad.id.includes("Unknown Gamepad"))
             return; // On some platforms each x360 controller was showing up twice and only one of them was queryable. -_-
-        }
         GamepadManager.controllers.push(new ControllerInput(event.gamepad));
     }
     static onRemoveController(event) {
@@ -2039,9 +2048,8 @@ class ControllerInput extends Component {
         this.buttons = [];
         this.gamepad = pad;
         this.deadzone = deadzone;
-        for (var i = 0; i < pad.buttons.length; i++) {
+        for (var i = 0; i < pad.buttons.length; i++)
             this.buttons.push(new ButtonState());
-        }
     }
     update() {
         var gamepad = this.queryGamepad();
@@ -2049,24 +2057,21 @@ class ControllerInput extends Component {
         this.leftStick.y = gamepad.axes[1];
         this.rightStick.x = gamepad.axes[2];
         this.rightStick.y = gamepad.axes[3];
-        for (var i = 0; i < this.buttons.length; i++) {
+        for (var i = 0; i < this.buttons.length; i++)
             this.buttons[i].update(gamepad.buttons[i].pressed);
-        }
     }
     getButton(index) {
         return this.buttons[index];
     }
     getLeftStick() {
-        if (this.leftStick.length > this.deadzone) {
+        if (this.leftStick.length > this.deadzone)
             return this.leftStick.clone();
-        }
-        return new Vector();
+        return Vector.zero;
     }
     getRightStick() {
-        if (this.rightStick.length > this.deadzone) {
+        if (this.rightStick.length > this.deadzone)
             return this.rightStick.clone();
-        }
-        return new Vector();
+        return Vector.zero;
     }
     getRawLeftStick() {
         return this.leftStick.clone();
@@ -3023,7 +3028,7 @@ class Shaders {
             new ShaderAttribute('a_texcoord', ShaderAttributeType.Texcoord),
             new ShaderAttribute('a_color', ShaderAttributeType.Color)
         ]);
-        // Primitive texture
+        // Primitive shader (no texture)
         Shaders.primitive = new Shader(
         // vertex shader
         'attribute vec2 a_position;' +
@@ -3047,230 +3052,6 @@ class Shaders {
             new ShaderAttribute('a_position', ShaderAttributeType.Position),
             new ShaderAttribute('a_color', ShaderAttributeType.Color)
         ]);
-    }
-}
-class AnimationTemplate {
-    constructor(name, speed, frames, loops, position, origin) {
-        this.loops = false;
-        this.goto = null;
-        this.name = name;
-        this.speed = speed;
-        this.frames = frames;
-        this.loops = loops || false;
-        this.position = (position || new Vector(0, 0));
-        this.origin = (origin || new Vector(0, 0));
-    }
-}
-/// <reference path="./animationTemplate.ts"/>
-class AnimationSet {
-    constructor(name) {
-        this.animations = {};
-        this.name = name;
-    }
-    add(name, speed, frames, loops, position, origin) {
-        let anim = new AnimationTemplate(name, speed, frames, loops, position, origin);
-        this.animations[name] = anim;
-        if (this.first == null)
-            this.first = anim;
-        return this;
-    }
-    addFrameAnimation(name, speed, tex, frameWidth, frameHeight, frames, loops, position, origin) {
-        let columns = Math.floor(tex.width / frameWidth);
-        let texFrames = [];
-        for (let i = 0; i < frames.length; i++) {
-            let index = frames[i];
-            let tx = (index % columns) * frameWidth;
-            let ty = Math.floor(index / columns) * frameWidth;
-            texFrames.push(tex.getSubtexture(new Rectangle(tx, ty, frameWidth, frameHeight)));
-        }
-        let anim = new AnimationTemplate(name, speed, texFrames, loops, position, origin);
-        this.animations[name] = anim;
-        if (this.first == null)
-            this.first = anim;
-        return this;
-    }
-    get(name) {
-        return this.animations[name];
-    }
-    has(name) {
-        return this.animations[name] != undefined;
-    }
-}
-/// <reference path="./animationSet.ts"/>
-class AnimationBank {
-    static create(name) {
-        var animSet = new AnimationSet(name);
-        AnimationBank.bank[name] = animSet;
-        return animSet;
-    }
-    static get(name) {
-        return AnimationBank.bank[name];
-    }
-    static has(name) {
-        return AnimationBank.bank[name] != undefined;
-    }
-}
-AnimationBank.bank = {};
-var AtlasType;
-(function (AtlasType) {
-    AtlasType[AtlasType["ASEPRITE"] = 0] = "ASEPRITE";
-})(AtlasType || (AtlasType = {}));
-class Atlas {
-    constructor(name, texture, data, type) {
-        this.subtextures = {};
-        this.name = name;
-        this.texture = texture;
-        this.data = data;
-        this.type = type;
-        if (type == AtlasType.ASEPRITE)
-            this.loadAsepriteAtlas();
-    }
-    get(name) {
-        return this.subtextures[name];
-    }
-    has(name) {
-        return this.subtextures[name] != undefined;
-    }
-    list(prefix, names) {
-        let listed = [];
-        for (let i = 0; i < names.length; i++)
-            listed.push(this.get(prefix + names[i]));
-        return listed;
-    }
-    loadAsepriteAtlas() {
-        let frames = this.data["frames"];
-        for (var path in frames) {
-            var name = path.replace(".ase", "");
-            var obj = frames[path];
-            var bounds = obj.frame;
-            if (obj.trimmed) {
-                var source = obj["spriteSourceSize"];
-                var size = obj["sourceSize"];
-                this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
-            }
-            else {
-                this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
-            }
-        }
-    }
-}
-class FosterWebGLTexture {
-    constructor(texture, width, height) {
-        this.disposed = false;
-        this.webGLTexture = texture;
-        this.width = width;
-        this.height = height;
-    }
-    dispose() {
-        if (!this.disposed) {
-            let gl = Engine.graphics.gl;
-            gl.deleteTexture(this.webGLTexture);
-            this.path = "";
-            this.webGLTexture = null;
-            this.width = 1;
-            this.height = 1;
-            this.disposed = true;
-        }
-    }
-}
-/// <reference path="./fosterWebGLTexture.ts"/>
-class RenderTarget {
-    constructor(buffer, texture, vertexBuffer, colorBuffer, texcoordBuffer) {
-        this.texture = texture;
-        this.frameBuffer = buffer;
-        this.vertexBuffer = vertexBuffer;
-        this.colorBuffer = colorBuffer;
-        this.texcoordBuffer = texcoordBuffer;
-    }
-    get width() { return this.texture.width; }
-    get height() { return this.texture.height; }
-    dispose() {
-        this.texture.dispose();
-        this.texture = null;
-        let gl = Engine.graphics.gl;
-        gl.deleteFramebuffer(this.frameBuffer);
-        gl.deleteBuffer(this.vertexBuffer);
-        gl.deleteBuffer(this.texcoordBuffer);
-        gl.deleteBuffer(this.colorBuffer);
-        this.frameBuffer = null;
-        this.vertexBuffer = null;
-        this.texcoordBuffer = null;
-        this.colorBuffer = null;
-    }
-    static create(width, height) {
-        let gl = Engine.graphics.gl;
-        let frameBuffer = gl.createFramebuffer();
-        let tex = gl.createTexture();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-        let vertexBuffer = gl.createBuffer();
-        let uvBuffer = gl.createBuffer();
-        let colorBuffer = gl.createBuffer();
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        return new RenderTarget(frameBuffer, new FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
-    }
-}
-/// <reference path="./fosterWebGLTexture.ts"/>
-class Texture {
-    constructor(texture, bounds, frame) {
-        this.bounds = null;
-        this.frame = null;
-        this.texture = null;
-        this.texture = texture;
-        this.bounds = bounds || new Rectangle(0, 0, texture.width, texture.height);
-        this.frame = frame || new Rectangle(0, 0, this.bounds.width, this.bounds.height);
-    }
-    get width() { return this.frame.width; }
-    get height() { return this.frame.height; }
-    get clippedWidth() { return this.bounds.width; }
-    get clippedHeight() { return this.bounds.height; }
-    getSubtexture(clip, sub) {
-        if (sub == undefined)
-            sub = new Texture(this.texture);
-        else
-            sub.texture = this.texture;
-        sub.bounds.x = this.bounds.x + Math.max(0, Math.min(this.bounds.width, clip.x + this.frame.x));
-        sub.bounds.y = this.bounds.y + Math.max(0, Math.min(this.bounds.height, clip.y + this.frame.y));
-        sub.bounds.width = Math.max(0, this.bounds.x + Math.min(this.bounds.width, clip.x + this.frame.x + clip.width) - sub.bounds.x);
-        sub.bounds.height = Math.max(0, this.bounds.y + Math.min(this.bounds.height, clip.y + this.frame.y + clip.height) - sub.bounds.y);
-        sub.frame.x = Math.min(0, this.frame.x + clip.x);
-        sub.frame.y = Math.min(0, this.frame.y + clip.y);
-        sub.frame.width = clip.width;
-        sub.frame.height = clip.height;
-        return sub;
-    }
-    clone() {
-        return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
-    }
-    toString() {
-        return (this.texture.path +
-            ": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
-            "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
-    }
-    dispose() {
-        this.texture.dispose();
-        this.texture = null;
-    }
-    static create(image) {
-        let gl = Engine.graphics.gl;
-        let tex = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
     }
 }
 /// <reference path="./collider.ts"/>
@@ -3630,6 +3411,12 @@ class Graphic extends Component {
     }
     get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
     get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
+    center() {
+        this.justify(0.5, 0.5);
+    }
+    justify(x, y) {
+        this.origin.set(this.width * x, this.height * y);
+    }
     render(camera) {
         Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
@@ -3783,5 +3570,249 @@ class Tilemap extends Component {
                 }
             }
         }
+    }
+}
+class AnimationTemplate {
+    constructor(name, speed, frames, loops, position, origin) {
+        this.loops = false;
+        this.goto = null;
+        this.name = name;
+        this.speed = speed;
+        this.frames = frames;
+        this.loops = loops || false;
+        this.position = (position || new Vector(0, 0));
+        this.origin = (origin || new Vector(0, 0));
+    }
+}
+/// <reference path="./animationTemplate.ts"/>
+class AnimationSet {
+    constructor(name) {
+        this.animations = {};
+        this.name = name;
+    }
+    add(name, speed, frames, loops, position, origin) {
+        let anim = new AnimationTemplate(name, speed, frames, loops, position, origin);
+        this.animations[name] = anim;
+        if (this.first == null)
+            this.first = anim;
+        return this;
+    }
+    addFrameAnimation(name, speed, tex, frameWidth, frameHeight, frames, loops, position, origin) {
+        let columns = Math.floor(tex.width / frameWidth);
+        let texFrames = [];
+        for (let i = 0; i < frames.length; i++) {
+            let index = frames[i];
+            let tx = (index % columns) * frameWidth;
+            let ty = Math.floor(index / columns) * frameWidth;
+            texFrames.push(tex.getSubtexture(new Rectangle(tx, ty, frameWidth, frameHeight)));
+        }
+        let anim = new AnimationTemplate(name, speed, texFrames, loops, position, origin);
+        this.animations[name] = anim;
+        if (this.first == null)
+            this.first = anim;
+        return this;
+    }
+    get(name) {
+        return this.animations[name];
+    }
+    has(name) {
+        return this.animations[name] != undefined;
+    }
+}
+/// <reference path="./animationSet.ts"/>
+class AnimationBank {
+    static create(name) {
+        var animSet = new AnimationSet(name);
+        AnimationBank.bank[name] = animSet;
+        return animSet;
+    }
+    static get(name) {
+        return AnimationBank.bank[name];
+    }
+    static has(name) {
+        return AnimationBank.bank[name] != undefined;
+    }
+}
+AnimationBank.bank = {};
+var AtlasType;
+(function (AtlasType) {
+    AtlasType[AtlasType["ASEPRITE"] = 0] = "ASEPRITE";
+})(AtlasType || (AtlasType = {}));
+class Atlas {
+    constructor(name, texture, data, type) {
+        this.subtextures = {};
+        this.name = name;
+        this.texture = texture;
+        this.data = data;
+        this.type = type;
+        if (type == AtlasType.ASEPRITE)
+            this.loadAsepriteAtlas();
+    }
+    get(name) {
+        return this.subtextures[name];
+    }
+    has(name) {
+        return this.subtextures[name] != undefined;
+    }
+    list(prefix, names) {
+        let listed = [];
+        for (let i = 0; i < names.length; i++)
+            listed.push(this.get(prefix + names[i]));
+        return listed;
+    }
+    loadAsepriteAtlas() {
+        let frames = this.data["frames"];
+        for (var path in frames) {
+            var name = path.replace(".ase", "");
+            var obj = frames[path];
+            var bounds = obj.frame;
+            if (obj.trimmed) {
+                var source = obj["spriteSourceSize"];
+                var size = obj["sourceSize"];
+                this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
+            }
+            else {
+                this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
+            }
+        }
+    }
+}
+class FosterWebGLTexture {
+    constructor(texture, width, height) {
+        this.disposed = false;
+        this.webGLTexture = texture;
+        this.width = width;
+        this.height = height;
+    }
+    dispose() {
+        if (!this.disposed) {
+            let gl = Engine.graphics.gl;
+            gl.deleteTexture(this.webGLTexture);
+            this.path = "";
+            this.webGLTexture = null;
+            this.width = 1;
+            this.height = 1;
+            this.disposed = true;
+        }
+    }
+}
+/// <reference path="./fosterWebGLTexture.ts"/>
+class RenderTarget {
+    constructor(buffer, texture, vertexBuffer, colorBuffer, texcoordBuffer) {
+        this.texture = texture;
+        this.frameBuffer = buffer;
+        this.vertexBuffer = vertexBuffer;
+        this.colorBuffer = colorBuffer;
+        this.texcoordBuffer = texcoordBuffer;
+    }
+    get width() { return this.texture.width; }
+    get height() { return this.texture.height; }
+    dispose() {
+        this.texture.dispose();
+        this.texture = null;
+        let gl = Engine.graphics.gl;
+        gl.deleteFramebuffer(this.frameBuffer);
+        gl.deleteBuffer(this.vertexBuffer);
+        gl.deleteBuffer(this.texcoordBuffer);
+        gl.deleteBuffer(this.colorBuffer);
+        this.frameBuffer = null;
+        this.vertexBuffer = null;
+        this.texcoordBuffer = null;
+        this.colorBuffer = null;
+    }
+    static create(width, height) {
+        let gl = Engine.graphics.gl;
+        let frameBuffer = gl.createFramebuffer();
+        let tex = gl.createTexture();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+        let vertexBuffer = gl.createBuffer();
+        let uvBuffer = gl.createBuffer();
+        let colorBuffer = gl.createBuffer();
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        return new RenderTarget(frameBuffer, new FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
+    }
+}
+/// <reference path="./fosterWebGLTexture.ts"/>
+class Texture {
+    constructor(texture, bounds, frame) {
+        this.bounds = null;
+        this.frame = null;
+        this.texture = null;
+        this.texture = texture;
+        this.bounds = bounds || new Rectangle(0, 0, texture.width, texture.height);
+        this.frame = frame || new Rectangle(0, 0, this.bounds.width, this.bounds.height);
+        this.center = new Vector(this.frame.width / 2, this.frame.height / 2);
+    }
+    get width() { return this.frame.width; }
+    get height() { return this.frame.height; }
+    get clippedWidth() { return this.bounds.width; }
+    get clippedHeight() { return this.bounds.height; }
+    getSubtexture(clip, sub) {
+        if (sub == undefined)
+            sub = new Texture(this.texture);
+        else
+            sub.texture = this.texture;
+        sub.bounds.x = this.bounds.x + Math.max(0, Math.min(this.bounds.width, clip.x + this.frame.x));
+        sub.bounds.y = this.bounds.y + Math.max(0, Math.min(this.bounds.height, clip.y + this.frame.y));
+        sub.bounds.width = Math.max(0, this.bounds.x + Math.min(this.bounds.width, clip.x + this.frame.x + clip.width) - sub.bounds.x);
+        sub.bounds.height = Math.max(0, this.bounds.y + Math.min(this.bounds.height, clip.y + this.frame.y + clip.height) - sub.bounds.y);
+        sub.frame.x = Math.min(0, this.frame.x + clip.x);
+        sub.frame.y = Math.min(0, this.frame.y + clip.y);
+        sub.frame.width = clip.width;
+        sub.frame.height = clip.height;
+        sub.center = new Vector(sub.frame.width / 2, sub.frame.height / 2);
+        return sub;
+    }
+    clone() {
+        return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
+    }
+    toString() {
+        return (this.texture.path +
+            ": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
+            "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
+    }
+    draw(position, origin, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, null, color, origin, scale, rotation, flipX, flipY);
+    }
+    drawCropped(position, crop, origin, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, crop, color, origin, scale, rotation, flipX, flipY);
+    }
+    drawCenter(position, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, null, color, this.center, scale, rotation, flipX, flipY);
+    }
+    drawCenterCropped(position, crop, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width / 2, crop.height / 2), scale, rotation, flipX, flipY);
+    }
+    drawJustify(position, justify, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, null, color, new Vector(this.width * justify.x, this.height * justify.y), scale, rotation, flipX, flipY);
+    }
+    drawJustifyCropped(position, crop, justify, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width * justify.x, crop.height * justify.y), scale, rotation, flipX, flipY);
+    }
+    dispose() {
+        this.texture.dispose();
+        this.texture = null;
+    }
+    static create(image) {
+        let gl = Engine.graphics.gl;
+        let tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
     }
 }

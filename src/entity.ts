@@ -109,7 +109,7 @@ class Entity
 	}
 
 	/**
-	 * Called when an entity is perminantely destroyed
+	 * Called when an entity is permanently destroyed
 	 */
 	destroy():void
 	{
