@@ -1,4 +1,8 @@
 /// <reference path="./../renderer.ts"/>
+
+/**
+ * Uses the Primitive Shader when rendering
+ */
 class PrimitiveRenderer extends Renderer
 {
 	constructor()

@@ -3,7 +3,7 @@
 
 ★ **still very work in progress** ★
 
-and am only working on this in my spare time!
+and has frequent, breaking changes. currently not worrying about backwards compatability with updates.
 
 #### Goals
  - Lightweight framework to be easily used for GameJam games
