@@ -63,7 +63,7 @@ class AssetLoader
 		return this;*/
 	}
 
-	public addAtlas(name:string, image:string, data:string, loader:AtlasLoader):AssetLoader
+	public addAtlas(name:string, image:string, data:string, loader:AtlasReader):AssetLoader
 	{
 		if (this.loading || this.loaded)
 			throw "Cannot add more assets when already loaded";
