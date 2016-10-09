@@ -19,6 +19,11 @@ enum Client
 class Engine
 {
 	/**
+	 * Foster Engine version
+	 */
+	public static version:string = "0.1.0";
+
+	/**
 	 * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
 	 */
 	public static get root():HTMLElement { return Engine.instance.root; }

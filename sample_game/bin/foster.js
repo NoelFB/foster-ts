@@ -8,13 +8,13 @@ class Component {
     }
     get entity() { return this._entity; }
     set entity(val) {
-        if (this._entity != null)
+        if (this._entity != null && val != null)
             throw "This Component is already attached to an Entity";
         this._entity = val;
     }
     get scene() { return this._scene; }
     set scene(val) {
-        if (this._scene != null)
+        if (this._scene != null && val != null)
             throw "This Component is already attached to a Scene";
         this._scene = val;
     }
@@ -33,11 +33,23 @@ class Component {
     render(camera) { }
     debugRender(camera) { }
 }
+/**
+ * Current game Client
+ */
 var Client;
 (function (Client) {
+    /**
+     * Running on the desktop (in Electron)
+     */
     Client[Client["Desktop"] = 0] = "Desktop";
+    /**
+     * Running on the Web
+     */
     Client[Client["Web"] = 1] = "Web";
 })(Client || (Client = {}));
+/**
+ * Core of the Foster Engine. Initializes and Runs the game.
+ */
 class Engine {
     constructor() {
         this.scene = null;
@@ -119,6 +131,7 @@ class Engine {
             Shaders.init();
             Mouse.init();
             Keys.init();
+            GamepadManager.init();
             // start update loop
             Engine.instance.step();
             // ready callback for game
@@ -129,8 +142,7 @@ class Engine {
     static goto(scene, disposeLastScene) {
         let lastScene = Engine.scene;
         Engine.instance.nextScene = scene;
-        if (disposeLastScene && lastScene != null)
-            lastScene.dispose();
+        Engine.instance.disposeLastScene = disposeLastScene;
         return scene;
     }
     static exit() {
@@ -168,8 +180,11 @@ class Engine {
         Keys.update();
         // swap scenes
         if (this.nextScene != null) {
-            if (this.scene != null)
+            if (this.scene != null) {
                 this.scene.ended();
+                if (this.disposeLastScene)
+                    this.scene.dispose();
+            }
             this.scene = this.nextScene;
             this.nextScene = null;
             this.scene.begin();
@@ -199,6 +214,10 @@ class Engine {
         }
     }
 }
+/**
+ * Foster Engine version
+ */
+Engine.version = "0.1.0";
 Engine.instance = null;
 Engine.started = false;
 Engine.exiting = false;
@@ -217,9 +236,13 @@ class Entity {
          */
         this.active = true;
         /**
-         * If the Entity has been instantiated yet (has it ever been added to a scene)
+         * If the Entity has been created yet (has it ever been added to a scene)
          */
-        this.instantiated = false;
+        this.isCreated = false;
+        /**
+         * If the Entity has been started yet (has it been updated in the current scene)
+         */
+        this.isStarted = false;
         /**
          * List of all Entity components
          */
@@ -259,29 +282,34 @@ class Entity {
             this._depth = val;
     }
     /**
-     * Called the first time the entity is created (after constructor)
+     * Called the first time the entity is added to a scene (after constructor, before added)
      */
     created() {
     }
     /**
-     * Called when the entity is added to a Scene
+     * Called immediately whenever the entity is added to a Scene (after created, before started)
      */
     added() {
     }
     /**
-     * Called when the entity is removed from a Scene
+     * Called before the first update of the Entity (after added)
+     */
+    started() {
+    }
+    /**
+     * Called immediately whenever the entity is removed from a Scene
      */
     removed() {
     }
     /**
-     * Called when the entity is recycled in a Scene
+     * Called immediately whenever the entity is recycled in a Scene
      */
     recycled() {
     }
     /**
-     * Called when an entity is perminantely destroyed
+     * Called when an entity is permanently destroyed
      */
-    destroy() {
+    destroyed() {
     }
     /**
      * Called every game-step, if this entity is in a Scene and Active
@@ -1079,6 +1107,8 @@ class Scene {
     dispose() {
         for (let i = 0; i < this.renderers.length; i++)
             this.renderers[i].dispose();
+        while (this.entities.length > 0)
+            this.destroy(this.entities[0]);
         this.entities = [];
         this.sorting = [];
         this.renderers = [];
@@ -1094,7 +1124,11 @@ class Scene {
         let lengthWas = this.entities.length;
         for (let i = 0; i < this.entities.length; i++) {
             let entity = this.entities[i];
-            if (entity.active)
+            if (!entity.isStarted) {
+                entity.isStarted = true;
+                entity.started();
+            }
+            if (entity.active && entity.isStarted)
                 entity.update();
             // in case stuff was removed
             if (lengthWas > this.entities.length) {
@@ -1154,8 +1188,8 @@ class Scene {
         if (position != undefined)
             entity.position.set(position.x, position.y);
         // first time for this entity
-        if (!entity.instantiated) {
-            entity.instantiated = true;
+        if (!entity.isCreated) {
+            entity.isCreated = true;
             entity.created();
         }
         // group existing groups in the entity
@@ -1215,6 +1249,7 @@ class Scene {
         for (let i = 0; i < entity.groups.length; i++)
             this._ungroupEntity(entity, entity.groups[i]);
         // remove entity
+        entity.isStarted = false;
         entity.scene = null;
         this.entities.splice(index, 1);
     }
@@ -1223,7 +1258,7 @@ class Scene {
      */
     removeAll() {
         for (let i = this.entities.length - 1; i >= 0; i--)
-            this.entities.splice(i, 1);
+            this.removeAt(i);
     }
     /**
      * Destroys the given entity (calls Entity.destroy, sets Entity.instantiated to false)
@@ -1232,8 +1267,8 @@ class Scene {
     destroy(entity) {
         if (entity.scene != null)
             this.remove(entity);
-        entity.destroy();
-        entity.instantiated = false;
+        entity.destroyed();
+        entity.isCreated = false;
     }
     find(className) {
         for (let i = 0; i < this.entities.length; i++)
@@ -1403,10 +1438,10 @@ class AssetLoader {
         this.assets ++;
         return this;*/
     }
-    addAtlas(name, image, data, type) {
+    addAtlas(name, image, data, loader) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
-        this.atlases.push({ name: name, image: image, data: data, type: type });
+        this.atlases.push({ name: name, image: image, data: data, loader: loader });
         this.assets += 3;
         return this;
     }
@@ -1495,7 +1530,7 @@ class AssetLoader {
         function check() {
             if (texture == null || atlasdata == null)
                 return;
-            let atlas = new Atlas(data.name, texture, atlasdata, data.type);
+            let atlas = new Atlas(data.name, texture, atlasdata, data.loader);
             Assets.atlases[atlas.name] = atlas;
             self.incrementLoader();
         }
@@ -1899,6 +1934,191 @@ class Tween extends Component {
                 this.step(this.from + (this.to - this.from) * this.ease(this.percent));
         }
     }
+    static create(on) {
+        let tween = new Tween();
+        on.add(tween);
+        return tween;
+    }
+}
+class Vector {
+    constructor(x, y) {
+        this.x = 0;
+        this.y = 0;
+        if (x != undefined)
+            this.x = x;
+        if (y != undefined)
+            this.y = y;
+    }
+    set(x, y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+    copy(v) {
+        this.x = v.x;
+        this.y = v.y;
+        return this;
+    }
+    add(v) {
+        this.x += v.x;
+        this.y += v.y;
+        return this;
+    }
+    sub(v) {
+        this.x -= v.x;
+        this.y -= v.y;
+        return this;
+    }
+    mult(v) {
+        this.x *= v.x;
+        this.y *= v.y;
+        return this;
+    }
+    div(v) {
+        this.x /= v.x;
+        this.y /= v.y;
+        return this;
+    }
+    scale(s) {
+        this.x *= s;
+        this.y *= s;
+        return this;
+    }
+    rotate(sin, cos) {
+        let ox = this.x, oy = this.y;
+        this.x = ox * cos - oy * sin;
+        this.y = ox * sin + oy * cos;
+        return this;
+    }
+    transform(m) {
+        let ax = this.x, ay = this.y;
+        this.x = m.mat[0] * ax + m.mat[3] * ay + m.mat[6];
+        this.y = m.mat[1] * ax + m.mat[4] * ay + m.mat[7];
+        return this;
+    }
+    clone() {
+        return new Vector(this.x, this.y);
+    }
+    get length() {
+        return Math.sqrt((this.x * this.x) + (this.y * this.y));
+    }
+    get normal() {
+        let dist = this.length;
+        return new Vector(this.x / dist, this.y / dist);
+    }
+    normalize() {
+        let dist = this.length;
+        this.x /= dist;
+        this.y /= dist;
+        return this;
+    }
+    static get zero() { return Vector._zero.set(0, 0); }
+}
+Vector.directions = [
+    new Vector(-1, 0),
+    new Vector(0, -1),
+    new Vector(1, 0),
+    new Vector(0, 1)
+];
+// temporary vectors used wherever
+Vector.temp0 = new Vector();
+Vector.temp1 = new Vector();
+Vector.temp2 = new Vector();
+Vector._zero = new Vector();
+/// <reference path="./../component.ts"/>
+/// <reference path="./../util/vector.ts"/>
+class GamepadManager {
+    static init() {
+        window.addEventListener("gamepadconnected", GamepadManager.onAddController, false);
+        window.addEventListener("gamepaddisconnected", GamepadManager.onRemoveController, false);
+    }
+    static onAddController(event) {
+        for (var i = 0; i < GamepadManager.controllers.length; i++) {
+            if (GamepadManager.controllers[i].gamepad == event.gamepad)
+                return; // We already have this controller, must be a reconnect.
+        }
+        if (event.gamepad.id.includes("Unknown Gamepad"))
+            return; // On some platforms each x360 controller was showing up twice and only one of them was queryable. -_-
+        GamepadManager.controllers.push(new ControllerInput(event.gamepad));
+    }
+    static onRemoveController(event) {
+        console.log("A gamepad was disconnected, please reconnect.");
+    }
+    static getController(index) {
+        return GamepadManager.controllers[index];
+    }
+    static numControllers() {
+        return GamepadManager.controllers.length;
+    }
+    static setRemoveControllerBehavior(handler) {
+        // let the dev decide how to act when controllers are removed.
+        GamepadManager.onRemoveController = handler;
+    }
+}
+GamepadManager.defaultDeadzone = 0.3;
+GamepadManager.controllers = [];
+class ControllerInput extends Component {
+    constructor(pad, deadzone = GamepadManager.defaultDeadzone) {
+        super();
+        // actual state of the gamepad
+        this.leftStick = new Vector();
+        this.rightStick = new Vector();
+        this.buttons = [];
+        this.gamepad = pad;
+        this.deadzone = deadzone;
+        for (var i = 0; i < pad.buttons.length; i++)
+            this.buttons.push(new ButtonState());
+    }
+    update() {
+        var gamepad = this.queryGamepad();
+        this.leftStick.x = gamepad.axes[0];
+        this.leftStick.y = gamepad.axes[1];
+        this.rightStick.x = gamepad.axes[2];
+        this.rightStick.y = gamepad.axes[3];
+        for (var i = 0; i < this.buttons.length; i++)
+            this.buttons[i].update(gamepad.buttons[i].pressed);
+    }
+    getButton(index) {
+        return this.buttons[index];
+    }
+    getLeftStick() {
+        if (this.leftStick.length > this.deadzone)
+            return this.leftStick.clone();
+        return Vector.zero;
+    }
+    getRightStick() {
+        if (this.rightStick.length > this.deadzone)
+            return this.rightStick.clone();
+        return Vector.zero;
+    }
+    getRawLeftStick() {
+        return this.leftStick.clone();
+    }
+    getRawRightStick() {
+        return this.rightStick.clone();
+    }
+    queryGamepad() {
+        return navigator.getGamepads()[this.gamepad.index];
+    }
+}
+class ButtonState {
+    constructor() {
+        this._last = false;
+        this._next = false;
+    }
+    update(val) {
+        this._last = this._next;
+        this._next = val;
+    }
+    down() {
+        return this._next;
+    }
+    pressed() {
+        return this._next && !this._last;
+    }
+    released() {
+        return this._last && !this._next;
+    }
 }
 class Keys {
     static init() {
@@ -2062,89 +2282,6 @@ var Key;
     Key[Key["closeBraket"] = 221] = "closeBraket";
     Key[Key["singleQuote"] = 222] = "singleQuote";
 })(Key || (Key = {}));
-class Vector {
-    constructor(x, y) {
-        this.x = 0;
-        this.y = 0;
-        if (x != undefined)
-            this.x = x;
-        if (y != undefined)
-            this.y = y;
-    }
-    set(x, y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    copy(v) {
-        this.x = v.x;
-        this.y = v.y;
-        return this;
-    }
-    add(v) {
-        this.x += v.x;
-        this.y += v.y;
-        return this;
-    }
-    sub(v) {
-        this.x -= v.x;
-        this.y -= v.y;
-        return this;
-    }
-    mult(v) {
-        this.x *= v.x;
-        this.y *= v.y;
-        return this;
-    }
-    div(v) {
-        this.x /= v.x;
-        this.y /= v.y;
-        return this;
-    }
-    scale(s) {
-        this.x *= s;
-        this.y *= s;
-        return this;
-    }
-    rotate(sin, cos) {
-        let ox = this.x, oy = this.y;
-        this.x = ox * cos - oy * sin;
-        this.y = ox * sin + oy * cos;
-        return this;
-    }
-    transform(m) {
-        let ax = this.x, ay = this.y;
-        this.x = m.mat[0] * ax + m.mat[3] * ay + m.mat[6];
-        this.y = m.mat[1] * ax + m.mat[4] * ay + m.mat[7];
-        return this;
-    }
-    clone() {
-        return new Vector(this.x, this.y);
-    }
-    get length() {
-        return Math.sqrt((this.x * this.x) + (this.y * this.y));
-    }
-    get normal() {
-        let dist = this.length;
-        return new Vector(this.x / dist, this.y / dist);
-    }
-    normalize() {
-        let dist = this.length;
-        this.x /= dist;
-        this.y /= dist;
-        return this;
-    }
-}
-Vector.directions = [
-    new Vector(-1, 0),
-    new Vector(0, -1),
-    new Vector(1, 0),
-    new Vector(0, 1)
-];
-// temporary vectors used wherever
-Vector.temp0 = new Vector();
-Vector.temp1 = new Vector();
-Vector.temp2 = new Vector();
 /// <reference path="./../util/vector.ts"/>
 class Mouse {
     static get x() { return this._position.x; }
@@ -2909,7 +3046,7 @@ class Shaders {
             new ShaderAttribute('a_texcoord', ShaderAttributeType.Texcoord),
             new ShaderAttribute('a_color', ShaderAttributeType.Color)
         ]);
-        // Primitive texture
+        // Primitive shader (no texture)
         Shaders.primitive = new Shader(
         // vertex shader
         'attribute vec2 a_position;' +
@@ -2997,19 +3134,14 @@ class AnimationBank {
     }
 }
 AnimationBank.bank = {};
-var AtlasType;
-(function (AtlasType) {
-    AtlasType[AtlasType["ASEPRITE"] = 0] = "ASEPRITE";
-})(AtlasType || (AtlasType = {}));
 class Atlas {
-    constructor(name, texture, data, type) {
+    constructor(name, texture, data, loader) {
         this.subtextures = {};
         this.name = name;
         this.texture = texture;
         this.data = data;
-        this.type = type;
-        if (type == AtlasType.ASEPRITE)
-            this.loadAsepriteAtlas();
+        this.loader = loader;
+        this.loader(this);
     }
     get(name) {
         return this.subtextures[name];
@@ -3023,8 +3155,10 @@ class Atlas {
             listed.push(this.get(prefix + names[i]));
         return listed;
     }
-    loadAsepriteAtlas() {
-        let frames = this.data["frames"];
+}
+class AtlasLoaders {
+    static Aseprite(atlas) {
+        let frames = atlas.data["frames"];
         for (var path in frames) {
             var name = path.replace(".ase", "");
             var obj = frames[path];
@@ -3032,10 +3166,10 @@ class Atlas {
             if (obj.trimmed) {
                 var source = obj["spriteSourceSize"];
                 var size = obj["sourceSize"];
-                this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
+                atlas.subtextures[name] = new Texture(atlas.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
             }
             else {
-                this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
+                atlas.subtextures[name] = new Texture(atlas.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
             }
         }
     }
@@ -3113,6 +3247,7 @@ class Texture {
         this.texture = texture;
         this.bounds = bounds || new Rectangle(0, 0, texture.width, texture.height);
         this.frame = frame || new Rectangle(0, 0, this.bounds.width, this.bounds.height);
+        this.center = new Vector(this.frame.width / 2, this.frame.height / 2);
     }
     get width() { return this.frame.width; }
     get height() { return this.frame.height; }
@@ -3131,6 +3266,7 @@ class Texture {
         sub.frame.y = Math.min(0, this.frame.y + clip.y);
         sub.frame.width = clip.width;
         sub.frame.height = clip.height;
+        sub.center = new Vector(sub.frame.width / 2, sub.frame.height / 2);
         return sub;
     }
     clone() {
@@ -3140,6 +3276,24 @@ class Texture {
         return (this.texture.path +
             ": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
             "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
+    }
+    draw(position, origin, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, null, color, origin, scale, rotation, flipX, flipY);
+    }
+    drawCropped(position, crop, origin, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, crop, color, origin, scale, rotation, flipX, flipY);
+    }
+    drawCenter(position, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, null, color, this.center, scale, rotation, flipX, flipY);
+    }
+    drawCenterCropped(position, crop, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width / 2, crop.height / 2), scale, rotation, flipX, flipY);
+    }
+    drawJustify(position, justify, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, null, color, new Vector(this.width * justify.x, this.height * justify.y), scale, rotation, flipX, flipY);
+    }
+    drawJustifyCropped(position, crop, justify, scale, rotation, color, flipX, flipY) {
+        Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width * justify.x, crop.height * justify.y), scale, rotation, flipX, flipY);
     }
     dispose() {
         this.texture.dispose();
@@ -3516,6 +3670,12 @@ class Graphic extends Component {
     }
     get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
     get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
+    center() {
+        this.justify(0.5, 0.5);
+    }
+    justify(x, y) {
+        this.origin.set(this.width * x, this.height * y);
+    }
     render(camera) {
         Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }

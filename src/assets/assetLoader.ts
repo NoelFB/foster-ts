@@ -63,11 +63,11 @@ class AssetLoader
 		return this;*/
 	}
 
-	public addAtlas(name:string, image:string, data:string, type:AtlasType):AssetLoader
+	public addAtlas(name:string, image:string, data:string, loader:AtlasLoader):AssetLoader
 	{
 		if (this.loading || this.loaded)
 			throw "Cannot add more assets when already loaded";
-		this.atlases.push({ name: name, image: image, data: data, type: type });
+		this.atlases.push({ name: name, image: image, data: data, loader: loader });
 		this.assets += 3;
 		return this;
 	}
@@ -196,7 +196,7 @@ class AssetLoader
 			if (texture == null || atlasdata == null)
 				return;
 			
-			let atlas = new Atlas(data.name, texture, atlasdata, data.type);
+			let atlas = new Atlas(data.name, texture, atlasdata, data.loader);
 			Assets.atlases[atlas.name] = atlas;
 			self.incrementLoader();
 		}

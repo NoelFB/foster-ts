@@ -74,7 +74,12 @@ class Scene
 		for (let i = 0; i < this.entities.length; i ++)
 		{
 			let entity = this.entities[i];
-			if (entity.active)
+			if (!entity.isStarted)
+			{
+				entity.isStarted = true;
+				entity.started();
+			}
+			if (entity.active && entity.isStarted)
 				entity.update();
 
 			// in case stuff was removed
@@ -151,9 +156,9 @@ class Scene
 			entity.position.set(position.x, position.y);
 
 		// first time for this entity
-		if (!entity.instantiated)
+		if (!entity.isCreated)
 		{
-			entity.instantiated = true;
+			entity.isCreated = true;
 			entity.created();
 		}
 
@@ -228,6 +233,7 @@ class Scene
 			this._ungroupEntity(entity, entity.groups[i]);
 
 		// remove entity
+		entity.isStarted = false;
 		entity.scene = null;
 		this.entities.splice(index, 1);
 	}
@@ -249,8 +255,8 @@ class Scene
 	{
 		if (entity.scene != null)
 			this.remove(entity);
-		entity.destroy();
-		entity.instantiated = false;
+		entity.destroyed();
+		entity.isCreated = false;
 	}
 
 	public find<T extends Entity>(className:Function):T

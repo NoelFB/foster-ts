@@ -28,10 +28,15 @@ class Entity
 	public active:boolean = true;
 
 	/**
-	 * If the Entity has been instantiated yet (has it ever been added to a scene)
+	 * If the Entity has been created yet (has it ever been added to a scene)
 	 */
-	public instantiated:boolean = false;
+	public isCreated:boolean = false;
 	
+	/**
+	 * If the Entity has been started yet (has it been updated in the current scene)
+	 */
+	public isStarted:boolean = false;
+
 	/**
 	 * The current scene that the Entity is in
 	 */
@@ -77,7 +82,7 @@ class Entity
 	}
 
 	/**
-	 * Called the first time the entity is created (after constructor)
+	 * Called the first time the entity is added to a scene (after constructor, before added)
 	 */
 	created():void
 	{
@@ -85,7 +90,7 @@ class Entity
 	}
 
 	/**
-	 * Called when the entity is added to a Scene
+	 * Called immediately whenever the entity is added to a Scene (after created, before started)
 	 */
 	added():void
 	{
@@ -93,7 +98,15 @@ class Entity
 	}
 
 	/**
-	 * Called when the entity is removed from a Scene
+	 * Called before the first update of the Entity (after added)
+	 */
+	started():void
+	{
+
+	}
+
+	/**
+	 * Called immediately whenever the entity is removed from a Scene
 	 */
 	removed():void
 	{
@@ -101,7 +114,7 @@ class Entity
 	}
 
 	/**
-	 * Called when the entity is recycled in a Scene
+	 * Called immediately whenever the entity is recycled in a Scene
 	 */
 	recycled():void
 	{
@@ -111,7 +124,7 @@ class Entity
 	/**
 	 * Called when an entity is permanently destroyed
 	 */
-	destroy():void
+	destroyed():void
 	{
 
 	}

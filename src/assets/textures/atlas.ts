@@ -1,8 +1,5 @@
 
-enum AtlasType
-{
-	ASEPRITE = 0
-}
+interface AtlasLoader { (atlas: Atlas): void; }
 
 class Atlas
 {
@@ -10,19 +7,17 @@ class Atlas
 	public name:string;
 	public texture:Texture;
 	public data:Object;
-	public type:AtlasType;
+	public loader:AtlasLoader;
 
 	public subtextures:{[path:string]:Texture} = {};
 
-	constructor(name:string, texture:Texture, data:Object, type:AtlasType)
+	constructor(name:string, texture:Texture, data:Object, loader:AtlasLoader)
 	{
 		this.name = name;
 		this.texture = texture;
 		this.data = data;
-		this.type = type;
-
-		if (type == AtlasType.ASEPRITE)
-			this.loadAsepriteAtlas();
+		this.loader = loader;
+		this.loader(this);
 	}
 
 	public get(name:string):Texture
@@ -42,10 +37,14 @@ class Atlas
 			listed.push(this.get(prefix + names[i]));
 		return listed;
 	}
+}
 
-	private loadAsepriteAtlas()
+
+class AtlasLoaders
+{
+	public static Aseprite(atlas:Atlas):void
 	{
-		let frames = this.data["frames"];
+		let frames = atlas.data["frames"];
 		for (var path in frames)
 		{
 			var name = path.replace(".ase", "");
@@ -56,11 +55,11 @@ class Atlas
 			{
 				var source = obj["spriteSourceSize"];
 				var size = obj["sourceSize"];
-				this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
+				atlas.subtextures[name] = new Texture(atlas.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
 			}
 			else
 			{
-				this.subtextures[name] = new Texture(this.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
+				atlas.subtextures[name] = new Texture(atlas.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
 			}
 		}
 	}
