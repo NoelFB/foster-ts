@@ -392,19 +392,61 @@ declare class Graphics {
      */
     circle(pos: Vector, rad: number, steps: number, colorA: Color, colorB?: Color): void;
 }
+/**
+ * Used by the Scene to render. A Scene can have multiple renderers that essentially act as separate layers / draw calls
+ */
 declare abstract class Renderer {
+    /**
+     * If this renderer is visible
+     */
     visible: boolean;
+    /**
+     * Current Render Target. null means it will draw to the screen
+     */
     target: RenderTarget;
+    /**
+     * Clear color when drawing (defaults to transparent)
+     */
     clearTargetColor: Color;
+    /**
+     * The scene we're in
+     */
     scene: Scene;
+    /**
+     * Camera that is applied to the shader during rendering. Falls back to Scene.camera if null
+     */
     camera: Camera;
+    /**
+     * Only draws entities of the given mask, if set (otherwise draws all entities)
+     */
     groupsMask: string[];
+    /**
+     * Current Shader used by the Renderer
+     */
     shader: Shader;
+    /**
+     * Shader Camera Matrix uniform (applies the camera matrix to this when rendering)
+     */
     shaderCameraUniformName: string;
+    /**
+     * Called during Scene.update
+     */
     update(): void;
+    /**
+     * Called before Render
+     */
     preRender(): void;
+    /**
+     * Renders the Renderer
+     */
     render(): void;
+    /**
+     * Called after Render
+     */
     postRender(): void;
+    /**
+     * Called when the Scene is disposed (cleans up our Target, if we have one)
+     */
     dispose(): void;
 }
 declare class Scene {
@@ -842,9 +884,15 @@ declare class Mouse {
     static update(): void;
     private static setNextMouseTo(pageX, pageY);
 }
+/**
+ * Uses the Primitive Shader when rendering
+ */
 declare class PrimitiveRenderer extends Renderer {
     constructor();
 }
+/**
+ * Uses the Texture Shader when rendering
+ */
 declare class SpriteRenderer extends Renderer {
     constructor();
 }

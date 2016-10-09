@@ -1033,16 +1033,43 @@ class Graphics {
         }
     }
 }
+/**
+ * Used by the Scene to render. A Scene can have multiple renderers that essentially act as separate layers / draw calls
+ */
 class Renderer {
     constructor() {
+        /**
+         * If this renderer is visible
+         */
         this.visible = true;
+        /**
+         * Current Render Target. null means it will draw to the screen
+         */
         this.target = null;
+        /**
+         * Clear color when drawing (defaults to transparent)
+         */
         this.clearTargetColor = new Color(0, 0, 0, 0);
+        /**
+         * The scene we're in
+         */
         this.scene = null;
+        /**
+         * Only draws entities of the given mask, if set (otherwise draws all entities)
+         */
         this.groupsMask = [];
     }
+    /**
+     * Called during Scene.update
+     */
     update() { }
+    /**
+     * Called before Render
+     */
     preRender() { }
+    /**
+     * Renders the Renderer
+     */
     render() {
         // set target
         if (this.target != null) {
@@ -1061,7 +1088,13 @@ class Renderer {
             if (list[i].visible)
                 list[i].render(currentCamera);
     }
+    /**
+     * Called after Render
+     */
     postRender() { }
+    /**
+     * Called when the Scene is disposed (cleans up our Target, if we have one)
+     */
     dispose() {
         if (this.target != null)
             this.target.dispose();
@@ -2350,6 +2383,9 @@ Mouse._position = new Vector(0, 0);
 Mouse._positionNext = new Vector(0, 0);
 Mouse.absolute = new Vector(0, 0);
 /// <reference path="./../renderer.ts"/>
+/**
+ * Uses the Primitive Shader when rendering
+ */
 class PrimitiveRenderer extends Renderer {
     constructor() {
         super();
@@ -2358,6 +2394,9 @@ class PrimitiveRenderer extends Renderer {
     }
 }
 /// <reference path="./../renderer.ts"/>
+/**
+ * Uses the Texture Shader when rendering
+ */
 class SpriteRenderer extends Renderer {
     constructor() {
         super();
