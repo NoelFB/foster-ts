@@ -2,8 +2,8 @@
 // entry point
 Engine.start("Game Title", 480, 270, 3, () => {
     // load assets
-    new AssetLoader()
-        .addAtlas("gfx", "assets/atlas.png", "assets/atlas.json", AtlasLoaders.Aseprite)
+    new AssetLoader("assets")
+        .addAtlas("gfx", "atlas.png", "atlas.json", AtlasReaders.Aseprite)
         .load(() => {
         var atlas = Assets.atlases["gfx"];
         Engine.graphics.pixel = atlas.get("pixel");

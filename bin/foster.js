@@ -126,6 +126,7 @@ class Engine {
             console.log("%c " + c + " ENGINE START " + c + " ", "background: #222; color: #ff44aa;");
             Engine.instance.root = document.getElementsByTagName("body")[0];
             // init
+            FosterIO.init();
             Engine.instance.graphics = new Graphics(Engine.instance);
             Engine.resize(width, height);
             Shaders.init();
@@ -1388,7 +1389,8 @@ class Scene {
     }
 }
 class AssetLoader {
-    constructor() {
+    constructor(root) {
+        this.root = "";
         this.loading = false;
         this.loaded = false;
         this.assets = 0;
@@ -1399,6 +1401,7 @@ class AssetLoader {
         this.sounds = [];
         this.atlases = [];
         this.texts = [];
+        this.root = root || "";
     }
     get percent() { return this.assetsLoaded / this.assets; }
     addTexture(path) {
@@ -1450,19 +1453,19 @@ class AssetLoader {
         this.callback = callback;
         // textures
         for (let i = 0; i < this.textures.length; i++)
-            this.loadTexture(this.textures[i]);
+            this.loadTexture(FosterIO.join(this.root, this.textures[i]));
         // json files
         for (let i = 0; i < this.jsons.length; i++)
-            this.loadJson(this.jsons[i]);
+            this.loadJson(FosterIO.join(this.root, this.jsons[i]));
         // xml files
         for (let i = 0; i < this.xmls.length; i++)
-            this.loadXml(this.xmls[i]);
+            this.loadXml(FosterIO.join(this.root, this.xmls[i]));
         // text files
         for (let i = 0; i < this.texts.length; i++)
-            this.loadText(this.texts[i]);
+            this.loadText(FosterIO.join(this.root, this.texts[i]));
         // sounds
         for (let i = 0; i < this.sounds.length; i++)
-            this.loadSound(this.sounds[i]);
+            this.loadSound(FosterIO.join(this.root, this.sounds[i]));
         // atlases
         for (let i = 0; i < this.atlases.length; i++)
             this.loadAtlas(this.atlases[i]);
@@ -1536,11 +1539,11 @@ class AssetLoader {
         }
         // load atlas data file  (XML or JSON)
         if ((/(?:\.([^.]+))?$/).exec(data.data)[1] == "xml")
-            this.loadXml(data.data, (xml) => { atlasdata = xml; check(); });
+            this.loadXml(FosterIO.join(this.root, data.data), (xml) => { atlasdata = xml; check(); });
         else
-            this.loadJson(data.data, (j) => { atlasdata = j; check(); });
+            this.loadJson(FosterIO.join(this.root, data.data), (j) => { atlasdata = j; check(); });
         // load atlas texture file
-        this.loadTexture(data.image, (tex) => { texture = tex; check(); });
+        this.loadTexture(FosterIO.join(this.root, data.image), (tex) => { texture = tex; check(); });
     }
     incrementLoader() {
         this.assetsLoaded++;
@@ -2545,12 +2548,14 @@ class Ease {
     }
 }
 class FosterIO {
+    static init() {
+        if (FosterIO.fs == null && Engine.client == Client.Desktop) {
+            FosterIO.fs = require("fs");
+            FosterIO.path = require("path");
+        }
+    }
     static read(path, callback) {
         if (Engine.client == Client.Desktop) {
-            if (FosterIO.fs == null) {
-                FosterIO.fs = require("fs");
-                FosterIO.path = require("path");
-            }
             FosterIO.fs.readFile(FosterIO.path.join(__dirname, path), 'utf8', function (err, data) {
                 if (err)
                     throw err;
@@ -2569,6 +2574,25 @@ class FosterIO {
             };
             httpRequest.open('GET', path);
             httpRequest.send();
+        }
+    }
+    static join(...paths) {
+        if (paths.length <= 0)
+            return ".";
+        if (Engine.client == Client.Desktop) {
+            let result = paths[0];
+            for (let i = 1; i < paths.length; i++)
+                result = FosterIO.path.join(result, paths[i]);
+            return result;
+        }
+        else {
+            let result = [];
+            for (let i = 0; i < paths.length; i++) {
+                let sub = paths[i].split("/");
+                for (let j = 0; j < sub.length; j++)
+                    result.push(sub[j]);
+            }
+            return result.length > 0 ? result.join("/") : ".";
         }
     }
 }
@@ -3135,30 +3159,67 @@ class AnimationBank {
 }
 AnimationBank.bank = {};
 class Atlas {
-    constructor(name, texture, data, loader) {
+    constructor(name, texture, data, reader) {
+        /**
+         * Dictionary of the Subtextures within this atlas
+         */
         this.subtextures = {};
         this.name = name;
         this.texture = texture;
         this.data = data;
-        this.loader = loader;
-        this.loader(this);
+        this.reader = reader;
+        this.reader(this.data, this);
     }
+    /**
+     * Gets a specific subtexture from the atlas
+     * @param name 	the name/path of the subtexture
+     */
     get(name) {
         return this.subtextures[name];
     }
+    /**
+     * Checks if a subtexture exists
+     * @param name 	the name/path of the subtexture
+     */
     has(name) {
         return this.subtextures[name] != undefined;
     }
+    /**
+     * Gets a list of textures
+     */
     list(prefix, names) {
         let listed = [];
         for (let i = 0; i < names.length; i++)
             listed.push(this.get(prefix + names[i]));
         return listed;
     }
+    /**
+     * Finds all subtextures with the given prefix
+     */
+    find(prefix) {
+        // find all textures
+        let found = [];
+        for (var key in this.subtextures) {
+            if (key.indexOf(prefix) == 0)
+                found.push({ name: key, tex: this.subtextures[key] });
+        }
+        // sort textures by name
+        found.sort((a, b) => {
+            return (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0));
+        });
+        // get sorted list
+        let listed = [];
+        for (let i = 0; i < found.length; i++)
+            listed.push(found[i]);
+        return listed;
+    }
 }
-class AtlasLoaders {
-    static Aseprite(atlas) {
-        let frames = atlas.data["frames"];
+class AtlasReaders {
+    /**
+     * Parses Aseprite data from the atlas
+     */
+    static Aseprite(data, into) {
+        let frames = data["frames"];
         for (var path in frames) {
             var name = path.replace(".ase", "");
             var obj = frames[path];
@@ -3166,10 +3227,10 @@ class AtlasLoaders {
             if (obj.trimmed) {
                 var source = obj["spriteSourceSize"];
                 var size = obj["sourceSize"];
-                atlas.subtextures[name] = new Texture(atlas.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
+                into.subtextures[name] = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
             }
             else {
-                atlas.subtextures[name] = new Texture(atlas.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
+                into.subtextures[name] = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
             }
         }
     }

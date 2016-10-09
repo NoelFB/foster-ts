@@ -100,6 +100,7 @@ class Engine
 			Engine.instance.root = document.getElementsByTagName("body")[0];
 
 			// init
+			FosterIO.init();
 			Engine.instance.graphics = new Graphics(Engine.instance);
 			Engine.resize(width, height);
 			Shaders.init();

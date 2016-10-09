@@ -502,6 +502,7 @@ declare class Scene {
     _untrackCollider(collider: Collider, tag: string): void;
 }
 declare class AssetLoader {
+    root: string;
     loading: boolean;
     loaded: boolean;
     callback: () => void;
@@ -514,12 +515,13 @@ declare class AssetLoader {
     private sounds;
     private atlases;
     private texts;
+    constructor(root?: string);
     addTexture(path: string): AssetLoader;
     addJson(path: string): AssetLoader;
     addXml(path: string): AssetLoader;
     addText(path: string): AssetLoader;
     addSound(path: string): AssetLoader;
-    addAtlas(name: string, image: string, data: string, loader: AtlasLoader): AssetLoader;
+    addAtlas(name: string, image: string, data: string, loader: AtlasReader): AssetLoader;
     load(callback?: () => void): void;
     unload(): void;
     private loadTexture(path, callback?);
@@ -915,7 +917,9 @@ declare class Ease {
 declare class FosterIO {
     private static fs;
     private static path;
+    static init(): void;
     static read(path: string, callback: (string) => void): void;
+    static join(...paths: string[]): string;
 }
 declare class Matrix {
     mat: Float32Array;
@@ -1047,24 +1051,57 @@ declare class AnimationBank {
     static get(name: string): AnimationSet;
     static has(name: string): boolean;
 }
-interface AtlasLoader {
-    (atlas: Atlas): void;
+interface AtlasReader {
+    (data: any, into: Atlas): void;
 }
 declare class Atlas {
+    /**
+     * Name of the Atlas
+     */
     name: string;
+    /**
+     * Reference to the atlas texture
+     */
     texture: Texture;
+    /**
+     * Raw Atlas Data, in whatever format the atlas was loaded in
+     */
     data: Object;
-    loader: AtlasLoader;
+    /**
+     * The Atlas Data Reader (a method parses the raw data and creates the subtextures)
+     */
+    reader: AtlasReader;
+    /**
+     * Dictionary of the Subtextures within this atlas
+     */
     subtextures: {
         [path: string]: Texture;
     };
-    constructor(name: string, texture: Texture, data: Object, loader: AtlasLoader);
+    constructor(name: string, texture: Texture, data: Object, reader: AtlasReader);
+    /**
+     * Gets a specific subtexture from the atlas
+     * @param name 	the name/path of the subtexture
+     */
     get(name: string): Texture;
+    /**
+     * Checks if a subtexture exists
+     * @param name 	the name/path of the subtexture
+     */
     has(name: string): boolean;
+    /**
+     * Gets a list of textures
+     */
     list(prefix: string, names: string[]): Texture[];
+    /**
+     * Finds all subtextures with the given prefix
+     */
+    find(prefix: string): Texture[];
 }
-declare class AtlasLoaders {
-    static Aseprite(atlas: Atlas): void;
+declare class AtlasReaders {
+    /**
+     * Parses Aseprite data from the atlas
+     */
+    static Aseprite(data: any, into: Atlas): void;
 }
 declare class FosterWebGLTexture {
     path: string;

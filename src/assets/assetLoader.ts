@@ -1,6 +1,7 @@
 class AssetLoader
 {
 	
+	public root:string = "";
 	public loading:boolean = false;
 	public loaded:boolean = false;
 	public callback:()=>void;
@@ -15,6 +16,11 @@ class AssetLoader
 	private sounds:string[] = [];
 	private atlases:any[] = [];
 	private texts:string[] = [];
+
+	constructor(root?:string)
+	{
+		this.root = root || "";
+	}
 
 	public addTexture(path:string):AssetLoader
 	{
@@ -79,23 +85,23 @@ class AssetLoader
 		
 		// textures
 		for (let i = 0; i < this.textures.length; i ++)
-			this.loadTexture(this.textures[i]);
+			this.loadTexture(FosterIO.join(this.root, this.textures[i]));
 
 		// json files
 		for (let i = 0; i < this.jsons.length; i ++)
-			this.loadJson(this.jsons[i]);
+			this.loadJson(FosterIO.join(this.root, this.jsons[i]));
 
 		// xml files
 		for (let i = 0; i < this.xmls.length; i ++)
-			this.loadXml(this.xmls[i]);
+			this.loadXml(FosterIO.join(this.root, this.xmls[i]));
 
 		// text files
 		for (let i = 0; i < this.texts.length; i ++)
-			this.loadText(this.texts[i]);
+			this.loadText(FosterIO.join(this.root, this.texts[i]));
 
 		// sounds
 		for (let i = 0; i < this.sounds.length; i ++)
-			this.loadSound(this.sounds[i]);
+			this.loadSound(FosterIO.join(this.root, this.sounds[i]));
 
 		// atlases
 		for (let i = 0; i < this.atlases.length; i ++)
@@ -203,12 +209,12 @@ class AssetLoader
 
 		// load atlas data file  (XML or JSON)
 		if ((/(?:\.([^.]+))?$/).exec(data.data)[1] == "xml")
-			this.loadXml(data.data, (xml) => { atlasdata = xml; check(); })
+			this.loadXml(FosterIO.join(this.root, data.data), (xml) => { atlasdata = xml; check(); })
 		else
-			this.loadJson(data.data, (j) => { atlasdata = j; check(); });
+			this.loadJson(FosterIO.join(this.root, data.data), (j) => { atlasdata = j; check(); });
 
 		// load atlas texture file
-		this.loadTexture(data.image, (tex) => { texture = tex; check(); });
+		this.loadTexture(FosterIO.join(this.root, data.image), (tex) => { texture = tex; check(); });
 	}
 
 	private incrementLoader()
