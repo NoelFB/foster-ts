@@ -4,6 +4,7 @@ Engine.start("Game Title", 480, 270, 3, () => {
     // load assets
     new AssetLoader("assets")
         .addAtlas("gfx", "atlas.png", "atlas.json", AtlasReaders.Aseprite)
+        .addSound("boop", "sfx.wav")
         .load(() => {
         var atlas = Assets.atlases["gfx"];
         Engine.graphics.pixel = atlas.get("pixel");
@@ -66,6 +67,7 @@ class GameScene extends Scene {
 class Player extends Entity {
     constructor() {
         super();
+        this.sfx = new Sound("boop");
         this.depth = -10;
         this.x = 200;
         this.y = 200;
@@ -99,12 +101,16 @@ class Player extends Entity {
         else
             this.physics.friction(0, 180);
         if (Keys.mapDown("left")) {
+            if (Keys.mapPressed("left"))
+                this.sfx.play();
             this.physics.speed.x -= 240 * Engine.delta;
             this.sprite.scale.x = -Math.abs(this.sprite.scale.x);
             if (this.physics.speed.x > 0)
                 this.dust.burst(this.x, this.y, 0, 4, 0);
         }
         else if (Keys.mapDown("right")) {
+            if (Keys.mapPressed("right"))
+                this.sfx.play();
             this.physics.speed.x += 240 * Engine.delta;
             this.sprite.scale.x = Math.abs(this.sprite.scale.x);
             if (this.physics.speed.x < 0)

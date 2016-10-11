@@ -1,20 +1,65 @@
 declare abstract class Component {
-    private _entity;
+    /**
+     * The Entity this Component is a child of
+     */
     entity: Entity;
-    private _scene;
+    private _entity;
+    /**
+     * The Scene containing this Component
+     */
     scene: Scene;
+    private _scene;
+    /**
+     * Whether this Component should be updated
+     */
     active: boolean;
+    /**
+     * Whether this Component should be rendered
+     */
     visible: boolean;
+    /**
+     * The Local position of the Component, relative to the Entity
+     */
     position: Vector;
+    /**
+     * The Local X position of the Component, relative to the Entity
+     */
     x: number;
+    /**
+     * The Local Y position of the Component, relative to the Entity
+     */
     y: number;
+    /**
+     * The position of the Component in the Scene (position + Entity.position)
+     */
     scenePosition: Vector;
+    /**
+     * Called when the Component was Added to the Entity
+     */
     addedToEntity(): void;
+    /**
+     * Called when the Component was Added to the Scene
+     */
     addedToScene(): void;
+    /**
+     * Called when the Component was Removed from the Entity
+     */
     removedFromEntity(): void;
+    /**
+     * Called when the Component was Removed from the Scene
+     */
     removedFromScene(): void;
+    /**
+     * Called when the Component is Updated from its Entity
+     */
     update(): void;
+    /**
+     * Called when the component is Rendered from its Entity
+     */
     render(camera?: Camera): void;
+    /**
+     * Called when the Engine is in Debug mode, at the end of the Scene Render from its Entity
+     */
     debugRender(camera?: Camera): void;
 }
 /**
@@ -83,7 +128,15 @@ declare class Engine {
      * @param ready 	Callback when the Engine is ready
      */
     static start(title: string, width: number, height: number, scale: number, ready: () => void): void;
+    /**
+     * Goes to a new Scene
+     * @param scene 	The Scene to go to
+     * @param disposeLastScene 	If the last scene should be disposed
+     */
     static goto(scene: Scene, disposeLastScene: boolean): Scene;
+    /**
+     * Ends the Game
+     */
     static exit(): void;
     /**
      * Resizes the game to the given size
@@ -232,20 +285,53 @@ declare class Entity {
      */
     ingroup(groupType: string): boolean;
 }
+/**
+ * Handels the Game Window and the differences between Browser / Desktop mode
+ */
 declare class GameWindow {
     private static browserWindow;
     private static titleName;
     private static screen;
     constructor();
+    /**
+     * Gets or Sets the Window Title
+     */
     static title: string;
+    /**
+     * Toggles Fullscreen Mode if running on the Desktop
+     */
     static fullscreen: boolean;
+    /**
+     * Returns the left position of the screen
+     */
     static screenLeft: number;
+    /**
+     * Returns the Top position of the screen
+     */
     static screenTop: number;
+    /**
+     * Returns the Width of the screen
+     */
     static screenWidth: number;
+    /**
+     * Returns the Height of the screen
+     */
     static screenHeight: number;
+    /**
+     * Resizes the Window if running in Desktop mode
+     */
     static resize(width: number, height: number): void;
+    /**
+     * Centers the Window if running in Desktop mode
+     */
     static center(): void;
+    /**
+     * Toggles Developer tools if running in Desktop mode
+     */
     static toggleDevTools(): void;
+    /**
+     * Gets the absolute mouse position in the screen
+     */
     static screenMouse: Vector;
 }
 declare enum ResolutionStyle {
@@ -449,6 +535,9 @@ declare abstract class Renderer {
      */
     dispose(): void;
 }
+/**
+ * The Scene contains a list of Entities and Renderers that in turn handle Gameplay. There can only be one active Scene at a time
+ */
 declare class Scene {
     /**
      * The Camera in the Scene
@@ -543,11 +632,31 @@ declare class Scene {
     _trackCollider(collider: Collider, tag: string): void;
     _untrackCollider(collider: Collider, tag: string): void;
 }
+/**
+ * Loads a set of assets
+ */
 declare class AssetLoader {
+    /**
+     * The root directory to load from
+     */
     root: string;
+    /**
+     * If the Asset Loader is loading
+     */
     loading: boolean;
+    private _loading;
+    /**
+     * If the Asset Loader has finished loading
+     */
     loaded: boolean;
+    _loaded: boolean;
+    /**
+     * Called when the Asset Loader has finished loading
+     */
     callback: () => void;
+    /**
+     * The Percentage towards being finished loading
+     */
     percent: number;
     private assets;
     private assetsLoaded;
@@ -558,22 +667,49 @@ declare class AssetLoader {
     private atlases;
     private texts;
     constructor(root?: string);
+    /**
+     * Adds the Texture to the loader
+     */
     addTexture(path: string): AssetLoader;
+    /**
+     * Adds the JSON to the loader
+     */
     addJson(path: string): AssetLoader;
+    /**
+     * Adds the XML to the loader
+     */
     addXml(path: string): AssetLoader;
+    /**
+     * Adds the text to the loader
+     */
     addText(path: string): AssetLoader;
-    addSound(path: string): AssetLoader;
+    /**
+     * Adds the sound to the loader
+     */
+    addSound(handle: string, path: string): AssetLoader;
+    /**
+     * Adds the atlas to the loader
+     */
     addAtlas(name: string, image: string, data: string, loader: AtlasReader): AssetLoader;
+    /**
+     * Begins loading all the assets and invokes Callback upon completion
+     */
     load(callback?: () => void): void;
+    /**
+     * Unloads all the Assets that this Asset Loader loaded
+     */
     unload(): void;
     private loadTexture(path, callback?);
     private loadJson(path, callback?);
     private loadXml(path, callback?);
     private loadText(path, callback?);
-    private loadSound(path, callback?);
+    private loadSound(handle, path, callback?);
     private loadAtlas(data);
     private incrementLoader();
 }
+/**
+ * A static reference to all the Assets currently loaded in the game
+ */
 declare class Assets {
     static textures: {
         [path: string]: Texture;
@@ -588,7 +724,7 @@ declare class Assets {
         [path: string]: string;
     };
     static sounds: {
-        [path: string]: HTMLAudioElement;
+        [path: string]: AudioSource;
     };
     static atlases: {
         [path: string]: Atlas;
@@ -1001,13 +1137,34 @@ declare class PrimitiveRenderer extends Renderer {
 declare class SpriteRenderer extends Renderer {
     constructor();
 }
+/**
+ * Helper class for math related functions
+ */
 declare class Calc {
+    /**
+     * Returns the Sign of the number (-1, 0, or 1)
+     */
     static sign(n: number): number;
+    /**
+     * Clamps the value between a min and max value
+     */
     static clamp(n: number, min: number, max: number): number;
+    /**
+     * Approaches N towards the target value by the step, without going past it
+     */
     static approach(n: number, target: number, step: number): number;
+    /**
+     * Returns a random value within the range. If no Maximum is provided, it returns within the range -min to +min
+     */
     static range(min: number, max?: number): number;
+    /**
+     * Chooses a random value from the given list
+     */
     static choose<T>(list: T[]): T;
 }
+/**
+ * Camera used to create a Matrix during rendering. Scenes and Renderers may have Cameras
+ */
 declare class Camera {
     position: Vector;
     origin: Vector;
@@ -1047,6 +1204,9 @@ declare class Color {
     static blue: Color;
     static temp: Color;
 }
+/**
+ * Default Ease methods for Tweening
+ */
 declare class Ease {
     static linear(t: number): number;
     static quadIn(t: number): number;
@@ -1067,6 +1227,9 @@ declare class Ease {
     static elasticInOut(t: number): number;
     static arc(t: number, ease: (number) => number): number;
 }
+/**
+ * Handles File IO stuff and the differences between Browser / Desktop mode
+ */
 declare class FosterIO {
     private static fs;
     private static path;
@@ -1108,16 +1271,46 @@ declare class Rectangle {
     clone(): Rectangle;
     copy(from: Rectangle): Rectangle;
 }
+/**
+ * A Foster Shader used for Rendering
+ * For Pre-existing shaders, see Shaders.ts
+ */
 declare class Shader {
+    /**
+     * The WebGL Shader Program
+     */
     program: WebGLProgram;
+    /**
+     * The Shader Uniforms
+     */
     uniforms: ShaderUniform[];
+    /**
+     * The Shader Attributes
+     */
     attributes: ShaderAttribute[];
+    /**
+     * If this Shader is dirty and must be updated
+     */
     dirty: boolean;
+    /**
+     * A direct reference to the Sampler2D Uniform
+     */
     sampler2d: ShaderUniform;
     private uniformsByName;
+    /**
+     * Creates a new Shader from the given vertex and fragment shader code, with the given uniforms and attributes
+     */
     constructor(vertex: string, fragment: string, uniforms: ShaderUniform[], attributes: ShaderAttribute[]);
+    /**
+     * Sets the Uniform of the given name to the value
+     * @param name 	the name of the uniform
+     * @param value 	the value to set the uniform to
+     */
     set(name: string, value: any): void;
 }
+/**
+ * Shader Uniform Types
+ */
 declare enum ShaderUniformType {
     float = 0,
     floatArray = 1,
@@ -1140,6 +1333,9 @@ declare enum ShaderUniformType {
     int4Array = 18,
     sampler2D = 19,
 }
+/**
+ * A Shader Uniform instance
+ */
 declare class ShaderUniform {
     private _shader;
     private _value;
@@ -1151,11 +1347,17 @@ declare class ShaderUniform {
     shader: Shader;
     constructor(name: string, type: ShaderUniformType, value?: any);
 }
+/**
+ * Shader Attribute Types
+ */
 declare enum ShaderAttributeType {
     Position = 0,
     Texcoord = 1,
     Color = 2,
 }
+/**
+ * A Shader Attribute Instance
+ */
 declare class ShaderAttribute {
     name: string;
     type: ShaderAttributeType;
@@ -1168,45 +1370,201 @@ declare class ShaderAttribute {
 declare var setGLUniformValue: {
     [type: number]: (gl: WebGLRenderingContext, location: WebGLUniformLocation, value: any) => void;
 };
+/**
+ * Default 2D shaders
+ */
 declare class Shaders {
+    /**
+     * A simple Texture Sahder
+     */
     static texture: Shader;
+    /**
+     * A Texture Shader that fills non-transparent pixels with the specific UV color
+     */
     static solid: Shader;
+    /**
+     * Primitive Shader only has Vertices and Colors, no Texture
+     */
     static primitive: Shader;
+    /**
+     * Initializes Default Shaders (called automatically by the Engine)
+     */
     static init(): void;
 }
+/**
+ * An animation template handles a single Animation in an Animation Set (ex. Player.Run)
+ */
 declare class AnimationTemplate {
+    /**
+     * The name of the Animation
+     */
     name: string;
+    /**
+     * The Speed the animation runs (frame index += speed * delta)
+     */
     speed: number;
+    /**
+     * The frames of this animation
+     */
     frames: Texture[];
+    /**
+     * The origin to render with
+     */
     origin: Vector;
+    /**
+     * The position to render at
+     */
     position: Vector;
+    /**
+     * If this animation should loop
+     */
     loops: boolean;
+    /**
+     * What animation(s) the Sprite should go to next upon completion
+     */
     goto: string[];
     constructor(name: string, speed: number, frames: Texture[], loops?: boolean, position?: Vector, origin?: Vector);
 }
+/**
+ * Animation Set holds a list of Animation Templates, referenced by name
+ */
 declare class AnimationSet {
+    /**
+     * The animation set name
+     */
     name: string;
+    /**
+     * A list of all the animation template, by their name
+     */
     animations: {
         [name: string]: AnimationTemplate;
     };
+    /**
+     * First animation template
+     */
     first: AnimationTemplate;
     constructor(name: string);
+    /**
+     * Adds a new Animation Template to this set
+     */
     add(name: string, speed: number, frames: Texture[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
+    /**
+     * Adds a new frame-based Animation Template to this set
+     */
     addFrameAnimation(name: string, speed: number, tex: Texture, frameWidth: number, frameHeight: number, frames: number[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
+    /**
+     * Gets an animation template by its name
+     */
     get(name: string): AnimationTemplate;
+    /**
+     * Checks if an animation template exists by the given name
+     */
     has(name: string): boolean;
 }
+/**
+ * Animation Bank holds all the Animations in the game
+ */
 declare class AnimationBank {
+    /**
+     * Reference to all the Animations
+     */
     static bank: {
         [name: string]: AnimationSet;
     };
+    /**
+     * Creates a new Animation Set of the given Name
+     */
     static create(name: string): AnimationSet;
+    /**
+     * Gets an Animation of the given name
+     */
     static get(name: string): AnimationSet;
+    /**
+     * Checks if an animation with the given name exists
+     */
     static has(name: string): boolean;
+}
+declare class AudioGroup {
+    private static active;
+    private static volumes;
+    private static mutes;
+    static volume(group: string, value?: number): number;
+    static muted(group: string, value?: boolean): boolean;
+    static groupSound(group: string, sound: Sound): void;
+    static ungroupSound(group: string, sound: Sound): void;
+}
+declare class AudioSource {
+    static maxInstances: number;
+    private path;
+    private sounds;
+    constructor(path: string, first?: HTMLAudioElement);
+    requestSound(): HTMLAudioElement;
+    returnSound(sound: HTMLAudioElement): void;
+}
+declare class Sound {
+    private source;
+    private sound;
+    private endEvent;
+    private loadedEvent;
+    private started;
+    private num;
+    /**
+     * Gets if the sound is currently playing
+     */
+    playing: boolean;
+    /**
+     * Gets or sets whether the sound is looping
+     */
+    loop: boolean;
+    private _loop;
+    /**
+     * Gets if the sound is paused
+     */
+    paused: boolean;
+    private _paused;
+    /**
+     * Gets or sets the current Group this sound is a part of
+     */
+    group: string;
+    private _group;
+    /**
+     * Gets or sets whether the current sound is muted
+     */
+    muted: boolean;
+    private _muted;
+    /**
+     * Gets or sets the volume of this sound
+     */
+    volume: number;
+    private _volume;
+    /**
+     * Creates a new sound of the given handle
+     */
+    constructor(handle: string, group?: string);
+    /**
+     * Plays the sound
+     */
+    play(loop?: boolean): Sound;
+    private internalPlay();
+    /**
+     * Resumes if the sound was paused
+     */
+    resume(): Sound;
+    /**
+     * Pauses a sound
+     */
+    pause(): Sound;
+    /**
+     * Completely stops a sound
+     */
+    stop(): Sound;
 }
 interface AtlasReader {
     (data: any, into: Atlas): void;
 }
+/**
+ * A single Texture which contains subtextures by name
+ */
 declare class Atlas {
     /**
      * Name of the Atlas
@@ -1256,6 +1614,9 @@ declare class AtlasReaders {
      */
     static Aseprite(data: any, into: Atlas): void;
 }
+/**
+ * Internal Texture used for Foster during Rendering
+ */
 declare class FosterWebGLTexture {
     path: string;
     webGLTexture: WebGLTexture;
@@ -1265,38 +1626,131 @@ declare class FosterWebGLTexture {
     constructor(texture: WebGLTexture, width: number, height: number);
     dispose(): void;
 }
+/**
+ * The Render Target is used for rendering graphics to
+ */
 declare class RenderTarget {
+    /**
+     * its texture to draw to
+     */
     texture: FosterWebGLTexture;
+    /**
+     * its frame buffer
+     */
     frameBuffer: WebGLFramebuffer;
+    /**
+     * its Vertex buffer
+     */
     vertexBuffer: WebGLBuffer;
+    /**
+     * its Texture Coordinate buffer
+     */
     texcoordBuffer: WebGLBuffer;
+    /**
+     * its Color UV buffer
+     */
     colorBuffer: WebGLBuffer;
+    /**
+     * The width of the Render Target
+     */
     width: number;
+    /**
+     * The height of the Render Target
+     */
     height: number;
+    /**
+     * Creates a new Render Target. use RenderTarget.create() for quick access
+     */
     constructor(buffer: WebGLFramebuffer, texture: FosterWebGLTexture, vertexBuffer: WebGLBuffer, colorBuffer: WebGLBuffer, texcoordBuffer: WebGLBuffer);
+    /**
+     * Disposes the Render Target and all its textures and buffers
+     */
     dispose(): void;
+    /**
+     * Creates a new Render Target of the given width and height
+     */
     static create(width: number, height: number): RenderTarget;
 }
+/**
+ * A Texture used for Rendering
+ */
 declare class Texture {
+    /**
+     * The cropped Bounds of the Texture within its WebGL Texture
+     */
     bounds: Rectangle;
+    /**
+     * The Frame adds padding around the existing Bounds when rendered
+     */
     frame: Rectangle;
+    /**
+     * A reference to the full WebGL Texture
+     */
     texture: FosterWebGLTexture;
+    /**
+     * The center point of this texture
+     */
     center: Vector;
+    /**
+     * The width of the Texture when rendered (frame.width)
+     */
     width: number;
+    /**
+     * The height of the Texture when rendered (frame.height)
+     */
     height: number;
+    /**
+     * The clipped width of the Texture (bounds.width)
+     */
     clippedWidth: number;
+    /**
+     * The clipped height of the Texture (bounds.height)
+     */
     clippedHeight: number;
+    /**
+     * Creates a new Texture from the WebGL Texture
+     */
     constructor(texture: FosterWebGLTexture, bounds?: Rectangle, frame?: Rectangle);
+    /**
+     * Creates a Subtexture from this texture
+     */
     getSubtexture(clip: Rectangle, sub?: Texture): Texture;
+    /**
+     * Creates a clone of this texture
+     */
     clone(): Texture;
     toString(): string;
+    /**
+     * Draws this texture
+     */
     draw(position: Vector, origin?: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    /**
+     * Draws a cropped version of this texture
+     */
     drawCropped(position: Vector, crop: Rectangle, origin?: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    /**
+     * Draws this texture, center aligned
+     */
     drawCenter(position: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    /**
+     * Draws a cropped version of this texture, center aligned
+     */
     drawCenterCropped(position: Vector, crop: Rectangle, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    /**
+     * Draws this texture, justified
+     */
     drawJustify(position: Vector, justify: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    /**
+     * Draws a cropped version of this texture, justified
+     */
     drawJustifyCropped(position: Vector, crop: Rectangle, justify: Vector, scale?: Vector, rotation?: number, color?: Color, flipX?: boolean, flipY?: boolean): void;
+    /**
+     * Disposes this texture and its WebGL Texture
+     */
     dispose(): void;
+    /**
+     * Creats a new Texture from an HTML Image Element
+     */
     static create(image: HTMLImageElement): Texture;
 }
 declare class Hitgrid extends Collider {

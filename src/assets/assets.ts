@@ -7,7 +7,7 @@ class Assets
 	public static json:{[path:string]:Object;} = {};
 	public static xml:{[path:string]:Object;} = {};
 	public static text:{[path:string]:string;} = {};
-	public static sounds:{[path:string]:HTMLAudioElement} = {};
+	public static sounds:{[path:string]:AudioSource} = {};
 	public static atlases:{[path:string]:Atlas} = {};
 
 	/**
@@ -27,7 +27,8 @@ class Assets
 		Assets.textures = {};
 
 		// TODO: implement sound unloading
-		// ...
+		for (var path in Assets.sounds)
+			Assets.sounds[path].dispose();
 		Assets.sounds = {};
 	}
 

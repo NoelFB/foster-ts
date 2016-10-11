@@ -6,6 +6,7 @@ Engine.start("Game Title", 480, 270, 3, () =>
 	// load assets
 	new AssetLoader("assets")
 		.addAtlas("gfx", "atlas.png", "atlas.json", AtlasReaders.Aseprite)
+		.addSound("boop", "sfx.wav")
 		.load(() =>
 		{
 			var atlas = Assets.atlases["gfx"];

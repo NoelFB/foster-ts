@@ -35,7 +35,7 @@ class AssetLoader
 	private textures:string[] = [];
 	private jsons:string[] = [];
 	private xmls:string[] = [];
-	private sounds:string[] = [];
+	private sounds:any[] = [];
 	private atlases:any[] = [];
 	private texts:string[] = [];
 
@@ -95,15 +95,13 @@ class AssetLoader
 	/**
 	 * Adds the sound to the loader
 	 */
-	public addSound(path:string):AssetLoader
+	public addSound(handle:string, path:string):AssetLoader
 	{
-		throw "Audio not implemented yet"
-		/*
 		if (this.loading || this.loaded)
 			throw "Cannot add more assets when already loaded";
-		this.sounds.push(path);
+		this.sounds.push({handle: handle, path: path });
 		this.assets ++;
-		return this;*/
+		return this;
 	}
 
 	/**
@@ -144,7 +142,7 @@ class AssetLoader
 
 		// sounds
 		for (let i = 0; i < this.sounds.length; i ++)
-			this.loadSound(FosterIO.join(this.root, this.sounds[i]));
+			this.loadSound(this.sounds[i].handle, FosterIO.join(this.root, this.sounds[i].path));
 
 		// atlases
 		for (let i = 0; i < this.atlases.length; i ++)
@@ -228,11 +226,18 @@ class AssetLoader
 		});
 	}
 
-	private loadSound(path:string, callback?:(sound:HTMLAudioElement)=>void):void
+	private loadSound(handle:string, path:string, callback?:(sound:AudioSource)=>void):void
 	{
 		var self = this;
-		// todo: LOAD SOUND
-		self.incrementLoader();
+		let audio = new Audio();
+		audio.addEventListener("loadeddata", function()
+		{
+			Assets.sounds[handle] = new AudioSource(path, audio);
+			if (callback != undefined)
+				callback(Assets.sounds[handle]);
+			self.incrementLoader();
+		});
+		audio.src = path;
 	}
 
 	private loadAtlas(data:any):void

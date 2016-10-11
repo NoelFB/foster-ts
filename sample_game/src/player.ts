@@ -5,6 +5,7 @@ class Player extends Entity
 	private physics:Physics;
 	private sprite:Sprite;
 	private dust:ParticleSystem;
+	private sfx:Sound = new Sound("boop");
 	
 	constructor()
 	{
@@ -53,6 +54,8 @@ class Player extends Entity
 			
 		if (Keys.mapDown("left"))
 		{
+			if (Keys.mapPressed("left"))
+				this.sfx.play();
 			this.physics.speed.x -= 240 * Engine.delta;
 			this.sprite.scale.x = -Math.abs(this.sprite.scale.x);
 			if (this.physics.speed.x > 0)
@@ -60,6 +63,8 @@ class Player extends Entity
 		}
 		else if (Keys.mapDown("right"))
 		{
+			if (Keys.mapPressed("right"))
+				this.sfx.play();
 			this.physics.speed.x += 240 * Engine.delta;
 			this.sprite.scale.x = Math.abs(this.sprite.scale.x);
 			if (this.physics.speed.x < 0)

@@ -2,35 +2,80 @@ class Component {
     constructor() {
         this._entity = null;
         this._scene = null;
+        /**
+         * Whether this Component should be updated
+         */
         this.active = true;
+        /**
+         * Whether this Component should be rendered
+         */
         this.visible = true;
+        /**
+         * The Local position of the Component, relative to the Entity
+         */
         this.position = new Vector(0, 0);
     }
+    /**
+     * The Entity this Component is a child of
+     */
     get entity() { return this._entity; }
     set entity(val) {
         if (this._entity != null && val != null)
             throw "This Component is already attached to an Entity";
         this._entity = val;
     }
+    /**
+     * The Scene containing this Component
+     */
     get scene() { return this._scene; }
     set scene(val) {
         if (this._scene != null && val != null)
             throw "This Component is already attached to a Scene";
         this._scene = val;
     }
+    /**
+     * The Local X position of the Component, relative to the Entity
+     */
     get x() { return this.position.x; }
     set x(val) { this.position.x = val; }
+    /**
+     * The Local Y position of the Component, relative to the Entity
+     */
     get y() { return this.position.y; }
     set y(val) { this.position.y = val; }
+    /**
+     * The position of the Component in the Scene (position + Entity.position)
+     */
     get scenePosition() {
         return new Vector((this._entity ? this._entity.x : 0) + this.position.x, (this._entity ? this._entity.y : 0) + this.position.y);
     }
+    /**
+     * Called when the Component was Added to the Entity
+     */
     addedToEntity() { }
+    /**
+     * Called when the Component was Added to the Scene
+     */
     addedToScene() { }
+    /**
+     * Called when the Component was Removed from the Entity
+     */
     removedFromEntity() { }
+    /**
+     * Called when the Component was Removed from the Scene
+     */
     removedFromScene() { }
+    /**
+     * Called when the Component is Updated from its Entity
+     */
     update() { }
+    /**
+     * Called when the component is Rendered from its Entity
+     */
     render(camera) { }
+    /**
+     * Called when the Engine is in Debug mode, at the end of the Scene Render from its Entity
+     */
     debugRender(camera) { }
 }
 /**
@@ -140,12 +185,20 @@ class Engine {
                 ready();
         };
     }
+    /**
+     * Goes to a new Scene
+     * @param scene 	The Scene to go to
+     * @param disposeLastScene 	If the last scene should be disposed
+     */
     static goto(scene, disposeLastScene) {
         let lastScene = Engine.scene;
         Engine.instance.nextScene = scene;
         Engine.instance.disposeLastScene = disposeLastScene;
         return scene;
     }
+    /**
+     * Ends the Game
+     */
     static exit() {
         if (Engine.started && !Engine.exiting)
             Engine.instance.exit();
@@ -412,6 +465,9 @@ class Entity {
         return (this.groups.indexOf(groupType) >= 0);
     }
 }
+/**
+ * Handels the Game Window and the differences between Browser / Desktop mode
+ */
 class GameWindow {
     constructor() {
         if (Engine.client == Client.Desktop) {
@@ -420,6 +476,9 @@ class GameWindow {
             GameWindow.screen = remote.screen;
         }
     }
+    /**
+     * Gets or Sets the Window Title
+     */
     static get title() {
         return GameWindow.titleName;
     }
@@ -430,6 +489,9 @@ class GameWindow {
         else
             document.title = val;
     }
+    /**
+     * Toggles Fullscreen Mode if running on the Desktop
+     */
     static get fullscreen() {
         return Engine.client == Client.Desktop && GameWindow.browserWindow.isFullScreen();
     }
@@ -439,42 +501,66 @@ class GameWindow {
         else
             console.warn("Can only set Fullscreen in Client.Desktop mode");
     }
+    /**
+     * Returns the left position of the screen
+     */
     static get screenLeft() {
         if (Engine.client == Client.Desktop)
             return GameWindow.browserWindow.getPosition()[0];
         else
             return Engine.graphics.canvas.getBoundingClientRect().left;
     }
+    /**
+     * Returns the Top position of the screen
+     */
     static get screenTop() {
         if (Engine.client == Client.Desktop)
             return GameWindow.browserWindow.getPosition()[1];
         else
             return Engine.graphics.canvas.getBoundingClientRect().top;
     }
+    /**
+     * Returns the Width of the screen
+     */
     static get screenWidth() {
         if (Engine.client == Client.Desktop)
             return GameWindow.browserWindow.getContentSize()[0];
         else
             return Engine.graphics.canvas.getBoundingClientRect().width;
     }
+    /**
+     * Returns the Height of the screen
+     */
     static get screenHeight() {
         if (Engine.client == Client.Desktop)
             return GameWindow.browserWindow.getContentSize()[1];
         else
             return Engine.graphics.canvas.getBoundingClientRect().height;
     }
+    /**
+     * Resizes the Window if running in Desktop mode
+     */
     static resize(width, height) {
         if (Engine.client == Client.Desktop)
             GameWindow.browserWindow.setContentSize(width, height);
     }
+    /**
+     * Centers the Window if running in Desktop mode
+     */
     static center() {
         if (Engine.client == Client.Desktop)
             GameWindow.browserWindow.center();
     }
+    /**
+     * Toggles Developer tools if running in Desktop mode
+     */
     static toggleDevTools() {
         if (Engine.client == Client.Desktop)
             GameWindow.browserWindow.toggleDevTools();
     }
+    /**
+     * Gets the absolute mouse position in the screen
+     */
     static get screenMouse() {
         if (Engine.client == Client.Desktop) {
             var pos = GameWindow.screen.getCursorScreenPoint();
@@ -1101,6 +1187,9 @@ class Renderer {
         this.target = null;
     }
 }
+/**
+ * The Scene contains a list of Entities and Renderers that in turn handle Gameplay. There can only be one active Scene at a time
+ */
 class Scene {
     constructor() {
         /**
@@ -1421,11 +1510,17 @@ class Scene {
         }
     }
 }
+/**
+ * Loads a set of assets
+ */
 class AssetLoader {
     constructor(root) {
+        /**
+         * The root directory to load from
+         */
         this.root = "";
-        this.loading = false;
-        this.loaded = false;
+        this._loading = false;
+        this._loaded = false;
         this.assets = 0;
         this.assetsLoaded = 0;
         this.textures = [];
@@ -1436,7 +1531,21 @@ class AssetLoader {
         this.texts = [];
         this.root = root || "";
     }
+    /**
+     * If the Asset Loader is loading
+     */
+    get loading() { return this._loading; }
+    /**
+     * If the Asset Loader has finished loading
+     */
+    get loaded() { return this._loaded; }
+    /**
+     * The Percentage towards being finished loading
+     */
     get percent() { return this.assetsLoaded / this.assets; }
+    /**
+     * Adds the Texture to the loader
+     */
     addTexture(path) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
@@ -1444,6 +1553,9 @@ class AssetLoader {
         this.assets++;
         return this;
     }
+    /**
+     * Adds the JSON to the loader
+     */
     addJson(path) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
@@ -1451,6 +1563,9 @@ class AssetLoader {
         this.assets++;
         return this;
     }
+    /**
+     * Adds the XML to the loader
+     */
     addXml(path) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
@@ -1458,6 +1573,9 @@ class AssetLoader {
         this.assets++;
         return this;
     }
+    /**
+     * Adds the text to the loader
+     */
     addText(path) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
@@ -1465,15 +1583,19 @@ class AssetLoader {
         this.assets++;
         return this;
     }
-    addSound(path) {
-        throw "Audio not implemented yet";
-        /*
+    /**
+     * Adds the sound to the loader
+     */
+    addSound(handle, path) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
-        this.sounds.push(path);
-        this.assets ++;
-        return this;*/
+        this.sounds.push({ handle: handle, path: path });
+        this.assets++;
+        return this;
     }
+    /**
+     * Adds the atlas to the loader
+     */
     addAtlas(name, image, data, loader) {
         if (this.loading || this.loaded)
             throw "Cannot add more assets when already loaded";
@@ -1481,8 +1603,11 @@ class AssetLoader {
         this.assets += 3;
         return this;
     }
+    /**
+     * Begins loading all the assets and invokes Callback upon completion
+     */
     load(callback) {
-        this.loading = true;
+        this._loading = true;
         this.callback = callback;
         // textures
         for (let i = 0; i < this.textures.length; i++)
@@ -1498,11 +1623,14 @@ class AssetLoader {
             this.loadText(FosterIO.join(this.root, this.texts[i]));
         // sounds
         for (let i = 0; i < this.sounds.length; i++)
-            this.loadSound(FosterIO.join(this.root, this.sounds[i]));
+            this.loadSound(this.sounds[i].handle, FosterIO.join(this.root, this.sounds[i].path));
         // atlases
         for (let i = 0; i < this.atlases.length; i++)
             this.loadAtlas(this.atlases[i]);
     }
+    /**
+     * Unloads all the Assets that this Asset Loader loaded
+     */
     unload() {
         if (this.loading)
             throw "Cannot unload until finished loading";
@@ -1552,10 +1680,16 @@ class AssetLoader {
             self.incrementLoader();
         });
     }
-    loadSound(path, callback) {
+    loadSound(handle, path, callback) {
         var self = this;
-        // todo: LOAD SOUND
-        self.incrementLoader();
+        let audio = new Audio();
+        audio.addEventListener("loadeddata", function () {
+            Assets.sounds[handle] = new AudioSource(path, audio);
+            if (callback != undefined)
+                callback(Assets.sounds[handle]);
+            self.incrementLoader();
+        });
+        audio.src = path;
     }
     loadAtlas(data) {
         var self = this;
@@ -1581,13 +1715,16 @@ class AssetLoader {
     incrementLoader() {
         this.assetsLoaded++;
         if (this.assetsLoaded == this.assets) {
-            this.loaded = true;
-            this.loading = false;
+            this._loaded = true;
+            this._loading = false;
             if (this.callback != undefined)
                 this.callback();
         }
     }
 }
+/**
+ * A static reference to all the Assets currently loaded in the game
+ */
 class Assets {
     /**
      * Unloads all the assets in the entire game
@@ -1603,7 +1740,8 @@ class Assets {
             Assets.textures[path].dispose();
         Assets.textures = {};
         // TODO: implement sound unloading
-        // ...
+        for (var path in Assets.sounds)
+            Assets.sounds[path].dispose();
         Assets.sounds = {};
     }
 }
@@ -1617,33 +1755,60 @@ Assets.atlases = {};
 class Alarm extends Component {
     constructor() {
         super();
+        this._percent = 0;
+        /**
+         * If the Alarm should be removed from the Entity upon completion
+         */
         this.removeOnComplete = false;
         this.active = this.visible = false;
     }
+    /**
+     * Gets the current Percent of the Alarm
+     */
+    get percent() { return this._percent; }
+    /**
+     * Gets the current Duration of the Alarm
+     */
+    get duration() { return this._duration; }
+    /**
+     * Starts the Alarm
+     */
     start(duration, callback) {
-        this.percent = 0;
-        this.duration = duration;
+        this._percent = 0;
+        this._duration = duration;
         this.callback = callback;
         return this;
     }
+    /**
+     * Restarts the Alarm
+     */
     restart() {
-        this.percent = 0;
+        this._percent = 0;
         return this;
     }
+    /**
+     * Resumes the Alarm if it was paused
+     */
     resume() {
         if (this.percent < 1)
             this.active = true;
         return this;
     }
+    /**
+     * Pauses the Alarm if it was active
+     */
     pause() {
         this.active = false;
         return this;
     }
+    /**
+     * Updates the Alarm (automatically called during its Entity's update)
+     */
     update() {
         if (this.percent < 1 && this.duration > 0) {
-            this.percent += Engine.delta / this.duration;
+            this._percent += Engine.delta / this.duration;
             if (this.percent >= 1) {
-                this.percent = 1;
+                this._percent = 1;
                 this.active = false;
                 this.callback(this);
                 if (this.removeOnComplete)
@@ -1651,6 +1816,9 @@ class Alarm extends Component {
             }
         }
     }
+    /**
+     * Creates and adds a new Alarm on the given Entity
+     */
     static create(on) {
         let alarm = new Alarm();
         on.add(alarm);
@@ -1706,7 +1874,7 @@ class Coroutine extends Component {
         return this;
     }
     /**
-     * Updates the Coroutine (automatically called through Entity)
+     * Updates the Coroutine (automatically called its Entity's update)
      */
     update() {
         this.wait -= Engine.delta;
@@ -1961,13 +2129,44 @@ class Physics extends Hitbox {
 class Tween extends Component {
     constructor() {
         super();
-        this.percent = 0;
+        this._percent = 0;
+        /**
+         * From value of the Tween (when percent is 0)
+         */
+        this.from = 0;
+        /**
+         * To value of the Tween (when percent is 1)
+         */
+        this.to = 0;
+        /**
+         * Easer function (ex. Linear would be (p) => { return p; })
+         * Alternatively, use the static Ease methods
+         */
+        this.ease = (p) => { return p; };
+        /**
+         * If the Tween should be removed upon completion
+         */
         this.removeOnComplete = false;
         this.active = this.visible = false;
     }
+    /**
+     * Gets the current Percent of the Tween
+     */
+    get percent() { return this._percent; }
+    /**
+     * Gets the current Duration of the Tween
+     */
+    get duration() { return this._duration; }
+    /**
+     * The value of the Tween at the current Percent
+     */
+    get value() { return this.from + (this.to - this.from) * this.ease(this.percent); }
+    /**
+     * Initializes the Tween and begins running
+     */
     start(duration, from, to, ease, step, removeOnComplete) {
-        this.percent = 0;
-        this.duration = duration;
+        this._percent = 0;
+        this._duration = duration;
         this.from = from;
         this.to = to;
         this.ease = ease;
@@ -1975,34 +2174,49 @@ class Tween extends Component {
         this.removeOnComplete = removeOnComplete;
         return this;
     }
+    /**
+     * Restarts the current Tween
+     */
     restart() {
-        this.percent = 0;
+        this._percent = 0;
         this.active = true;
         return this;
     }
+    /**
+     * Resumes the current tween if it was paused
+     */
     resume() {
         if (this.percent < 1)
             this.active = true;
         return this;
     }
+    /**
+     * Pauses the current tween if it was active
+     */
     pause() {
         this.active = false;
         return this;
     }
+    /**
+     * Upates the tween (automatically called when its Entity is updated)
+     */
     update() {
         if (this.percent < 1 && this.duration > 0) {
-            this.percent += Engine.delta / this.duration;
+            this._percent += Engine.delta / this.duration;
             if (this.percent >= 1) {
-                this.percent = 1;
+                this._percent = 1;
                 this.step(this.to);
                 this.active = false;
                 if (this.removeOnComplete)
                     this.entity.remove(this);
             }
             else
-                this.step(this.from + (this.to - this.from) * this.ease(this.percent));
+                this.step(this.value);
         }
     }
+    /**
+     * Creates a new tween on an existing entity
+     */
     static create(on) {
         let tween = new Tween();
         on.add(tween);
@@ -2437,26 +2651,47 @@ class SpriteRenderer extends Renderer {
         this.shaderCameraUniformName = "matrix";
     }
 }
+/**
+ * Helper class for math related functions
+ */
 class Calc {
+    /**
+     * Returns the Sign of the number (-1, 0, or 1)
+     */
     static sign(n) {
         return (n < 0 ? -1 : (n > 0 ? 1 : 0));
     }
+    /**
+     * Clamps the value between a min and max value
+     */
     static clamp(n, min, max) {
         return Math.max(min, Math.min(max, n));
     }
+    /**
+     * Approaches N towards the target value by the step, without going past it
+     */
     static approach(n, target, step) {
         return n > target ? Math.max(n - step, target) : Math.min(n + step, target);
     }
+    /**
+     * Returns a random value within the range. If no Maximum is provided, it returns within the range -min to +min
+     */
     static range(min, max) {
         if (max == undefined)
             return -min + Math.random() * min * 2;
         return min + Math.random() * (max - min);
     }
+    /**
+     * Chooses a random value from the given list
+     */
     static choose(list) {
         return list[Math.floor(Math.random() * list.length)];
     }
 }
 /// <reference path="./vector.ts"/>
+/**
+ * Camera used to create a Matrix during rendering. Scenes and Renderers may have Cameras
+ */
 class Camera {
     constructor() {
         this.position = new Vector(0, 0);
@@ -2555,6 +2790,9 @@ Color.red = new Color(1, 0, 0, 1);
 Color.green = new Color(0, 1, 0, 1);
 Color.blue = new Color(0, 0, 1, 1);
 Color.temp = new Color();
+/**
+ * Default Ease methods for Tweening
+ */
 class Ease {
     static linear(t) {
         return t;
@@ -2619,6 +2857,9 @@ class Ease {
         return (1 - ease((t - 0.5) * 2));
     }
 }
+/**
+ * Handles File IO stuff and the differences between Browser / Desktop mode
+ */
 class FosterIO {
     static init() {
         if (FosterIO.fs == null && Engine.client == Client.Desktop) {
@@ -2883,8 +3124,18 @@ class Rectangle {
         return this;
     }
 }
+/**
+ * A Foster Shader used for Rendering
+ * For Pre-existing shaders, see Shaders.ts
+ */
 class Shader {
+    /**
+     * Creates a new Shader from the given vertex and fragment shader code, with the given uniforms and attributes
+     */
     constructor(vertex, fragment, uniforms, attributes) {
+        /**
+         * If this Shader is dirty and must be updated
+         */
         this.dirty = true;
         this.uniformsByName = {};
         let gl = Engine.graphics.gl;
@@ -2925,10 +3176,18 @@ class Shader {
                 this.sampler2d = uniform;
         }
     }
+    /**
+     * Sets the Uniform of the given name to the value
+     * @param name 	the name of the uniform
+     * @param value 	the value to set the uniform to
+     */
     set(name, value) {
         this.uniformsByName[name].value = value;
     }
 }
+/**
+ * Shader Uniform Types
+ */
 var ShaderUniformType;
 (function (ShaderUniformType) {
     // normal ones
@@ -2954,6 +3213,9 @@ var ShaderUniformType;
     // special case for sampler2D
     ShaderUniformType[ShaderUniformType["sampler2D"] = 19] = "sampler2D";
 })(ShaderUniformType || (ShaderUniformType = {}));
+/**
+ * A Shader Uniform instance
+ */
 class ShaderUniform {
     constructor(name, type, value) {
         this._value = null;
@@ -2975,12 +3237,18 @@ class ShaderUniform {
         this._shader = s;
     }
 }
+/**
+ * Shader Attribute Types
+ */
 var ShaderAttributeType;
 (function (ShaderAttributeType) {
     ShaderAttributeType[ShaderAttributeType["Position"] = 0] = "Position";
     ShaderAttributeType[ShaderAttributeType["Texcoord"] = 1] = "Texcoord";
     ShaderAttributeType[ShaderAttributeType["Color"] = 2] = "Color";
 })(ShaderAttributeType || (ShaderAttributeType = {}));
+/**
+ * A Shader Attribute Instance
+ */
 class ShaderAttribute {
     constructor(name, type) {
         this.name = name;
@@ -3077,8 +3345,13 @@ setGLUniformValue[ShaderUniformType.matrix4d] = (gl, location, value) => {
     gl.uniformMatrix2fv(location, false, value);
 };
 /// <reference path="./shader.ts" />
-// Default 2D shaders
+/**
+ * Default 2D shaders
+ */
 class Shaders {
+    /**
+     * Initializes Default Shaders (called automatically by the Engine)
+     */
     static init() {
         // Default Texture Shader
         Shaders.texture = new Shader(
@@ -3168,9 +3441,18 @@ class Shaders {
         ]);
     }
 }
+/**
+ * An animation template handles a single Animation in an Animation Set (ex. Player.Run)
+ */
 class AnimationTemplate {
     constructor(name, speed, frames, loops, position, origin) {
+        /**
+         * If this animation should loop
+         */
         this.loops = false;
+        /**
+         * What animation(s) the Sprite should go to next upon completion
+         */
         this.goto = null;
         this.name = name;
         this.speed = speed;
@@ -3181,11 +3463,20 @@ class AnimationTemplate {
     }
 }
 /// <reference path="./animationTemplate.ts"/>
+/**
+ * Animation Set holds a list of Animation Templates, referenced by name
+ */
 class AnimationSet {
     constructor(name) {
+        /**
+         * A list of all the animation template, by their name
+         */
         this.animations = {};
         this.name = name;
     }
+    /**
+     * Adds a new Animation Template to this set
+     */
     add(name, speed, frames, loops, position, origin) {
         let anim = new AnimationTemplate(name, speed, frames, loops, position, origin);
         this.animations[name] = anim;
@@ -3193,6 +3484,9 @@ class AnimationSet {
             this.first = anim;
         return this;
     }
+    /**
+     * Adds a new frame-based Animation Template to this set
+     */
     addFrameAnimation(name, speed, tex, frameWidth, frameHeight, frames, loops, position, origin) {
         let columns = Math.floor(tex.width / frameWidth);
         let texFrames = [];
@@ -3208,28 +3502,265 @@ class AnimationSet {
             this.first = anim;
         return this;
     }
+    /**
+     * Gets an animation template by its name
+     */
     get(name) {
         return this.animations[name];
     }
+    /**
+     * Checks if an animation template exists by the given name
+     */
     has(name) {
         return this.animations[name] != undefined;
     }
 }
 /// <reference path="./animationSet.ts"/>
+/**
+ * Animation Bank holds all the Animations in the game
+ */
 class AnimationBank {
+    /**
+     * Creates a new Animation Set of the given Name
+     */
     static create(name) {
         var animSet = new AnimationSet(name);
         AnimationBank.bank[name] = animSet;
         return animSet;
     }
+    /**
+     * Gets an Animation of the given name
+     */
     static get(name) {
         return AnimationBank.bank[name];
     }
+    /**
+     * Checks if an animation with the given name exists
+     */
     static has(name) {
         return AnimationBank.bank[name] != undefined;
     }
 }
+/**
+ * Reference to all the Animations
+ */
 AnimationBank.bank = {};
+class AudioGroup {
+    static volume(group, value) {
+        if (value != undefined) {
+            AudioGroup.volumes[group] = value;
+            if (AudioGroup.active[group] != undefined)
+                for (let i = 0; i < AudioGroup.active[group].length; i++)
+                    AudioGroup.active[group][i].volume = AudioGroup.active[group][i].volume;
+        }
+        if (AudioGroup.volumes[group] != undefined)
+            return AudioGroup.volumes[group];
+        return 1;
+    }
+    static muted(group, value) {
+        if (value != undefined) {
+            AudioGroup.mutes[group] = value;
+            if (AudioGroup.active[group] != undefined)
+                for (let i = 0; i < AudioGroup.active[group].length; i++)
+                    AudioGroup.active[group][i].muted = AudioGroup.active[group][i].muted;
+        }
+        if (AudioGroup.mutes[group] != undefined)
+            return AudioGroup.mutes[group];
+        return false;
+    }
+    static groupSound(group, sound) {
+        if (AudioGroup.active[group] == undefined)
+            AudioGroup.active[group] = [];
+        AudioGroup.active[group].push(sound);
+    }
+    static ungroupSound(group, sound) {
+        if (AudioGroup.active[group] != undefined) {
+            let index = AudioGroup.active[group].indexOf(sound);
+            if (index >= 0)
+                AudioGroup.active[group].splice(index, 1);
+        }
+    }
+}
+AudioGroup.active = {};
+AudioGroup.volumes = {};
+AudioGroup.mutes = {};
+class AudioSource {
+    constructor(path, first) {
+        this.sounds = [];
+        this.path = path;
+        if (first)
+            this.sounds.push(first);
+    }
+    requestSound() {
+        if (this.sounds.length > 0) {
+            let source = this.sounds[0];
+            this.sounds.splice(0, 1);
+            return source;
+        }
+        else if (this.sounds.length < AudioSource.maxInstances) {
+            let source = new Audio();
+            source.src = this.path;
+            return source;
+        }
+        else
+            return null;
+    }
+    returnSound(sound) {
+        this.sounds.push(sound);
+    }
+}
+AudioSource.maxInstances = 50;
+class Sound {
+    /**
+     * Creates a new sound of the given handle
+     */
+    constructor(handle, group) {
+        this.sound = null;
+        this.started = false;
+        this.num = 0;
+        this._loop = false;
+        this._paused = false;
+        this._group = "";
+        this._muted = false;
+        this._volume = 1;
+        this.source = Assets.sounds[handle];
+        if (group)
+            this.group = group;
+    }
+    /**
+     * Gets if the sound is currently playing
+     */
+    get playing() { return this.started && !this._paused; }
+    /**
+     * Gets or sets whether the sound is looping
+     */
+    get loop() { return this._loop; }
+    set loop(v) {
+        this._loop = v;
+        if (this.sound != null && this.started)
+            this.sound.loop = this._loop;
+    }
+    /**
+     * Gets if the sound is paused
+     */
+    get paused() { return this._paused; }
+    /**
+     * Gets or sets the current Group this sound is a part of
+     */
+    get group() { return this._group; }
+    set group(val) {
+        if (this._group.length > 0)
+            AudioGroup.ungroupSound(this._group, this);
+        this._group = val;
+        if (this.started)
+            AudioGroup.groupSound(this._group, this);
+    }
+    /**
+     * Gets or sets whether the current sound is muted
+     */
+    get muted() { return this._muted; }
+    set muted(m) {
+        this._muted = m;
+        if (this.started)
+            this.sound.muted = this._muted || AudioGroup.muted(this._group);
+    }
+    /**
+     * Gets or sets the volume of this sound
+     */
+    get volume() { return this._volume; }
+    set volume(n) {
+        this._volume = n;
+        if (this.started)
+            this.sound.volume = this._volume * AudioGroup.volume(this._group);
+    }
+    /**
+     * Plays the sound
+     */
+    play(loop) {
+        // should this sound loop?
+        this.loop = loop;
+        // reset current sound if we're playing something already
+        if (this.sound != null && this.started) {
+            this.sound.currentTime = 0;
+            if (this._paused)
+                this.resume();
+        }
+        else {
+            this.sound = this.source.requestSound();
+            if (this.sound != null) {
+                if (this.sound.readyState < 3) {
+                    var self = this;
+                    self.loadedEvent = () => {
+                        if (self.sound != null)
+                            self.internalPlay();
+                        self.sound.removeEventListener("loadeddata", self.loadedEvent);
+                        self.loadedEvent = null;
+                    };
+                    this.sound.addEventListener("loadeddata", self.loadedEvent);
+                }
+                else
+                    this.internalPlay();
+            }
+        }
+        return this;
+    }
+    internalPlay() {
+        AudioGroup.groupSound(this._group, this);
+        this.started = true;
+        var self = this;
+        this.endEvent = () => { self.stop(); };
+        this.sound.addEventListener("ended", this.endEvent);
+        this.sound.loop = this.loop;
+        this.sound.volume = this._volume * AudioGroup.volume(this._group);
+        this.sound.muted = this._muted || AudioGroup.muted(this._group);
+        if (!this._paused)
+            this.sound.play();
+    }
+    /**
+     * Resumes if the sound was paused
+     */
+    resume() {
+        if (this.started && this._paused)
+            this.sound.play();
+        this._paused = false;
+        return this;
+    }
+    /**
+     * Pauses a sound
+     */
+    pause() {
+        if (this.started && !this._paused)
+            this.sound.pause();
+        this._paused = true;
+        return this;
+    }
+    /**
+     * Completely stops a sound
+     */
+    stop() {
+        if (this.sound != null) {
+            this.source.returnSound(this.sound);
+            if (this.started) {
+                this.sound.pause();
+                this.sound.currentTime = 0;
+                this.sound.volume = 1;
+                this.sound.muted = false;
+                this.sound.removeEventListener("ended", this.endEvent);
+                if (this.loadedEvent != null)
+                    this.sound.removeEventListener("loadeddata", this.loadedEvent);
+            }
+            this.sound = null;
+            this.started = false;
+            this._paused = false;
+            if (this._group.length > 0)
+                AudioGroup.ungroupSound(this._group, this);
+        }
+        return this;
+    }
+}
+/**
+ * A single Texture which contains subtextures by name
+ */
 class Atlas {
     constructor(name, texture, data, reader) {
         /**
@@ -3307,6 +3838,9 @@ class AtlasReaders {
         }
     }
 }
+/**
+ * Internal Texture used for Foster during Rendering
+ */
 class FosterWebGLTexture {
     constructor(texture, width, height) {
         this.disposed = false;
@@ -3327,7 +3861,13 @@ class FosterWebGLTexture {
     }
 }
 /// <reference path="./fosterWebGLTexture.ts"/>
+/**
+ * The Render Target is used for rendering graphics to
+ */
 class RenderTarget {
+    /**
+     * Creates a new Render Target. use RenderTarget.create() for quick access
+     */
     constructor(buffer, texture, vertexBuffer, colorBuffer, texcoordBuffer) {
         this.texture = texture;
         this.frameBuffer = buffer;
@@ -3335,8 +3875,17 @@ class RenderTarget {
         this.colorBuffer = colorBuffer;
         this.texcoordBuffer = texcoordBuffer;
     }
+    /**
+     * The width of the Render Target
+     */
     get width() { return this.texture.width; }
+    /**
+     * The height of the Render Target
+     */
     get height() { return this.texture.height; }
+    /**
+     * Disposes the Render Target and all its textures and buffers
+     */
     dispose() {
         this.texture.dispose();
         this.texture = null;
@@ -3350,6 +3899,9 @@ class RenderTarget {
         this.texcoordBuffer = null;
         this.colorBuffer = null;
     }
+    /**
+     * Creates a new Render Target of the given width and height
+     */
     static create(width, height) {
         let gl = Engine.graphics.gl;
         let frameBuffer = gl.createFramebuffer();
@@ -3372,20 +3924,50 @@ class RenderTarget {
     }
 }
 /// <reference path="./fosterWebGLTexture.ts"/>
+/**
+ * A Texture used for Rendering
+ */
 class Texture {
+    /**
+     * Creates a new Texture from the WebGL Texture
+     */
     constructor(texture, bounds, frame) {
+        /**
+         * The cropped Bounds of the Texture within its WebGL Texture
+         */
         this.bounds = null;
+        /**
+         * The Frame adds padding around the existing Bounds when rendered
+         */
         this.frame = null;
+        /**
+         * A reference to the full WebGL Texture
+         */
         this.texture = null;
         this.texture = texture;
         this.bounds = bounds || new Rectangle(0, 0, texture.width, texture.height);
         this.frame = frame || new Rectangle(0, 0, this.bounds.width, this.bounds.height);
         this.center = new Vector(this.frame.width / 2, this.frame.height / 2);
     }
+    /**
+     * The width of the Texture when rendered (frame.width)
+     */
     get width() { return this.frame.width; }
+    /**
+     * The height of the Texture when rendered (frame.height)
+     */
     get height() { return this.frame.height; }
+    /**
+     * The clipped width of the Texture (bounds.width)
+     */
     get clippedWidth() { return this.bounds.width; }
+    /**
+     * The clipped height of the Texture (bounds.height)
+     */
     get clippedHeight() { return this.bounds.height; }
+    /**
+     * Creates a Subtexture from this texture
+     */
     getSubtexture(clip, sub) {
         if (sub == undefined)
             sub = new Texture(this.texture);
@@ -3402,6 +3984,9 @@ class Texture {
         sub.center = new Vector(sub.frame.width / 2, sub.frame.height / 2);
         return sub;
     }
+    /**
+     * Creates a clone of this texture
+     */
     clone() {
         return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
     }
@@ -3410,28 +3995,52 @@ class Texture {
             ": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
             "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
     }
+    /**
+     * Draws this texture
+     */
     draw(position, origin, scale, rotation, color, flipX, flipY) {
         Engine.graphics.texture(this, position.x, position.y, null, color, origin, scale, rotation, flipX, flipY);
     }
+    /**
+     * Draws a cropped version of this texture
+     */
     drawCropped(position, crop, origin, scale, rotation, color, flipX, flipY) {
         Engine.graphics.texture(this, position.x, position.y, crop, color, origin, scale, rotation, flipX, flipY);
     }
+    /**
+     * Draws this texture, center aligned
+     */
     drawCenter(position, scale, rotation, color, flipX, flipY) {
         Engine.graphics.texture(this, position.x, position.y, null, color, this.center, scale, rotation, flipX, flipY);
     }
+    /**
+     * Draws a cropped version of this texture, center aligned
+     */
     drawCenterCropped(position, crop, scale, rotation, color, flipX, flipY) {
         Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width / 2, crop.height / 2), scale, rotation, flipX, flipY);
     }
+    /**
+     * Draws this texture, justified
+     */
     drawJustify(position, justify, scale, rotation, color, flipX, flipY) {
         Engine.graphics.texture(this, position.x, position.y, null, color, new Vector(this.width * justify.x, this.height * justify.y), scale, rotation, flipX, flipY);
     }
+    /**
+     * Draws a cropped version of this texture, justified
+     */
     drawJustifyCropped(position, crop, justify, scale, rotation, color, flipX, flipY) {
         Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width * justify.x, crop.height * justify.y), scale, rotation, flipX, flipY);
     }
+    /**
+     * Disposes this texture and its WebGL Texture
+     */
     dispose() {
         this.texture.dispose();
         this.texture = null;
     }
+    /**
+     * Creats a new Texture from an HTML Image Element
+     */
     static create(image) {
         let gl = Engine.graphics.gl;
         let tex = gl.createTexture();
