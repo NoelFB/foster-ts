@@ -120,6 +120,16 @@ declare class Engine {
      */
     static graphics: Graphics;
     /**
+     * Gets or sets the global sound volume multiplier
+     */
+    static volume: number;
+    private static _volume;
+    /**
+     * Mutes or Unmutes the entire game
+     */
+    static muted: boolean;
+    private static _muted;
+    /**
      * Starts up the Game Engine
      * @param title 	Window Title
      * @param width 	Game Width
@@ -1485,13 +1495,10 @@ declare class AnimationBank {
     static has(name: string): boolean;
 }
 declare class AudioGroup {
-    private static active;
     private static volumes;
     private static mutes;
     static volume(group: string, value?: number): number;
     static muted(group: string, value?: boolean): boolean;
-    static groupSound(group: string, sound: Sound): void;
-    static ungroupSound(group: string, sound: Sound): void;
 }
 declare class AudioSource {
     static maxInstances: number;
@@ -1502,12 +1509,13 @@ declare class AudioSource {
     returnSound(sound: HTMLAudioElement): void;
 }
 declare class Sound {
+    static active: Sound[];
     private source;
     private sound;
     private endEvent;
     private loadedEvent;
     private started;
-    private num;
+    private groups;
     /**
      * Gets if the sound is currently playing
      */
@@ -1523,11 +1531,6 @@ declare class Sound {
     paused: boolean;
     private _paused;
     /**
-     * Gets or sets the current Group this sound is a part of
-     */
-    group: string;
-    private _group;
-    /**
      * Gets or sets whether the current sound is muted
      */
     muted: boolean;
@@ -1540,12 +1543,14 @@ declare class Sound {
     /**
      * Creates a new sound of the given handle
      */
-    constructor(handle: string, group?: string);
+    constructor(handle: string, groups?: string[]);
     /**
      * Plays the sound
      */
     play(loop?: boolean): Sound;
     private internalPlay();
+    private internalUpdateVolume();
+    private internalUpdateMuted();
     /**
      * Resumes if the sound was paused
      */
@@ -1558,6 +1563,10 @@ declare class Sound {
      * Completely stops a sound
      */
     stop(): Sound;
+    group(group: string): Sound;
+    ungroup(group: string): Sound;
+    ungroupAll(): Sound;
+    ingroup(group: string): boolean;
 }
 interface AtlasReader {
     (data: any, into: Atlas): void;

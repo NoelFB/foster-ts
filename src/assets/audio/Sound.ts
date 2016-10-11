@@ -1,12 +1,13 @@
 class Sound
 {
+	public static active:Sound[] = [];
 
 	private source:AudioSource;
 	private sound:HTMLAudioElement = null;
 	private endEvent:()=>void;
 	private loadedEvent:()=>void;
 	private started:boolean = false;
-	private num:number = 0;
+	private groups:string[] = [];
 
 	/**
 	 * Gets if the sound is currently playing
@@ -20,7 +21,7 @@ class Sound
 	public set loop(v:boolean)
 	{
 		this._loop = v;
-		if (this.sound != null && this.started)
+		if (this.started)
 			this.sound.loop = this._loop;
 	}
 	private _loop:boolean = false;
@@ -32,28 +33,13 @@ class Sound
 	private _paused:boolean = false;
 
 	/**
-	 * Gets or sets the current Group this sound is a part of
-	 */
-	public get group():string { return this._group; }
-	public set group(val:string)
-	{
-		if (this._group.length > 0)
-			AudioGroup.ungroupSound(this._group, this);
-		this._group = val;
-		if (this.started)
-			AudioGroup.groupSound(this._group, this);
-	}
-	private _group:string = "";
-
-	/**
 	 * Gets or sets whether the current sound is muted
 	 */
 	public get muted():boolean { return this._muted; }
 	public set muted(m:boolean)
 	{
 		this._muted = m;
-		if (this.started)
-			this.sound.muted = this._muted || AudioGroup.muted(this._group);
+		this.internalUpdateMuted();
 	}
 	private _muted:boolean = false;
 
@@ -64,19 +50,19 @@ class Sound
 	public set volume(n:number)
 	{
 		this._volume = n;
-		if (this.started)
-			this.sound.volume = this._volume * AudioGroup.volume(this._group);
+		this.internalUpdateVolume();
 	}
 	private _volume:number = 1;
 
 	/**
 	 * Creates a new sound of the given handle
 	 */
-	constructor(handle:string, group?:string)
+	constructor(handle:string, groups?:string[])
 	{
 		this.source = Assets.sounds[handle];
-		if (group)
-			this.group = group;
+		if (groups && groups.length > 0)
+			for (let i = 0; i < groups.length; i ++)
+				this.group(groups[i]);
 	}
 
 	/**
@@ -122,19 +108,41 @@ class Sound
 
 	private internalPlay()
 	{
-		AudioGroup.groupSound(this._group, this);
 		this.started = true;
+		Sound.active.push(this);
 		
 		var self = this;
 		this.endEvent = () => { self.stop(); };
 
 		this.sound.addEventListener("ended", this.endEvent);
 		this.sound.loop = this.loop;
-		this.sound.volume = this._volume * AudioGroup.volume(this._group);
-		this.sound.muted = this._muted || AudioGroup.muted(this._group);
+		this.internalUpdateVolume();
+		this.internalUpdateMuted();
 		
 		if (!this._paused)
 			this.sound.play();
+	}
+
+	private internalUpdateVolume()
+	{
+		if  (this.started)
+		{
+			let groupVolume = 1;
+			for  (let i = 0; i < this.groups.length; i ++)
+				groupVolume *= AudioGroup.volume(this.groups[i]);
+			this.sound.volume = this._volume * groupVolume * Engine.volume;
+		}
+	}
+
+	private internalUpdateMuted()
+	{
+		if (this.started)
+		{
+			let groupMuted = false;
+			for  (let i = 0; i < this.groups.length && !groupMuted; i ++)
+				groupMuted = groupMuted || AudioGroup.muted(this.groups[i]);
+			this.sound.muted = Engine.muted || this._muted || groupMuted;
+		}
 	}
 
 	/**
@@ -183,9 +191,43 @@ class Sound
 			this.started = false;
 			this._paused = false;
 
-			if (this._group.length > 0)
-				AudioGroup.ungroupSound(this._group, this);
+			let i = Sound.active.indexOf(this);
+			if (i >= 0)
+				Sound.active.splice(i, 1);
 		}
 		return this;
+	}
+
+	public group(group:string):Sound
+	{
+		this.groups.push(group);
+		this.internalUpdateVolume();
+		this.internalUpdateMuted();
+		return this;
+	}
+
+	public ungroup(group:string):Sound
+	{
+		let index = this.groups.indexOf(group);
+		if (index >= 0)
+		{
+			this.groups.splice(index, 1);
+			this.internalUpdateVolume();
+			this.internalUpdateMuted();
+		}
+		return this;
+	}
+
+	public ungroupAll():Sound
+	{
+		this.groups = [];
+		this.internalUpdateVolume();
+		this.internalUpdateMuted();
+		return this;
+	}
+
+	public ingroup(group:string):boolean
+	{
+		return this.groups.indexOf(group) >= 0;
 	}
 }

@@ -149,6 +149,24 @@ class Engine {
      */
     static get graphics() { return Engine.instance.graphics; }
     /**
+     * Gets or sets the global sound volume multiplier
+     */
+    static get volume() { return Engine._volume; }
+    static set volume(n) {
+        Engine._volume = n;
+        for (let i = 0; i < Sound.active.length; i++)
+            Sound.active[i].volume = Sound.active[i].volume;
+    }
+    /**
+     * Mutes or Unmutes the entire game
+     */
+    static get muted() { return Engine._muted; }
+    static set muted(m) {
+        Engine._muted = m;
+        for (let i = 0; i < Sound.active.length; i++)
+            Sound.active[i].muted = Sound.active[i].muted;
+    }
+    /**
      * Starts up the Game Engine
      * @param title 	Window Title
      * @param width 	Game Width
@@ -272,6 +290,8 @@ class Engine {
  * Foster Engine version
  */
 Engine.version = "0.1.0";
+Engine._volume = 1;
+Engine._muted = false;
 Engine.instance = null;
 Engine.started = false;
 Engine.exiting = false;
@@ -3547,41 +3567,28 @@ class AnimationBank {
 AnimationBank.bank = {};
 class AudioGroup {
     static volume(group, value) {
-        if (value != undefined) {
+        if (value != undefined && AudioGroup.volumes[group] != value) {
             AudioGroup.volumes[group] = value;
-            if (AudioGroup.active[group] != undefined)
-                for (let i = 0; i < AudioGroup.active[group].length; i++)
-                    AudioGroup.active[group][i].volume = AudioGroup.active[group][i].volume;
+            for (let i = 0; i < Sound.active.length; i++)
+                if (Sound.active[i].ingroup(group))
+                    Sound.active[i].volume = Sound.active[i].volume;
         }
         if (AudioGroup.volumes[group] != undefined)
             return AudioGroup.volumes[group];
         return 1;
     }
     static muted(group, value) {
-        if (value != undefined) {
+        if (value != undefined && AudioGroup.mutes[group] != value) {
             AudioGroup.mutes[group] = value;
-            if (AudioGroup.active[group] != undefined)
-                for (let i = 0; i < AudioGroup.active[group].length; i++)
-                    AudioGroup.active[group][i].muted = AudioGroup.active[group][i].muted;
+            for (let i = 0; i < Sound.active.length; i++)
+                if (Sound.active[i].ingroup(group))
+                    Sound.active[i].muted = Sound.active[i].muted;
         }
         if (AudioGroup.mutes[group] != undefined)
             return AudioGroup.mutes[group];
         return false;
     }
-    static groupSound(group, sound) {
-        if (AudioGroup.active[group] == undefined)
-            AudioGroup.active[group] = [];
-        AudioGroup.active[group].push(sound);
-    }
-    static ungroupSound(group, sound) {
-        if (AudioGroup.active[group] != undefined) {
-            let index = AudioGroup.active[group].indexOf(sound);
-            if (index >= 0)
-                AudioGroup.active[group].splice(index, 1);
-        }
-    }
 }
-AudioGroup.active = {};
 AudioGroup.volumes = {};
 AudioGroup.mutes = {};
 class AudioSource {
@@ -3614,18 +3621,18 @@ class Sound {
     /**
      * Creates a new sound of the given handle
      */
-    constructor(handle, group) {
+    constructor(handle, groups) {
         this.sound = null;
         this.started = false;
-        this.num = 0;
+        this.groups = [];
         this._loop = false;
         this._paused = false;
-        this._group = "";
         this._muted = false;
         this._volume = 1;
         this.source = Assets.sounds[handle];
-        if (group)
-            this.group = group;
+        if (groups && groups.length > 0)
+            for (let i = 0; i < groups.length; i++)
+                this.group(groups[i]);
     }
     /**
      * Gets if the sound is currently playing
@@ -3637,7 +3644,7 @@ class Sound {
     get loop() { return this._loop; }
     set loop(v) {
         this._loop = v;
-        if (this.sound != null && this.started)
+        if (this.started)
             this.sound.loop = this._loop;
     }
     /**
@@ -3645,24 +3652,12 @@ class Sound {
      */
     get paused() { return this._paused; }
     /**
-     * Gets or sets the current Group this sound is a part of
-     */
-    get group() { return this._group; }
-    set group(val) {
-        if (this._group.length > 0)
-            AudioGroup.ungroupSound(this._group, this);
-        this._group = val;
-        if (this.started)
-            AudioGroup.groupSound(this._group, this);
-    }
-    /**
      * Gets or sets whether the current sound is muted
      */
     get muted() { return this._muted; }
     set muted(m) {
         this._muted = m;
-        if (this.started)
-            this.sound.muted = this._muted || AudioGroup.muted(this._group);
+        this.internalUpdateMuted();
     }
     /**
      * Gets or sets the volume of this sound
@@ -3670,8 +3665,7 @@ class Sound {
     get volume() { return this._volume; }
     set volume(n) {
         this._volume = n;
-        if (this.started)
-            this.sound.volume = this._volume * AudioGroup.volume(this._group);
+        this.internalUpdateVolume();
     }
     /**
      * Plays the sound
@@ -3705,16 +3699,32 @@ class Sound {
         return this;
     }
     internalPlay() {
-        AudioGroup.groupSound(this._group, this);
         this.started = true;
+        Sound.active.push(this);
         var self = this;
         this.endEvent = () => { self.stop(); };
         this.sound.addEventListener("ended", this.endEvent);
         this.sound.loop = this.loop;
-        this.sound.volume = this._volume * AudioGroup.volume(this._group);
-        this.sound.muted = this._muted || AudioGroup.muted(this._group);
+        this.internalUpdateVolume();
+        this.internalUpdateMuted();
         if (!this._paused)
             this.sound.play();
+    }
+    internalUpdateVolume() {
+        if (this.started) {
+            let groupVolume = 1;
+            for (let i = 0; i < this.groups.length; i++)
+                groupVolume *= AudioGroup.volume(this.groups[i]);
+            this.sound.volume = this._volume * groupVolume * Engine.volume;
+        }
+    }
+    internalUpdateMuted() {
+        if (this.started) {
+            let groupMuted = false;
+            for (let i = 0; i < this.groups.length && !groupMuted; i++)
+                groupMuted = groupMuted || AudioGroup.muted(this.groups[i]);
+            this.sound.muted = Engine.muted || this._muted || groupMuted;
+        }
     }
     /**
      * Resumes if the sound was paused
@@ -3752,12 +3762,38 @@ class Sound {
             this.sound = null;
             this.started = false;
             this._paused = false;
-            if (this._group.length > 0)
-                AudioGroup.ungroupSound(this._group, this);
+            let i = Sound.active.indexOf(this);
+            if (i >= 0)
+                Sound.active.splice(i, 1);
         }
         return this;
     }
+    group(group) {
+        this.groups.push(group);
+        this.internalUpdateVolume();
+        this.internalUpdateMuted();
+        return this;
+    }
+    ungroup(group) {
+        let index = this.groups.indexOf(group);
+        if (index >= 0) {
+            this.groups.splice(index, 1);
+            this.internalUpdateVolume();
+            this.internalUpdateMuted();
+        }
+        return this;
+    }
+    ungroupAll() {
+        this.groups = [];
+        this.internalUpdateVolume();
+        this.internalUpdateMuted();
+        return this;
+    }
+    ingroup(group) {
+        return this.groups.indexOf(group) >= 0;
+    }
 }
+Sound.active = [];
 /**
  * A single Texture which contains subtextures by name
  */

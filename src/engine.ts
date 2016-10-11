@@ -73,6 +73,30 @@ class Engine
 	public static get graphics():Graphics { return Engine.instance.graphics; }
 
 	/**
+	 * Gets or sets the global sound volume multiplier
+	 */
+	public static get volume():number { return Engine._volume; }
+	public static set volume(n:number)
+	{
+		Engine._volume = n;
+		for (let i = 0; i < Sound.active.length; i ++)
+			Sound.active[i].volume = Sound.active[i].volume;
+	}
+	private static _volume:number = 1;
+
+	/**
+	 * Mutes or Unmutes the entire game
+	 */
+	public static get muted():boolean { return Engine._muted; }
+	public static set muted(m:boolean)
+	{
+		Engine._muted = m;
+		for (let i = 0; i < Sound.active.length; i ++)
+			Sound.active[i].muted = Sound.active[i].muted;
+	}
+	private static _muted:boolean = false;
+
+	/**
 	 * Starts up the Game Engine
 	 * @param title 	Window Title
 	 * @param width 	Game Width
