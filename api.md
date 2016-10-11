@@ -4,30 +4,63 @@ Work in Progress documentation, that should eventually probably be moved out of 
 ||||||
 |---|---|---|---|---|
 | [Alarm](#class-alarm) | [AnimationBank](#class-animationbank) | [AnimationSet](#class-animationset) | [AnimationTemplate](#class-animationtemplate) | [AssetLoader](#class-assetloader) |
-| [Assets](#class-assets) | [Atlas](#class-atlas) | [AtlasType](#enum-atlastype) | [Calc](#class-calc) | [Camera](#class-camera) |
-| [Client](#enum-client) | [Collider](#class-collider) | [Color](#class-color) | [Component](#class-component) | [Coroutine](#class-coroutine) |
-| [Ease](#class-ease) | [Engine](#class-engine) | [Entity](#class-entity) | [FosterIO](#class-fosterio) | [FosterWebGLTexture](#class-fosterwebgltexture) |
-| [GameWindow](#class-gamewindow) | [Graphic](#class-graphic) | [Graphics](#class-graphics) | [Hitbox](#class-hitbox) | [Hitgrid](#class-hitgrid) |
-| [Key](#enum-key) | [Keys](#class-keys) | [Matrix](#class-matrix) | [Mouse](#class-mouse) | [Particle](#class-particle) |
-| [ParticleSystem](#class-particlesystem) | [ParticleTemplate](#class-particletemplate) | [Physics](#class-physics) | [PrimitiveRenderer](#class-primitiverenderer) | [Rectangle](#class-rectangle) |
-| [Rectsprite](#class-rectsprite) | [RenderTarget](#class-rendertarget) | [Renderer](#class-renderer) | [ResolutionStyle](#enum-resolutionstyle) | [Scene](#class-scene) |
-| [Shader](#class-shader) | [ShaderAttribute](#class-shaderattribute) | [ShaderAttributeType](#enum-shaderattributetype) | [ShaderUniform](#class-shaderuniform) | [ShaderUniformType](#enum-shaderuniformtype) |
-| [Shaders](#class-shaders) | [Sprite](#class-sprite) | [SpriteRenderer](#class-spriterenderer) | [Texture](#class-texture) | [Tilemap](#class-tilemap) |
-| [Tween](#class-tween) | [Vector](#class-vector) | [setGLUniformValue](#var-setgluniformvalue) |||
+| [Assets](#class-assets) | [Atlas](#class-atlas) | [AtlasReaders](#class-atlasreaders) | [ButtonState](#class-buttonstate) | [Calc](#class-calc) |
+| [Camera](#class-camera) | [Client](#enum-client) | [Collider](#class-collider) | [Color](#class-color) | [Component](#class-component) |
+| [ControllerInput](#class-controllerinput) | [Coroutine](#class-coroutine) | [Ease](#class-ease) | [Engine](#class-engine) | [Entity](#class-entity) |
+| [FosterIO](#class-fosterio) | [FosterWebGLTexture](#class-fosterwebgltexture) | [GameWindow](#class-gamewindow) | [GamepadManager](#class-gamepadmanager) | [Graphic](#class-graphic) |
+| [Graphics](#class-graphics) | [Hitbox](#class-hitbox) | [Hitgrid](#class-hitgrid) | [Key](#enum-key) | [Keys](#class-keys) |
+| [Matrix](#class-matrix) | [Mouse](#class-mouse) | [Particle](#class-particle) | [ParticleSystem](#class-particlesystem) | [ParticleTemplate](#class-particletemplate) |
+| [Physics](#class-physics) | [PrimitiveRenderer](#class-primitiverenderer) | [Rectangle](#class-rectangle) | [Rectsprite](#class-rectsprite) | [RenderTarget](#class-rendertarget) |
+| [Renderer](#class-renderer) | [ResolutionStyle](#enum-resolutionstyle) | [Scene](#class-scene) | [Shader](#class-shader) | [ShaderAttribute](#class-shaderattribute) |
+| [ShaderAttributeType](#enum-shaderattributetype) | [ShaderUniform](#class-shaderuniform) | [ShaderUniformType](#enum-shaderuniformtype) | [Shaders](#class-shaders) | [Sprite](#class-sprite) |
+| [SpriteRenderer](#class-spriterenderer) | [Texture](#class-texture) | [Tilemap](#class-tilemap) | [Tween](#class-tween) | [Vector](#class-vector) |
+| [setGLUniformValue](#var-setgluniformvalue) |||||
 # class Alarm
 ##### extends [Component](#class-component)
 ### Members
  - **percent**:`number`
+
+	Gets the current Percent of the Alarm
+
  - **duration**:`number`
+
+	Gets the current Duration of the Alarm
+
  - **callback**:`(Alarm)=>void`
+
+	Called when the Alarm is finished
+
+ - **removeOnComplete**:`boolean`
+
+	If the Alarm should be removed from the Entity upon completion
+
 
 ### Methods
  - **constructor**():`void`
  - **start**(`duration:number, callback:(Alarm)=>void`):`Alarm`
+
+	Starts the Alarm
+
  - **restart**():`Alarm`
+
+	Restarts the Alarm
+
  - **resume**():`Alarm`
+
+	Resumes the Alarm if it was paused
+
  - **pause**():`Alarm`
+
+	Pauses the Alarm if it was active
+
  - **update**():`void`
+
+	Updates the Alarm (automatically called during its Entity's update)
+
+ - **Alarm.create**(`on:Entity`):`Alarm`
+
+	Creates and adds a new Alarm on the given Entity
+
 
 # class AnimationBank
 ### Members
@@ -66,18 +99,20 @@ Work in Progress documentation, that should eventually probably be moved out of 
 
 # class AssetLoader
 ### Members
+ - **root**:`string`
  - **loading**:`boolean`
  - **loaded**:`boolean`
  - **callback**:`()=>void`
  - **percent**:`number`
 
 ### Methods
+ - **constructor**(`root?:string`):`void`
  - **addTexture**(`path:string`):`AssetLoader`
  - **addJson**(`path:string`):`AssetLoader`
  - **addXml**(`path:string`):`AssetLoader`
  - **addText**(`path:string`):`AssetLoader`
  - **addSound**(`path:string`):`AssetLoader`
- - **addAtlas**(`name:string, image:string, data:string, type:AtlasType`):`AssetLoader`
+ - **addAtlas**(`name:string, image:string, data:string, loader:AtlasReader`):`AssetLoader`
  - **load**(`callback?:()=>void`):`void`
  - **unload**():`void`
 
@@ -99,19 +134,61 @@ Work in Progress documentation, that should eventually probably be moved out of 
 # class Atlas
 ### Members
  - **name**:`string`
+
+	Name of the Atlas
+
  - **texture**:`Texture`
+
+	Reference to the atlas texture
+
  - **data**:`Object`
- - **type**:`AtlasType`
+
+	Raw Atlas Data, in whatever format the atlas was loaded in
+
+ - **reader**:`AtlasReader`
+
+	The Atlas Data Reader (a method parses the raw data and creates the subtextures)
+
  - **subtextures**:`{[path:string]:Texture;}`
 
+	Dictionary of the Subtextures within this atlas
+
+
 ### Methods
- - **constructor**(`name:string, texture:Texture, data:Object, type:AtlasType`):`void`
+ - **constructor**(`name:string, texture:Texture, data:Object, reader:AtlasReader`):`void`
  - **get**(`name:string`):`Texture`
+
+	Gets a specific subtexture from the atlas
+	 - **name**:`string` the name/path of the subtexture
+
  - **has**(`name:string`):`boolean`
+
+	Checks if a subtexture exists
+	 - **name**:`string` the name/path of the subtexture
+
  - **list**(`prefix:string, names:string[]`):`Texture[]`
 
-# enum AtlasType
- - **ASEPRITE** = `0`
+	Gets a list of textures
+
+ - **find**(`prefix:string`):`Texture[]`
+
+	Finds all subtextures with the given prefix
+
+
+# class AtlasReaders
+### Methods
+ - **AtlasReaders.Aseprite**(`data:any, into:Atlas`):`void`
+
+	Parses Aseprite data from the atlas
+
+
+# class ButtonState
+### Methods
+ - **constructor**():`void`
+ - **update**(`val:boolean`):`void`
+ - **down**():`boolean`
+ - **pressed**():`boolean`
+ - **released**():`boolean`
 
 # class Calc
 ### Methods
@@ -196,22 +273,58 @@ Work in Progress documentation, that should eventually probably be moved out of 
  - **render**(`camera?:Camera`):`void`
  - **debugRender**(`camera?:Camera`):`void`
 
-# class Coroutine
+# class ControllerInput
 ##### extends [Component](#class-component)
-	Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
-
 ### Members
- - **wait**:`number`
+ - **gamepad**:`Gamepad`
 
 ### Methods
- - **constructor**(`call?:any`):`void`
- - **start**(`call:any`):`Coroutine`
- - **resume**():`Coroutine`
- - **pause**():`Coroutine`
- - **stop**():`Coroutine`
+ - **constructor**(`pad:Gamepad, deadzone?:number`):`void`
  - **update**():`void`
+ - **getButton**(`index:number`):`ButtonState`
+ - **getLeftStick**():`Vector`
+ - **getRightStick**():`Vector`
+ - **getRawLeftStick**():`Vector`
+ - **getRawRightStick**():`Vector`
+
+# class Coroutine
+##### extends [Component](#class-component)
+	Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
+ More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
+
+### Methods
+ - **constructor**(`call?:()=>Iterator`):`void`
+
+	@param call? 	if set, immediately starts he Coroutine with the given Iterator
+
+ - **start**(`call:()=>Iterator`):`Coroutine`
+
+	Starts the Coroutine with the given Iterator
+
+ - **resume**():`Coroutine`
+
+	Resumes the current Coroutine (sets this.active to true)
+
+ - **pause**():`Coroutine`
+
+	Pauses the current Coroutine (sets this.active to false)
+
+ - **stop**():`Coroutine`
+
+	Stops the Coroutine, and sets the current Iterator to null
+
+ - **update**():`void`
+
+	Updates the Coroutine (automatically called its Entity's update)
+
  - **step**():`void`
+
+	Steps the Coroutine through the Iterator once
+
  - **end**(`remove:boolean`):`void`
+
+	Calls Coroutine.stop and will optionally remove itself from the Entity
+
 
 # class Ease
 ### Methods
@@ -238,6 +351,10 @@ Work in Progress documentation, that should eventually probably be moved out of 
 	Core of the Foster Engine. Initializes and Runs the game.
 
 ### Members
+ - **Engine.version**:`string`
+
+	Foster Engine version
+
  - **Engine.root**:`HTMLElement`
 
 	The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
@@ -321,9 +438,13 @@ Work in Progress documentation, that should eventually probably be moved out of 
 
 	If the Entity is active. If false, Entity.update is not called
 
- - **instantiated**:`boolean`
+ - **isCreated**:`boolean`
 
-	If the Entity has been instantiated yet (has it ever been added to a scene)
+	If the Entity has been created yet (has it ever been added to a scene)
+
+ - **isStarted**:`boolean`
+
+	If the Entity has been started yet (has it been updated in the current scene)
 
  - **scene**:`Scene`
 
@@ -346,23 +467,27 @@ Work in Progress documentation, that should eventually probably be moved out of 
  - **constructor**():`void`
  - **created**():`void`
 
-	Called the first time the entity is created (after constructor)
+	Called the first time the entity is added to a scene (after constructor, before added)
 
  - **added**():`void`
 
-	Called when the entity is added to a Scene
+	Called immediately whenever the entity is added to a Scene (after created, before started)
+
+ - **started**():`void`
+
+	Called before the first update of the Entity (after added)
 
  - **removed**():`void`
 
-	Called when the entity is removed from a Scene
+	Called immediately whenever the entity is removed from a Scene
 
  - **recycled**():`void`
 
-	Called when the entity is recycled in a Scene
+	Called immediately whenever the entity is recycled in a Scene
 
- - **destroy**():`void`
+ - **destroyed**():`void`
 
-	Called when an entity is perminantely destroyed
+	Called when an entity is permanently destroyed
 
  - **update**():`void`
 
@@ -411,7 +536,9 @@ Work in Progress documentation, that should eventually probably be moved out of 
 
 # class FosterIO
 ### Methods
+ - **FosterIO.init**():`void`
  - **FosterIO.read**(`path:string, callback:(string)=>void`):`void`
+ - **FosterIO.join**(`.:undefined`):`string`
 
 # class FosterWebGLTexture
 ### Members
@@ -441,6 +568,17 @@ Work in Progress documentation, that should eventually probably be moved out of 
  - **GameWindow.center**():`void`
  - **GameWindow.toggleDevTools**():`void`
 
+# class GamepadManager
+### Members
+ - **GamepadManager.defaultDeadzone**:`number`
+
+### Methods
+ - **GamepadManager.init**():`void`
+ - **GamepadManager.onAddController**(`event:any`):`void`
+ - **GamepadManager.getController**(`index:number`):`ControllerInput`
+ - **GamepadManager.numControllers**():`number`
+ - **GamepadManager.setRemoveControllerBehavior**(`handler:any`):`void`
+
 # class Graphic
 ##### extends [Component](#class-component)
 ### Members
@@ -458,6 +596,8 @@ Work in Progress documentation, that should eventually probably be moved out of 
 
 ### Methods
  - **constructor**(`texture:Texture, position?:Vector`):`void`
+ - **center**():`void`
+ - **justify**(`x:number, y:number`):`void`
  - **render**(`camera:Camera`):`void`
 
 # class Graphics
@@ -885,6 +1025,8 @@ Work in Progress documentation, that should eventually probably be moved out of 
 
 # class PrimitiveRenderer
 ##### extends [Renderer](#class-renderer)
+	Uses the Primitive Shader when rendering
+
 ### Methods
  - **constructor**():`void`
 
@@ -939,22 +1081,63 @@ Work in Progress documentation, that should eventually probably be moved out of 
  - **RenderTarget.create**(`width:number, height:number`):`RenderTarget`
 
 # class Renderer
+	Used by the Scene to render. A Scene can have multiple renderers that essentially act as separate layers / draw calls
+
 ### Members
  - **visible**:`boolean`
+
+	If this renderer is visible
+
  - **target**:`RenderTarget`
+
+	Current Render Target. null means it will draw to the screen
+
  - **clearTargetColor**:`Color`
+
+	Clear color when drawing (defaults to transparent)
+
  - **scene**:`Scene`
+
+	The scene we're in
+
  - **camera**:`Camera`
+
+	Camera that is applied to the shader during rendering. Falls back to Scene.camera if null
+
  - **groupsMask**:`string[]`
+
+	Only draws entities of the given mask, if set (otherwise draws all entities)
+
  - **shader**:`Shader`
+
+	Current Shader used by the Renderer
+
  - **shaderCameraUniformName**:`string`
+
+	Shader Camera Matrix uniform (applies the camera matrix to this when rendering)
+
 
 ### Methods
  - **update**():`void`
+
+	Called during Scene.update
+
  - **preRender**():`void`
+
+	Called before Render
+
  - **render**():`void`
+
+	Renders the Renderer
+
  - **postRender**():`void`
+
+	Called after Render
+
  - **dispose**():`void`
+
+	Called when the Scene is disposed (cleans up our Target, if we have one)
+
 
 # enum ResolutionStyle
  - **None** = `0`	Renders the buffer at the Center of the Screen with no scaling
@@ -1137,6 +1320,8 @@ Work in Progress documentation, that should eventually probably be moved out of 
 
 # class SpriteRenderer
 ##### extends [Renderer](#class-renderer)
+	Uses the Texture Shader when rendering
+
 ### Methods
  - **constructor**():`void`
 
@@ -1145,6 +1330,7 @@ Work in Progress documentation, that should eventually probably be moved out of 
  - **bounds**:`Rectangle`
  - **frame**:`Rectangle`
  - **texture**:`FosterWebGLTexture`
+ - **center**:`Vector`
  - **width**:`number`
  - **height**:`number`
  - **clippedWidth**:`number`
@@ -1155,6 +1341,12 @@ Work in Progress documentation, that should eventually probably be moved out of 
  - **getSubtexture**(`clip:Rectangle, sub?:Texture`):`Texture`
  - **clone**():`Texture`
  - **toString**():`string`
+ - **draw**(`position:Vector, origin?:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean`):`void`
+ - **drawCropped**(`position:Vector, crop:Rectangle, origin?:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean`):`void`
+ - **drawCenter**(`position:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean`):`void`
+ - **drawCenterCropped**(`position:Vector, crop:Rectangle, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean`):`void`
+ - **drawJustify**(`position:Vector, justify:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean`):`void`
+ - **drawJustifyCropped**(`position:Vector, crop:Rectangle, justify:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean`):`void`
  - **dispose**():`void`
  - **Texture.create**(`image:HTMLImageElement`):`Texture`
 
@@ -1179,20 +1371,65 @@ Work in Progress documentation, that should eventually probably be moved out of 
 ##### extends [Component](#class-component)
 ### Members
  - **percent**:`number`
+
+	Gets the current Percent of the Tween
+
  - **duration**:`number`
+
+	Gets the current Duration of the Tween
+
+ - **value**:`number`
+
+	The value of the Tween at the current Percent
+
  - **from**:`number`
+
+	From value of the Tween (when percent is 0)
+
  - **to**:`number`
+
+	To value of the Tween (when percent is 1)
+
  - **ease**:`(number)=>number`
+
+	Easer function (ex. Linear would be (p) => { return p; })
+ Alternatively, use the static Ease methods
+
  - **step**:`(number)=>void`
+
+	Callback when the Tween is updated, returning the current Value
+
  - **removeOnComplete**:`boolean`
+
+	If the Tween should be removed upon completion
+
 
 ### Methods
  - **constructor**():`void`
  - **start**(`duration:number, from:number, to:number, ease:(number)=>number, step:(number)=>void, removeOnComplete?:boolean`):`Tween`
+
+	Initializes the Tween and begins running
+
  - **restart**():`Tween`
+
+	Restarts the current Tween
+
  - **resume**():`Tween`
+
+	Resumes the current tween if it was paused
+
  - **pause**():`Tween`
+
+	Pauses the current tween if it was active
+
  - **update**():`void`
+
+	Upates the tween (automatically called when its Entity is updated)
+
+ - **Tween.create**(`on:Entity`):`Tween`
+
+	Creates a new tween on an existing entity
+
 
 # class Vector
 ### Members
@@ -1204,6 +1441,7 @@ Work in Progress documentation, that should eventually probably be moved out of 
  - **Vector.temp0**:`Vector`
  - **Vector.temp1**:`Vector`
  - **Vector.temp2**:`Vector`
+ - **Vector.zero**:`Vector`
 
 ### Methods
  - **constructor**(`x?:number, y?:number`):`void`
