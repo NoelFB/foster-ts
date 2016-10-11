@@ -599,29 +599,88 @@ declare class Assets {
     static unload(): void;
 }
 declare class Alarm extends Component {
+    /**
+     * Gets the current Percent of the Alarm
+     */
     percent: number;
+    private _percent;
+    /**
+     * Gets the current Duration of the Alarm
+     */
     duration: number;
+    private _duration;
+    /**
+     * Called when the Alarm is finished
+     */
     callback: (Alarm) => void;
+    /**
+     * If the Alarm should be removed from the Entity upon completion
+     */
+    removeOnComplete: boolean;
     constructor();
+    /**
+     * Starts the Alarm
+     */
     start(duration: number, callback: (Alarm) => void): Alarm;
+    /**
+     * Restarts the Alarm
+     */
     restart(): Alarm;
+    /**
+     * Resumes the Alarm if it was paused
+     */
     resume(): Alarm;
+    /**
+     * Pauses the Alarm if it was active
+     */
     pause(): Alarm;
+    /**
+     * Updates the Alarm (automatically called during its Entity's update)
+     */
     update(): void;
+    /**
+     * Creates and adds a new Alarm on the given Entity
+     */
+    static create(on: Entity): Alarm;
 }
 /**
- * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
+ * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
+ * More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
  */
 declare class Coroutine extends Component {
-    wait: number;
+    private wait;
     private iterator;
-    constructor(call?: any);
-    start(call: any): Coroutine;
+    /**
+     * @param call? 	if set, immediately starts he Coroutine with the given Iterator
+     */
+    constructor(call?: () => Iterator<any>);
+    /**
+     * Starts the Coroutine with the given Iterator
+     */
+    start(call: () => Iterator<any>): Coroutine;
+    /**
+     * Resumes the current Coroutine (sets this.active to true)
+     */
     resume(): Coroutine;
+    /**
+     * Pauses the current Coroutine (sets this.active to false)
+     */
     pause(): Coroutine;
+    /**
+     * Stops the Coroutine, and sets the current Iterator to null
+     */
     stop(): Coroutine;
+    /**
+     * Updates the Coroutine (automatically called its Entity's update)
+     */
     update(): void;
+    /**
+     * Steps the Coroutine through the Iterator once
+     */
     step(): void;
+    /**
+     * Calls Coroutine.stop and will optionally remove itself from the Entity
+     */
     end(remove: boolean): void;
 }
 declare abstract class Collider extends Component {
@@ -669,19 +728,65 @@ declare class Physics extends Hitbox {
     stop(): void;
 }
 declare class Tween extends Component {
+    /**
+     * Gets the current Percent of the Tween
+     */
     percent: number;
+    private _percent;
+    /**
+     * Gets the current Duration of the Tween
+     */
     duration: number;
+    private _duration;
+    /**
+     * The value of the Tween at the current Percent
+     */
+    value: number;
+    /**
+     * From value of the Tween (when percent is 0)
+     */
     from: number;
+    /**
+     * To value of the Tween (when percent is 1)
+     */
     to: number;
+    /**
+     * Easer function (ex. Linear would be (p) => { return p; })
+     * Alternatively, use the static Ease methods
+     */
     ease: (number) => number;
+    /**
+     * Callback when the Tween is updated, returning the current Value
+     */
     step: (number) => void;
+    /**
+     * If the Tween should be removed upon completion
+     */
     removeOnComplete: boolean;
     constructor();
+    /**
+     * Initializes the Tween and begins running
+     */
     start(duration: number, from: number, to: number, ease: (number) => number, step: (number) => void, removeOnComplete?: boolean): Tween;
+    /**
+     * Restarts the current Tween
+     */
     restart(): Tween;
+    /**
+     * Resumes the current tween if it was paused
+     */
     resume(): Tween;
+    /**
+     * Pauses the current tween if it was active
+     */
     pause(): Tween;
+    /**
+     * Upates the tween (automatically called when its Entity is updated)
+     */
     update(): void;
+    /**
+     * Creates a new tween on an existing entity
+     */
     static create(on: Entity): Tween;
 }
 declare class Vector {

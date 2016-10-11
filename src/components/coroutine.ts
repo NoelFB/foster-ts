@@ -1,13 +1,19 @@
-/**
- * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
- */
 /// <reference path="./../component.ts"/>
+
+/**
+ * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
+ * More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
+ */
 class Coroutine extends Component
 {
-	public wait:number = 0;
-	private iterator:any = null;
 
-	public constructor(call?:any)
+	private wait:number = 0;
+	private iterator:Iterator<any> = null;
+
+	/**
+	 * @param call? 	if set, immediately starts he Coroutine with the given Iterator
+	 */
+	public constructor(call?:()=>Iterator<any>)
 	{
 		super();
 		this.active = this.visible = false;
@@ -15,25 +21,37 @@ class Coroutine extends Component
 			this.start(call);
 	}
 
-	public start(call:any):Coroutine
+	/**
+	 * Starts the Coroutine with the given Iterator
+	 */
+	public start(call:()=>Iterator<any>):Coroutine
 	{
 		this.iterator = call();
 		this.active = true;
 		return this;
 	}
 
+	/**
+	 * Resumes the current Coroutine (sets this.active to true)
+	 */
 	public resume():Coroutine
 	{
 		this.active = true;
 		return this;
 	}
 
+	/**
+	 * Pauses the current Coroutine (sets this.active to false)
+	 */
 	public pause():Coroutine
 	{
 		this.active = false;
 		return this;
 	}
 
+	/**
+	 * Stops the Coroutine, and sets the current Iterator to null
+	 */
 	public stop():Coroutine
 	{
 		this.wait = 0;
@@ -42,6 +60,9 @@ class Coroutine extends Component
 		return this;
 	}
 
+	/**
+	 * Updates the Coroutine (automatically called its Entity's update)
+	 */
 	public update():void
 	{
 		this.wait  -= Engine.delta;
@@ -51,6 +72,9 @@ class Coroutine extends Component
 		this.step();
 	}
 
+	/**
+	 * Steps the Coroutine through the Iterator once
+	 */
 	public step():void
 	{
 		if (this.iterator != null)
@@ -68,6 +92,9 @@ class Coroutine extends Component
 		}
 	}
 
+	/**
+	 * Calls Coroutine.stop and will optionally remove itself from the Entity
+	 */
 	public end(remove:boolean):void
 	{
 		this.stop();

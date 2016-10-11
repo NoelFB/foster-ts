@@ -2,12 +2,47 @@
 class Tween extends Component
 {
 
-	public percent:number = 0;
-	public duration:number;
-	public from:number;
-	public to:number;
-	public ease:(number)=>number;
+	/**
+	 * Gets the current Percent of the Tween
+	 */
+	public get percent():number { return this._percent; }
+	private _percent:number = 0;
+
+	/**
+	 * Gets the current Duration of the Tween
+	 */
+	public get duration():number { return this._duration; }
+	private _duration:number;
+
+	/**
+	 * The value of the Tween at the current Percent
+	 */
+	public get value():number { return this.from + (this.to - this.from) * this.ease(this.percent); }
+
+	/**
+	 * From value of the Tween (when percent is 0)
+	 */
+	public from:number = 0;
+
+	/**
+	 * To value of the Tween (when percent is 1)
+	 */
+	public to:number = 0;
+
+	/**
+	 * Easer function (ex. Linear would be (p) => { return p; })
+	 * Alternatively, use the static Ease methods
+	 */
+	public ease:(number)=>number = (p) => { return p; };
+
+	/**
+	 * Callback when the Tween is updated, returning the current Value
+	 */
 	public step:(number)=>void;
+
+	/**
+	 * If the Tween should be removed upon completion
+	 */
 	public removeOnComplete:boolean = false;
 
 	constructor() 
@@ -16,10 +51,13 @@ class Tween extends Component
 		this.active = this.visible = false; 
 	}
 
+	/**
+	 * Initializes the Tween and begins running
+	 */
 	public start(duration:number, from:number, to:number, ease:(number)=>number, step:(number)=>void, removeOnComplete?:boolean):Tween
 	{
-		this.percent = 0;
-		this.duration = duration;
+		this._percent = 0;
+		this._duration = duration;
 		this.from = from;
 		this.to = to;
 		this.ease = ease;
@@ -28,13 +66,19 @@ class Tween extends Component
 		return this;
 	}
 
+	/**
+	 * Restarts the current Tween
+	 */
 	public restart():Tween
 	{
-		this.percent = 0;
+		this._percent = 0;
 		this.active = true;
 		return this;
 	}
 
+	/**
+	 * Resumes the current tween if it was paused
+	 */
 	public resume():Tween
 	{
 		if (this.percent < 1)
@@ -42,30 +86,39 @@ class Tween extends Component
 		return this;
 	}
 
+	/**
+	 * Pauses the current tween if it was active
+	 */
 	public pause():Tween
 	{
 		this.active = false;
 		return this;
 	}
 
+	/**
+	 * Upates the tween (automatically called when its Entity is updated)
+	 */
 	public update():void
 	{
-		if (this.percent < 1)
+		if (this.percent < 1 && this.duration > 0)
 		{
-			this.percent += Engine.delta / this.duration;
+			this._percent += Engine.delta / this.duration;
 			if (this.percent >= 1)
 			{
-				this.percent = 1;
+				this._percent = 1;
 				this.step(this.to);
 				this.active = false;
 				if (this.removeOnComplete)
 					this.entity.remove(this);
 			}
 			else
-				this.step(this.from + (this.to - this.from) * this.ease(this.percent));
+				this.step(this.value);
 		}
 	}
 
+	/**
+	 * Creates a new tween on an existing entity
+	 */
 	public static create(on:Entity):Tween
 	{
 		let tween = new Tween();

@@ -1617,43 +1617,85 @@ Assets.atlases = {};
 class Alarm extends Component {
     constructor() {
         super();
+        this._percent = 0;
+        /**
+         * If the Alarm should be removed from the Entity upon completion
+         */
+        this.removeOnComplete = false;
         this.active = this.visible = false;
     }
+    /**
+     * Gets the current Percent of the Alarm
+     */
+    get percent() { return this._percent; }
+    /**
+     * Gets the current Duration of the Alarm
+     */
+    get duration() { return this._duration; }
+    /**
+     * Starts the Alarm
+     */
     start(duration, callback) {
-        this.percent = 0;
-        this.duration = duration;
+        this._percent = 0;
+        this._duration = duration;
         this.callback = callback;
         return this;
     }
+    /**
+     * Restarts the Alarm
+     */
     restart() {
-        this.percent = 0;
+        this._percent = 0;
         return this;
     }
+    /**
+     * Resumes the Alarm if it was paused
+     */
     resume() {
         if (this.percent < 1)
             this.active = true;
         return this;
     }
+    /**
+     * Pauses the Alarm if it was active
+     */
     pause() {
         this.active = false;
         return this;
     }
+    /**
+     * Updates the Alarm (automatically called during its Entity's update)
+     */
     update() {
-        if (this.percent < 1) {
-            this.percent += Engine.delta / this.duration;
+        if (this.percent < 1 && this.duration > 0) {
+            this._percent += Engine.delta / this.duration;
             if (this.percent >= 1) {
-                this.percent = 1;
+                this._percent = 1;
                 this.active = false;
                 this.callback(this);
+                if (this.removeOnComplete)
+                    this.entity.remove(this);
             }
         }
     }
+    /**
+     * Creates and adds a new Alarm on the given Entity
+     */
+    static create(on) {
+        let alarm = new Alarm();
+        on.add(alarm);
+        return alarm;
+    }
 }
-/**
- * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
- */
 /// <reference path="./../component.ts"/>
+/**
+ * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
+ * More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
+ */
 class Coroutine extends Component {
+    /**
+     * @param call? 	if set, immediately starts he Coroutine with the given Iterator
+     */
     constructor(call) {
         super();
         this.wait = 0;
@@ -1662,31 +1704,49 @@ class Coroutine extends Component {
         if (call)
             this.start(call);
     }
+    /**
+     * Starts the Coroutine with the given Iterator
+     */
     start(call) {
         this.iterator = call();
         this.active = true;
         return this;
     }
+    /**
+     * Resumes the current Coroutine (sets this.active to true)
+     */
     resume() {
         this.active = true;
         return this;
     }
+    /**
+     * Pauses the current Coroutine (sets this.active to false)
+     */
     pause() {
         this.active = false;
         return this;
     }
+    /**
+     * Stops the Coroutine, and sets the current Iterator to null
+     */
     stop() {
         this.wait = 0;
         this.active = false;
         this.iterator = null;
         return this;
     }
+    /**
+     * Updates the Coroutine (automatically called its Entity's update)
+     */
     update() {
         this.wait -= Engine.delta;
         if (this.wait > 0)
             return;
         this.step();
     }
+    /**
+     * Steps the Coroutine through the Iterator once
+     */
     step() {
         if (this.iterator != null) {
             let next = this.iterator.next();
@@ -1700,6 +1760,9 @@ class Coroutine extends Component {
             }
         }
     }
+    /**
+     * Calls Coroutine.stop and will optionally remove itself from the Entity
+     */
     end(remove) {
         this.stop();
         if (remove)
@@ -1928,13 +1991,44 @@ class Physics extends Hitbox {
 class Tween extends Component {
     constructor() {
         super();
-        this.percent = 0;
+        this._percent = 0;
+        /**
+         * From value of the Tween (when percent is 0)
+         */
+        this.from = 0;
+        /**
+         * To value of the Tween (when percent is 1)
+         */
+        this.to = 0;
+        /**
+         * Easer function (ex. Linear would be (p) => { return p; })
+         * Alternatively, use the static Ease methods
+         */
+        this.ease = (p) => { return p; };
+        /**
+         * If the Tween should be removed upon completion
+         */
         this.removeOnComplete = false;
         this.active = this.visible = false;
     }
+    /**
+     * Gets the current Percent of the Tween
+     */
+    get percent() { return this._percent; }
+    /**
+     * Gets the current Duration of the Tween
+     */
+    get duration() { return this._duration; }
+    /**
+     * The value of the Tween at the current Percent
+     */
+    get value() { return this.from + (this.to - this.from) * this.ease(this.percent); }
+    /**
+     * Initializes the Tween and begins running
+     */
     start(duration, from, to, ease, step, removeOnComplete) {
-        this.percent = 0;
-        this.duration = duration;
+        this._percent = 0;
+        this._duration = duration;
         this.from = from;
         this.to = to;
         this.ease = ease;
@@ -1942,34 +2036,49 @@ class Tween extends Component {
         this.removeOnComplete = removeOnComplete;
         return this;
     }
+    /**
+     * Restarts the current Tween
+     */
     restart() {
-        this.percent = 0;
+        this._percent = 0;
         this.active = true;
         return this;
     }
+    /**
+     * Resumes the current tween if it was paused
+     */
     resume() {
         if (this.percent < 1)
             this.active = true;
         return this;
     }
+    /**
+     * Pauses the current tween if it was active
+     */
     pause() {
         this.active = false;
         return this;
     }
+    /**
+     * Upates the tween (automatically called when its Entity is updated)
+     */
     update() {
-        if (this.percent < 1) {
-            this.percent += Engine.delta / this.duration;
+        if (this.percent < 1 && this.duration > 0) {
+            this._percent += Engine.delta / this.duration;
             if (this.percent >= 1) {
-                this.percent = 1;
+                this._percent = 1;
                 this.step(this.to);
                 this.active = false;
                 if (this.removeOnComplete)
                     this.entity.remove(this);
             }
             else
-                this.step(this.from + (this.to - this.from) * this.ease(this.percent));
+                this.step(this.value);
         }
     }
+    /**
+     * Creates a new tween on an existing entity
+     */
     static create(on) {
         let tween = new Tween();
         on.add(tween);

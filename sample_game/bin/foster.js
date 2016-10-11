@@ -1033,16 +1033,43 @@ class Graphics {
         }
     }
 }
+/**
+ * Used by the Scene to render. A Scene can have multiple renderers that essentially act as separate layers / draw calls
+ */
 class Renderer {
     constructor() {
+        /**
+         * If this renderer is visible
+         */
         this.visible = true;
+        /**
+         * Current Render Target. null means it will draw to the screen
+         */
         this.target = null;
+        /**
+         * Clear color when drawing (defaults to transparent)
+         */
         this.clearTargetColor = new Color(0, 0, 0, 0);
+        /**
+         * The scene we're in
+         */
         this.scene = null;
+        /**
+         * Only draws entities of the given mask, if set (otherwise draws all entities)
+         */
         this.groupsMask = [];
     }
+    /**
+     * Called during Scene.update
+     */
     update() { }
+    /**
+     * Called before Render
+     */
     preRender() { }
+    /**
+     * Renders the Renderer
+     */
     render() {
         // set target
         if (this.target != null) {
@@ -1061,7 +1088,13 @@ class Renderer {
             if (list[i].visible)
                 list[i].render(currentCamera);
     }
+    /**
+     * Called after Render
+     */
     postRender() { }
+    /**
+     * Called when the Scene is disposed (cleans up our Target, if we have one)
+     */
     dispose() {
         if (this.target != null)
             this.target.dispose();
@@ -1584,6 +1617,7 @@ Assets.atlases = {};
 class Alarm extends Component {
     constructor() {
         super();
+        this.removeOnComplete = false;
         this.active = this.visible = false;
     }
     start(duration, callback) {
@@ -1606,21 +1640,32 @@ class Alarm extends Component {
         return this;
     }
     update() {
-        if (this.percent < 1) {
+        if (this.percent < 1 && this.duration > 0) {
             this.percent += Engine.delta / this.duration;
             if (this.percent >= 1) {
                 this.percent = 1;
                 this.active = false;
                 this.callback(this);
+                if (this.removeOnComplete)
+                    this.entity.remove(this);
             }
         }
     }
+    static create(on) {
+        let alarm = new Alarm();
+        on.add(alarm);
+        return alarm;
+    }
 }
-/**
- * Coroutine Class. Warning, this uses some pretty modern JS features and may not work on most browsers
- */
 /// <reference path="./../component.ts"/>
+/**
+ * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
+ * More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
+ */
 class Coroutine extends Component {
+    /**
+     * @param call? 	if set, immediately starts he Coroutine with the given Iterator
+     */
     constructor(call) {
         super();
         this.wait = 0;
@@ -1629,31 +1674,49 @@ class Coroutine extends Component {
         if (call)
             this.start(call);
     }
+    /**
+     * Starts the Coroutine with the given Iterator
+     */
     start(call) {
         this.iterator = call();
         this.active = true;
         return this;
     }
+    /**
+     * Resumes the current Coroutine (sets this.active to true)
+     */
     resume() {
         this.active = true;
         return this;
     }
+    /**
+     * Pauses the current Coroutine (sets this.active to false)
+     */
     pause() {
         this.active = false;
         return this;
     }
+    /**
+     * Stops the Coroutine, and sets the current Iterator to null
+     */
     stop() {
         this.wait = 0;
         this.active = false;
         this.iterator = null;
         return this;
     }
+    /**
+     * Updates the Coroutine (automatically called through Entity)
+     */
     update() {
         this.wait -= Engine.delta;
         if (this.wait > 0)
             return;
         this.step();
     }
+    /**
+     * Steps the Coroutine through the Iterator once
+     */
     step() {
         if (this.iterator != null) {
             let next = this.iterator.next();
@@ -1667,6 +1730,9 @@ class Coroutine extends Component {
             }
         }
     }
+    /**
+     * Calls Coroutine.stop and will optionally remove itself from the Entity
+     */
     end(remove) {
         this.stop();
         if (remove)
@@ -1924,7 +1990,7 @@ class Tween extends Component {
         return this;
     }
     update() {
-        if (this.percent < 1) {
+        if (this.percent < 1 && this.duration > 0) {
             this.percent += Engine.delta / this.duration;
             if (this.percent >= 1) {
                 this.percent = 1;
@@ -2350,6 +2416,9 @@ Mouse._position = new Vector(0, 0);
 Mouse._positionNext = new Vector(0, 0);
 Mouse.absolute = new Vector(0, 0);
 /// <reference path="./../renderer.ts"/>
+/**
+ * Uses the Primitive Shader when rendering
+ */
 class PrimitiveRenderer extends Renderer {
     constructor() {
         super();
@@ -2358,6 +2427,9 @@ class PrimitiveRenderer extends Renderer {
     }
 }
 /// <reference path="./../renderer.ts"/>
+/**
+ * Uses the Texture Shader when rendering
+ */
 class SpriteRenderer extends Renderer {
     constructor() {
         super();

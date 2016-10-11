@@ -93,7 +93,7 @@ class Player extends Entity
 		this.scene.camera.position.y += (this.y - this.scene.camera.position.y) / 10;
 	}
 
-	private *routine()
+	private *routine():Iterator<any>
 	{
 		console.log("test");
 		yield 0.5;

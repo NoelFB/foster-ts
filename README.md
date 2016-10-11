@@ -11,7 +11,7 @@ and has frequent, breaking changes. currently not worrying about backwards compa
  - ES6 all the way. Not my goal to be backwards / ES5 compatible as this is to be primarily used in Electron
  - Scene -> Entity -> Component structure
  - Frame-based animation, with atlas loading (Aseprite, Texture Packer, etc)
- - AABB Collision system, with simple Physics component to handle motion / 
+ - AABB Collision system, with simple Physics component to handle motion 
  
 #### Todo
  - Implement Audio stuff

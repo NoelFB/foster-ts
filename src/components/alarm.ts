@@ -1,10 +1,27 @@
 /// <reference path="./../component.ts"/>
 class Alarm extends Component
 {
+	/**
+	 * Gets the current Percent of the Alarm
+	 */
+	public get percent():number { return this._percent; }
+	private _percent:number = 0;
 
-	public percent:number;
-	public duration:number;
+	/**
+	 * Gets the current Duration of the Alarm
+	 */
+	public get duration():number { return this._duration; }
+	private _duration:number;
+
+	/**
+	 * Called when the Alarm is finished
+	 */
 	public callback:(Alarm)=>void;
+
+	/**
+	 * If the Alarm should be removed from the Entity upon completion
+	 */
+	public removeOnComplete:boolean = false;
 
 	constructor() 
 	{ 
@@ -12,20 +29,29 @@ class Alarm extends Component
 		this.active = this.visible = false; 
 	}
 
+	/**
+	 * Starts the Alarm
+	 */
 	public start(duration:number, callback:(Alarm)=>void):Alarm
 	{
-		this.percent = 0;
-		this.duration = duration;
+		this._percent = 0;
+		this._duration = duration;
 		this.callback = callback;
 		return this;
 	}
 
+	/**
+	 * Restarts the Alarm
+	 */
 	public restart():Alarm
 	{
-		this.percent = 0;
+		this._percent = 0;
 		return this;
 	}
 
+	/**
+	 * Resumes the Alarm if it was paused
+	 */
 	public resume():Alarm
 	{
 		if (this.percent < 1)
@@ -33,23 +59,42 @@ class Alarm extends Component
 		return this;
 	}
 
+	/**
+	 * Pauses the Alarm if it was active
+	 */
 	public pause():Alarm
 	{
 		this.active = false;
 		return this;
 	}
 
+	/**
+	 * Updates the Alarm (automatically called during its Entity's update)
+	 */
 	public update():void
 	{
-		if (this.percent < 1)
+		if (this.percent < 1 && this.duration > 0)
 		{
-			this.percent += Engine.delta / this.duration;
+			this._percent += Engine.delta / this.duration;
 			if (this.percent >= 1)
 			{
-				this.percent = 1;
+				this._percent = 1;
 				this.active = false;
 				this.callback(this);
+
+				if (this.removeOnComplete)
+					this.entity.remove(this);
 			}
 		}
+	}
+
+	/**
+	 * Creates and adds a new Alarm on the given Entity
+	 */
+	public static create(on:Entity):Alarm
+	{
+		let alarm = new Alarm();
+		on.add(alarm);
+		return alarm;
 	}
 }
