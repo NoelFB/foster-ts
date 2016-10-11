@@ -35,4 +35,12 @@ class AudioSource
 	{
 		this.sounds.push(sound);
 	}
+
+	/**
+	 * Not Implemented
+	 */
+	public dispose():void
+	{
+
+	}
 }

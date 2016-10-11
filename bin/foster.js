@@ -1759,7 +1759,6 @@ class Assets {
         for (var path in Assets.textures)
             Assets.textures[path].dispose();
         Assets.textures = {};
-        // TODO: implement sound unloading
         for (var path in Assets.sounds)
             Assets.sounds[path].dispose();
         Assets.sounds = {};
@@ -3614,6 +3613,11 @@ class AudioSource {
     }
     returnSound(sound) {
         this.sounds.push(sound);
+    }
+    /**
+     * Not Implemented
+     */
+    dispose() {
     }
 }
 AudioSource.maxInstances = 50;

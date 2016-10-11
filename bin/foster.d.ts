@@ -1507,6 +1507,10 @@ declare class AudioSource {
     constructor(path: string, first?: HTMLAudioElement);
     requestSound(): HTMLAudioElement;
     returnSound(sound: HTMLAudioElement): void;
+    /**
+     * Not Implemented
+     */
+    dispose(): void;
 }
 declare class Sound {
     static active: Sound[];
