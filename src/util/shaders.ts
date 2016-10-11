@@ -1,12 +1,28 @@
 /// <reference path="./shader.ts" />
 
-// Default 2D shaders
+/**
+ * Default 2D shaders
+ */
 class Shaders
 {
+	/**
+	 * A simple Texture Sahder
+	 */
 	public static texture:Shader;
+
+	/**
+	 * A Texture Shader that fills non-transparent pixels with the specific UV color
+	 */
 	public static solid:Shader;
+
+	/**
+	 * Primitive Shader only has Vertices and Colors, no Texture
+	 */
 	public static primitive:Shader;
 	
+	/**
+	 * Initializes Default Shaders (called automatically by the Engine)
+	 */
 	public static init()
 	{
 		// Default Texture Shader

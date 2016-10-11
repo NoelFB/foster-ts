@@ -1,3 +1,6 @@
+/**
+ * A static reference to all the Assets currently loaded in the game
+ */
 class Assets
 {
 	public static textures:{[path: string]:Texture;} = {};

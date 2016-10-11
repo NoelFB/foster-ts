@@ -1,4 +1,8 @@
 /// <reference path="./vector.ts"/>
+
+/**
+ * Camera used to create a Matrix during rendering. Scenes and Renderers may have Cameras
+ */
 class Camera
 {
 	public position:Vector = new Vector(0, 0);

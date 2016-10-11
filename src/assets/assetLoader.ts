@@ -1,15 +1,37 @@
+/**
+ * Loads a set of assets
+ */
 class AssetLoader
 {
-	
+	/**
+	 * The root directory to load from
+	 */
 	public root:string = "";
-	public loading:boolean = false;
-	public loaded:boolean = false;
+
+	/**
+	 * If the Asset Loader is loading
+	 */
+	public get loading():boolean { return this._loading; }
+	private _loading:boolean = false;
+
+	/**
+	 * If the Asset Loader has finished loading
+	 */
+	public get loaded():boolean { return this._loaded; }
+	public _loaded:boolean = false;
+
+	/**
+	 * Called when the Asset Loader has finished loading
+	 */
 	public callback:()=>void;
+
+	/**
+	 * The Percentage towards being finished loading
+	 */
 	public get percent():number { return this.assetsLoaded / this.assets; }
 	
 	private assets:number = 0;
 	private assetsLoaded:number = 0;
-	
 	private textures:string[] = [];
 	private jsons:string[] = [];
 	private xmls:string[] = [];
@@ -22,6 +44,9 @@ class AssetLoader
 		this.root = root || "";
 	}
 
+	/**
+	 * Adds the Texture to the loader
+	 */
 	public addTexture(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
@@ -31,6 +56,9 @@ class AssetLoader
 		return this;
 	}
 	
+	/**
+	 * Adds the JSON to the loader
+	 */
 	public addJson(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
@@ -40,6 +68,9 @@ class AssetLoader
 		return this;
 	}
 
+	/**
+	 * Adds the XML to the loader
+	 */
 	public addXml(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
@@ -49,6 +80,9 @@ class AssetLoader
 		return this;
 	}
 	
+	/**
+	 * Adds the text to the loader
+	 */
 	public addText(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
@@ -58,6 +92,9 @@ class AssetLoader
 		return this;
 	}
 
+	/**
+	 * Adds the sound to the loader
+	 */
 	public addSound(path:string):AssetLoader
 	{
 		throw "Audio not implemented yet"
@@ -69,6 +106,9 @@ class AssetLoader
 		return this;*/
 	}
 
+	/**
+	 * Adds the atlas to the loader
+	 */
 	public addAtlas(name:string, image:string, data:string, loader:AtlasReader):AssetLoader
 	{
 		if (this.loading || this.loaded)
@@ -78,9 +118,12 @@ class AssetLoader
 		return this;
 	}
 	
+	/**
+	 * Begins loading all the assets and invokes Callback upon completion
+	 */
 	public load(callback?:()=>void):void
 	{
-		this.loading = true;
+		this._loading = true;
 		this.callback = callback;
 		
 		// textures
@@ -108,6 +151,9 @@ class AssetLoader
 			this.loadAtlas(this.atlases[i]);
 	}
 
+	/**
+	 * Unloads all the Assets that this Asset Loader loaded
+	 */
 	public unload():void
 	{
 		if (this.loading)
@@ -222,8 +268,8 @@ class AssetLoader
 		this.assetsLoaded ++;
 		if (this.assetsLoaded == this.assets)
 		{
-			this.loaded = true;
-			this.loading = false;
+			this._loaded = true;
+			this._loading = false;
 			if (this.callback != undefined)
 				this.callback();
 		}

@@ -1,3 +1,6 @@
+/**
+ * The Scene contains a list of Entities and Renderers that in turn handle Gameplay. There can only be one active Scene at a time
+ */
 class Scene
 {
 	

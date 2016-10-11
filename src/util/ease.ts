@@ -1,3 +1,6 @@
+/**
+ * Default Ease methods for Tweening
+ */
 class Ease
 {
 	public static linear(t:number)

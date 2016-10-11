@@ -117,6 +117,11 @@ class Engine
 		}
 	}
 
+	/**
+	 * Goes to a new Scene
+	 * @param scene 	The Scene to go to
+	 * @param disposeLastScene 	If the last scene should be disposed
+	 */
 	public static goto(scene:Scene, disposeLastScene:boolean):Scene
 	{
 		let lastScene = Engine.scene;
@@ -125,6 +130,9 @@ class Engine
 		return scene;
 	}
 
+	/**
+	 * Ends the Game
+	 */
 	public static exit():void
 	{
 		if (Engine.started && !Engine.exiting)

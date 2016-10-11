@@ -1,16 +1,53 @@
 /// <reference path="./fosterWebGLTexture.ts"/>
+
+/**
+ * A Texture used for Rendering
+ */
 class Texture
 {
+	/**
+	 * The cropped Bounds of the Texture within its WebGL Texture
+	 */
 	public bounds:Rectangle = null;
+
+	/**
+	 * The Frame adds padding around the existing Bounds when rendered
+	 */
 	public frame:Rectangle = null;
+
+	/**
+	 * A reference to the full WebGL Texture
+	 */
 	public texture:FosterWebGLTexture = null;
+
+	/**
+	 * The center point of this texture
+	 */
 	public center:Vector;
 
+	/**
+	 * The width of the Texture when rendered (frame.width)
+	 */
 	public get width():number { return this.frame.width; }
+
+	/**
+	 * The height of the Texture when rendered (frame.height)
+	 */
 	public get height():number { return this.frame.height; }
+
+	/**
+	 * The clipped width of the Texture (bounds.width)
+	 */
 	public get clippedWidth():number { return this.bounds.width; }
+
+	/**
+	 * The clipped height of the Texture (bounds.height)
+	 */
 	public get clippedHeight():number { return this.bounds.height; }
 
+	/**
+	 * Creates a new Texture from the WebGL Texture
+	 */
 	public constructor(texture:FosterWebGLTexture, bounds?:Rectangle, frame?:Rectangle)
 	{
 		this.texture = texture;
@@ -19,6 +56,9 @@ class Texture
 		this.center = new Vector(this.frame.width / 2, this.frame.height / 2);
 	}
 
+	/**
+	 * Creates a Subtexture from this texture
+	 */
 	public getSubtexture(clip:Rectangle, sub?:Texture):Texture
 	{
 		if (sub == undefined)
@@ -40,6 +80,9 @@ class Texture
 		return sub;
 	}
 
+	/**
+	 * Creates a clone of this texture
+	 */
 	public clone():Texture
 	{
 		return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
@@ -52,42 +95,66 @@ class Texture
 		"frame["+ this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height +"]");
 	}
 
+	/**
+	 * Draws this texture
+	 */
 	public draw(position:Vector, origin?:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
 	{
 		Engine.graphics.texture(this, position.x, position.y, null, color, origin, scale, rotation, flipX, flipY);
 	}
 
+	/**
+	 * Draws a cropped version of this texture
+	 */
 	public drawCropped(position:Vector, crop:Rectangle, origin?:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
 	{
 		Engine.graphics.texture(this, position.x, position.y, crop, color, origin, scale, rotation, flipX, flipY);
 	}
 
+	/**
+	 * Draws this texture, center aligned
+	 */
 	public drawCenter(position:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
 	{
 		Engine.graphics.texture(this, position.x, position.y, null, color, this.center, scale, rotation, flipX, flipY);
 	}
-
+	
+	/**
+	 * Draws a cropped version of this texture, center aligned
+	 */
 	public drawCenterCropped(position:Vector, crop:Rectangle, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
 	{
 		Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width / 2, crop.height / 2), scale, rotation, flipX, flipY);
 	}
 
+	/**
+	 * Draws this texture, justified
+	 */
 	public drawJustify(position:Vector, justify:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
 	{
 		Engine.graphics.texture(this, position.x, position.y, null, color, new Vector(this.width * justify.x, this.height * justify.y), scale, rotation, flipX, flipY);
 	}
 
+	/**
+	 * Draws a cropped version of this texture, justified
+	 */
 	public drawJustifyCropped(position:Vector, crop:Rectangle, justify:Vector, scale?:Vector, rotation?:number, color?:Color, flipX?:boolean, flipY?:boolean):void
 	{
 		Engine.graphics.texture(this, position.x, position.y, crop, color, new Vector(crop.width * justify.x, crop.height * justify.y), scale, rotation, flipX, flipY);
 	}
 
+	/**
+	 * Disposes this texture and its WebGL Texture
+	 */
 	public dispose():void
 	{
 		this.texture.dispose();
 		this.texture = null;
 	}
 
+	/**
+	 * Creats a new Texture from an HTML Image Element
+	 */
 	public static create(image:HTMLImageElement):Texture
 	{
 		let gl = Engine.graphics.gl;

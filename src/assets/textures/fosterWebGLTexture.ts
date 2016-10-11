@@ -1,3 +1,6 @@
+/**
+ * Internal Texture used for Foster during Rendering
+ */
 class FosterWebGLTexture
 {
 	public path:string;

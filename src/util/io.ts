@@ -1,3 +1,6 @@
+/**
+ * Handles File IO stuff and the differences between Browser / Desktop mode
+ */
 class FosterIO
 {
 

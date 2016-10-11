@@ -1,6 +1,9 @@
 
 interface AtlasReader { (data:any, into: Atlas): void; }
 
+/**
+ * A single Texture which contains subtextures by name
+ */
 class Atlas
 {
 	/**

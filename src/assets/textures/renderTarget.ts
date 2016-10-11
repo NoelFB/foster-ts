@@ -1,16 +1,49 @@
 /// <reference path="./fosterWebGLTexture.ts"/>
+
+/**
+ * The Render Target is used for rendering graphics to
+ */
 class RenderTarget
 {
 
+	/**
+	 * its texture to draw to
+	 */
 	public texture:FosterWebGLTexture;
+
+	/**
+	 * its frame buffer
+	 */
 	public frameBuffer:WebGLFramebuffer;
+
+	/**
+	 * its Vertex buffer
+	 */
 	public vertexBuffer:WebGLBuffer;
+
+	/**
+	 * its Texture Coordinate buffer
+	 */
 	public texcoordBuffer:WebGLBuffer;
+
+	/**
+	 * its Color UV buffer
+	 */
 	public colorBuffer:WebGLBuffer;
 
+	/**
+	 * The width of the Render Target
+	 */
 	public get width():number { return this.texture.width; }
+
+	/**
+	 * The height of the Render Target
+	 */
 	public get height():number { return this.texture.height; }
 
+	/**
+	 * Creates a new Render Target. use RenderTarget.create() for quick access
+	 */
 	public constructor(buffer:WebGLFramebuffer, texture:FosterWebGLTexture, vertexBuffer:WebGLBuffer, colorBuffer:WebGLBuffer, texcoordBuffer:WebGLBuffer)
 	{
 		this.texture = texture;
@@ -20,6 +53,9 @@ class RenderTarget
 		this.texcoordBuffer = texcoordBuffer;
 	}
 
+	/**
+	 * Disposes the Render Target and all its textures and buffers
+	 */
 	public dispose():void
 	{
 		this.texture.dispose();
@@ -36,6 +72,9 @@ class RenderTarget
 		this.colorBuffer = null;
 	}
 
+	/**
+	 * Creates a new Render Target of the given width and height
+	 */
 	public static create(width:number, height:number):RenderTarget
 	{
 		let gl = Engine.graphics.gl;

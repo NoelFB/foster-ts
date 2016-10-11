@@ -1,8 +1,23 @@
 /// <reference path="./animationTemplate.ts"/>
+
+/**
+ * Animation Set holds a list of Animation Templates, referenced by name
+ */
 class AnimationSet
 {
+	/**
+	 * The animation set name
+	 */
 	public name:string;
+
+	/**
+	 * A list of all the animation template, by their name
+	 */
 	public animations:{[name:string]: AnimationTemplate} = {};
+
+	/**
+	 * First animation template
+	 */
 	public first:AnimationTemplate;
 	
 	constructor(name:string)
@@ -10,6 +25,9 @@ class AnimationSet
 		this.name = name;
 	}
 	
+	/**
+	 * Adds a new Animation Template to this set
+	 */
 	public add(name:string, speed:number, frames:Texture[], loops:boolean, position?:Vector, origin?:Vector):AnimationSet
 	{
 		let anim = new AnimationTemplate(name, speed, frames, loops, position, origin);
@@ -21,6 +39,9 @@ class AnimationSet
 		return this;
 	}
 	
+	/**
+	 * Adds a new frame-based Animation Template to this set
+	 */
 	public addFrameAnimation(name:string, speed:number, tex:Texture, frameWidth:number, frameHeight:number, frames:number[], loops:boolean, position?:Vector, origin?:Vector):AnimationSet
 	{
 		let columns = Math.floor(tex.width / frameWidth);
@@ -41,11 +62,17 @@ class AnimationSet
 		return this;
 	}
 
+	/**
+	 * Gets an animation template by its name
+	 */
 	public get(name:string):AnimationTemplate
 	{
 		return this.animations[name];
 	}
 	
+	/**
+	 * Checks if an animation template exists by the given name
+	 */
 	public has(name:string):boolean
 	{
 		return this.animations[name] != undefined;

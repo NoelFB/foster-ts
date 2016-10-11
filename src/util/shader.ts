@@ -1,13 +1,39 @@
+/**
+ * A Foster Shader used for Rendering
+ * For Pre-existing shaders, see Shaders.ts
+ */
 class Shader
 {
+	/**
+	 * The WebGL Shader Program
+	 */
 	public program:WebGLProgram;
+
+	/**
+	 * The Shader Uniforms
+	 */
 	public uniforms:ShaderUniform[];
+
+	/**
+	 * The Shader Attributes
+	 */
 	public attributes:ShaderAttribute[];
+
+	/**
+	 * If this Shader is dirty and must be updated
+	 */
 	public dirty:boolean = true;
+
+	/**
+	 * A direct reference to the Sampler2D Uniform
+	 */
 	public sampler2d:ShaderUniform;
 	
 	private uniformsByName:any = {};
 	
+	/**
+	 * Creates a new Shader from the given vertex and fragment shader code, with the given uniforms and attributes
+	 */
 	constructor(vertex:string, fragment:string, uniforms:ShaderUniform[], attributes:ShaderAttribute[])
 	{
 		let gl = Engine.graphics.gl;
@@ -58,12 +84,20 @@ class Shader
 		}
 	}
 	
+	/**
+	 * Sets the Uniform of the given name to the value
+	 * @param name 	the name of the uniform
+	 * @param value 	the value to set the uniform to
+	 */
 	set(name:string, value:any)
 	{
 		this.uniformsByName[name].value = value;
 	}
 }
 
+/**
+ * Shader Uniform Types
+ */
 enum ShaderUniformType
 {
 	// normal ones
@@ -91,6 +125,9 @@ enum ShaderUniformType
 	sampler2D
 }
 
+/**
+ * A Shader Uniform instance
+ */
 class ShaderUniform
 {
 	private _shader:Shader;
@@ -127,6 +164,9 @@ class ShaderUniform
 	}
 }
 
+/**
+ * Shader Attribute Types
+ */
 enum ShaderAttributeType
 {
 	Position,
@@ -134,6 +174,9 @@ enum ShaderAttributeType
 	Color
 }
 
+/**
+ * A Shader Attribute Instance
+ */
 class ShaderAttribute
 {
 	public name:string;
