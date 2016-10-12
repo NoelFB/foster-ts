@@ -14,9 +14,10 @@ and has frequent, breaking changes. currently not worrying about backwards compa
  - AABB Collision system, with simple Physics component to handle motion 
  
 #### Todo
- - Implement Audio stuff
  - Comment everything (and generate Docs somehow?)
  - Maybe put it in  `Foster Namespace`? I find it really annoying to type "`new Foster.Entity`" and etc, all the time though
+ - Add lots of helper / usability methods (ex. Audio fade in/out, built in screen transitions, more atlas loaders, etc)
+ - Probably lots of bugs that should be fixed
  
 #### Builds
  - [foster.js](bin/foster.js) : compiled JS file
