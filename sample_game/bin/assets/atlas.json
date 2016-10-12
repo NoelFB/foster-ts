@@ -50,7 +50,7 @@
  },
  "meta": {
   "app": "http://www.aseprite.org/",
-  "version": "1.1.5.6",
+  "version": "1.1.9",
   "image": "atlas.png",
   "format": "RGBA8888",
   "size": { "w": 64, "h": 32 },
