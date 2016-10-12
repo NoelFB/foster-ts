@@ -8,6 +8,12 @@ class Sound
 	private loadedEvent:()=>void;
 	private started:boolean = false;
 	private groups:string[] = [];
+	
+	private fadeFrom:number;
+	private fadeTo:number;
+	private fadePercent:number = 1;
+	private fadeDuration:number = 1;
+	private fadeEase:(n:number)=>number;
 
 	/**
 	 * Gets if the sound is currently playing
@@ -106,45 +112,6 @@ class Sound
 		return this;
 	}
 
-	private internalPlay()
-	{
-		this.started = true;
-		Sound.active.push(this);
-		
-		var self = this;
-		this.endEvent = () => { self.stop(); };
-
-		this.sound.addEventListener("ended", this.endEvent);
-		this.sound.loop = this.loop;
-		this.internalUpdateVolume();
-		this.internalUpdateMuted();
-		
-		if (!this._paused)
-			this.sound.play();
-	}
-
-	private internalUpdateVolume()
-	{
-		if  (this.started)
-		{
-			let groupVolume = 1;
-			for  (let i = 0; i < this.groups.length; i ++)
-				groupVolume *= AudioGroup.volume(this.groups[i]);
-			this.sound.volume = this._volume * groupVolume * Engine.volume;
-		}
-	}
-
-	private internalUpdateMuted()
-	{
-		if (this.started)
-		{
-			let groupMuted = false;
-			for  (let i = 0; i < this.groups.length && !groupMuted; i ++)
-				groupMuted = groupMuted || AudioGroup.muted(this.groups[i]);
-			this.sound.muted = Engine.muted || this._muted || groupMuted;
-		}
-	}
-
 	/**
 	 * Resumes if the sound was paused
 	 */
@@ -190,6 +157,7 @@ class Sound
 			this.sound = null;
 			this.started = false;
 			this._paused = false;
+			this.fadePercent = 1;
 
 			let i = Sound.active.indexOf(this);
 			if (i >= 0)
@@ -229,5 +197,63 @@ class Sound
 	public ingroup(group:string):boolean
 	{
 		return this.groups.indexOf(group) >= 0;
+	}
+
+	private internalPlay()
+	{
+		this.started = true;
+		Sound.active.push(this);
+		
+		var self = this;
+		this.endEvent = () => { self.stop(); };
+
+		this.sound.addEventListener("ended", this.endEvent);
+		this.sound.loop = this.loop;
+		this.internalUpdateVolume();
+		this.internalUpdateMuted();
+		
+		if (!this._paused)
+			this.sound.play();
+	}
+
+	private internalUpdateVolume()
+	{
+		if  (this.started)
+		{
+			let groupVolume = 1;
+			for  (let i = 0; i < this.groups.length; i ++)
+				groupVolume *= AudioGroup.volume(this.groups[i]);
+			this.sound.volume = this._volume * groupVolume * Engine.volume;
+		}
+	}
+
+	private internalUpdateMuted()
+	{
+		if (this.started)
+		{
+			let groupMuted = false;
+			for  (let i = 0; i < this.groups.length && !groupMuted; i ++)
+				groupMuted = groupMuted || AudioGroup.muted(this.groups[i]);
+			this.sound.muted = Engine.muted || this._muted || groupMuted;
+		}
+	}
+
+	public update():void
+	{
+		if (this.fadePercent < 1)
+		{
+			this.fadePercent = Calc.approach(this.fadePercent, 1, Engine.delta / this.fadeDuration);
+			this.volume = this.fadeFrom + (this.fadeTo - this.fadeFrom) * this.fadeEase(this.fadePercent);
+		}
+	}
+
+	public fade(volume:number, duration:number, ease?:(n:number)=>number):Sound
+	{
+		this.fadeFrom = this.volume;
+		this.fadeTo = volume;
+		this.fadeDuration = Math.max(0.001, duration);
+		this.fadeEase = (ease != undefined ? ease : (n) => { return n; });
+		this.fadePercent = 0;
+		return this;
 	}
 }

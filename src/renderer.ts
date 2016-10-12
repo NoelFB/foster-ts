@@ -54,9 +54,18 @@ abstract class Renderer
 	public preRender():void {}
 
 	/**
-	 * Renders the Renderer
+	 * Renders the Renderer. Calls drawBegin and then drawEntities
 	 */
 	public render():void
+	{
+		this.drawBegin();
+		this.drawEntities();
+	}
+
+	/**
+	 * Sets up the current render target and shader
+	 */
+	public drawBegin():void
 	{
 		// set target
 		if (this.target != null)
@@ -68,15 +77,27 @@ abstract class Renderer
 			Engine.graphics.setRenderTarget(Engine.graphics.buffer);
 		
 		// set to our shader, and set main Matrix to the camera with fallback to Scene camera
-		let currentCamera = (this.camera || this.scene.camera);
 		Engine.graphics.shader = this.shader;
-		Engine.graphics.shader.set(this.shaderCameraUniformName, currentCamera.matrix);
-		
+		Engine.graphics.shader.set(this.shaderCameraUniformName, this.getActiveCamera().matrix);
+	}
+
+	/**
+	 * Draws all the entities
+	 */
+	public drawEntities():void
+	{
+		let camera = this.getActiveCamera();
+
 		// draw each entity
 		let list = (this.groupsMask.length > 0 ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
 		for (let i = list.length - 1; i >= 0; i --)
 			if (list[i].visible)
-				list[i].render(currentCamera);
+				list[i].render(camera);
+	}
+
+	private getActiveCamera():Camera
+	{
+		return (this.camera || this.scene.camera);
 	}
 
 	/**

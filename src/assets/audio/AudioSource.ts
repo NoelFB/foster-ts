@@ -13,6 +13,9 @@ class AudioSource
 			this.sounds.push(first);
 	}
 
+	/**
+	 * Gets a new instance of the sound from cache or file
+	 */
 	public requestSound():HTMLAudioElement
 	{
 		if (this.sounds.length > 0)
@@ -31,6 +34,9 @@ class AudioSource
 			return null;
 	}
 
+	/**
+	 * Returns the sound instance so it can be used again
+	 */
 	public returnSound(sound:HTMLAudioElement):void
 	{
 		this.sounds.push(sound);

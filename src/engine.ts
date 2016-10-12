@@ -260,6 +260,10 @@ class Engine
 		// final flush on graphics
 		this.graphics.finalize();
 
+		// update sounds
+		for (let i = 0; i < Sound.active.length; i ++)
+			Sound.active[i].update();
+
 		// do it all again!
 		if (!Engine.exiting)
 			requestAnimationFrame(this.step.bind(this));
