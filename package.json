@@ -1,6 +1,6 @@
 {
   "name": "foster",
-  "version": "0.01",
+  "version": "0.0.1",
   "description": "A simple WebGL + TypeScript Game framework with an Scene/Entity/Component model",
   "homepage": "https://github.com/Drazzke/foster",
   "license": "MIT",
