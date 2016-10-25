@@ -6,13 +6,8 @@
 		"outFile": "foster.js",
 		"declaration": true
 	},
-	"exclude":
-	[
-		"bin",
+	"exclude": [
 		"node_modules",
-		"gulpfile.js",
-		"sample_game",
-		"app",
-		".vscode"
+		"bin"
 	]
 }

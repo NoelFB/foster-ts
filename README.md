@@ -24,7 +24,8 @@ and has frequent, breaking changes. currently not worrying about backwards compa
  - [foster.d.ts](bin/foster.d.ts) : typescript definition file to reference from your game (ex. `/// <reference path="foster.d.ts"/>`)
 
 #### Sample Games
- - [sample_game](sample_game) - [online demo](http://noelfb.com/foster/sample_game/) / [online demo 2](http://noelfb.com/foster/sample_game2/)
+ - [online demo](http://noelfb.com/foster/sample_game/) / [online demo 2](http://noelfb.com/foster/sample_game2/)
+ - (source for demos coming soon)
 
 #### [API Documentation](api.md) (incomplete)
 #### [MIT License](license.md)
