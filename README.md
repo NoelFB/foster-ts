@@ -23,9 +23,6 @@ and has frequent, breaking changes. currently not worrying about backwards compa
  - [foster.js](bin/foster.js) : compiled JS file
  - [foster.d.ts](bin/foster.d.ts) : typescript definition file to reference from your game (ex. `/// <reference path="foster.d.ts"/>`)
 
-#### Sample Games
- - [online demo](http://noelfb.com/foster/sample_game/) / [online demo 2](http://noelfb.com/foster/sample_game2/)
- - (source for demos coming soon)
-
+#### [Foster Examples](https://github.com/NoelFB/foster.examples)
 #### [API Documentation](api.md) (incomplete)
 #### [MIT License](license.md)
