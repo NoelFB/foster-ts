@@ -26,7 +26,7 @@ class Rectsprite extends Component
 	public render()
 	{
 		// draw with a pixel texture (shader is using textures)
-		if (Engine.graphics.shader.sampler2d != null && Engine.graphics.pixel != null)
+		if (Engine.graphics.shader.sampler2d != null)
 		{
 			Engine.graphics.texture
 			(

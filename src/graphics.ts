@@ -61,10 +61,14 @@ class Graphics
 
 	// pixel drawing
 	private _pixel:Texture = null;
-	private _pixelUVs:Vector[];
+	private _pixelUVs:Vector[] = [new Vector(0, 0), new Vector(1, 0), new Vector(1, 1), new Vector(0, 1)];
+	private _defaultPixel:Texture = null;
 	
 	public set pixel(p:Texture) 
 	{ 
+		if (p == null)
+			p = this._defaultPixel;
+
 		let minX = p.bounds.left / p.texture.width;
 		let minY = p.bounds.top / p.texture.height;
 		let maxX = p.bounds.right / p.texture.width;
@@ -111,10 +115,20 @@ class Graphics
 	}
 
 	/**
+	 * Initial load of Graphics and WebGL components
+	 */
+	public load()
+	{
+		// creates the default pixel texture
+		this.pixel = this._defaultPixel = Texture.createFromData([1, 1, 1, 1], 1, 1);
+	}
+
+	/**
 	 * Unloads the Graphics and WebGL stuff
 	 */
 	public unload()
 	{
+		this._defaultPixel.dispose();
 		this.gl.deleteBuffer(this.vertexBuffer);
 		this.gl.deleteBuffer(this.colorBuffer);
 		this.gl.deleteBuffer(this.texcoordBuffer);
@@ -589,29 +603,29 @@ class Graphics
 	}
 	
 	/**
-	 * Draws a rectangle with the Graphics.Pixel texture
+	 * Draws a rectangle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
 	 */
-	public pixelRect(bounds:Rectangle, color:Color)
+	public rect(x:number, y:number, width:number, height:number, color:Color)
 	{
-		Engine.assert(this._pixel != null, "pixelRect requires the Graphics.pixel Subtexture be set");
-		this.setShaderTexture(this._pixel);
+		if (this.shader.sampler2d != null)
+			this.setShaderTexture(this._pixel);
 			
 		let uv = this._pixelUVs;
-		this.push(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
-		this.pushUnsafe(bounds.right, bounds.top, uv[1].x, uv[1].y, color);
-		this.pushUnsafe(bounds.right, bounds.bottom,uv[2].x, uv[2].y, color);
-		this.pushUnsafe(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
-		this.pushUnsafe(bounds.left, bounds.bottom, uv[3].x, uv[3].y, color);
-		this.pushUnsafe(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
+		this.push(x, y, uv[0].x, uv[0].y, color);
+		this.pushUnsafe(x + width, y, uv[1].x, uv[1].y, color);
+		this.pushUnsafe(x + width, y + height,uv[2].x, uv[2].y, color);
+		this.pushUnsafe(x, y, uv[0].x, uv[0].y, color);
+		this.pushUnsafe(x, y + height, uv[3].x, uv[3].y, color);
+		this.pushUnsafe(x + width, y + height, uv[2].x, uv[2].y, color);
 	}
 	
 	/**
-	 * Draws a triangle with the Graphics.Pixel texture
+	 * Draws a triangle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
 	 */
-	public pixelTriangle(a:Vector, b:Vector, c:Vector, colA:Color, colB?:Color, colC?:Color)
+	public triangle(a:Vector, b:Vector, c:Vector, colA:Color, colB?:Color, colC?:Color)
 	{
-		Engine.assert(this._pixel != null, "pixelTriangle requires the Graphics.pixel Subtexture be set");
-		this.setShaderTexture(this._pixel);
+		if (this.shader.sampler2d != null)
+			this.setShaderTexture(this._pixel);
 		
 		if (colB == undefined) colB = colA;
 		if (colC == undefined) colC = colA;
@@ -623,12 +637,12 @@ class Graphics
 	}
 	
 	/**
-	 * Draws a circle with the Graphics.Pixel texture
+	 * Draws a circle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
 	 */
-	public pixelCircle(pos:Vector, rad:number, steps:number, colorA:Color, colorB?:Color)
+	public circle(pos:Vector, rad:number, steps:number, colorA:Color, colorB?:Color)
 	{
-		Engine.assert(this._pixel != null, "pixelCircle requires the Graphics.pixel Subtexture be set");
-		this.setShaderTexture(this._pixel);
+		if (this.shader.sampler2d != null)
+			this.setShaderTexture(this._pixel);
 			
 		if (colorB == undefined)
 			colorB = colorA;
@@ -649,58 +663,12 @@ class Graphics
 		}
 	}
 	
-	/**
-	 * Draws a triangle. Best used with Shaders.Primitive
-	 */
-	public triangle(a:Vector, b:Vector, c:Vector, colA:Color, colB?:Color, colC?:Color)
+	public hollowRect(x:number, y:number, width:number, height:number, stroke:number, color:Color)
 	{
-		if (colB == undefined) colB = colA;
-		if (colC == undefined) colC = colA;
-		
-		this.push(a.x, a.y, 0, 0, colA);
-		this.pushUnsafe(b.x, b.y, 0, 0, colB);
-		this.pushUnsafe(c.x, c.y, 0, 0, colC);
-	}
-	
-	/**
-	 * Draws a rectangle. Best used with Shaders.Primitive
-	 */
-	public rect(r:Rectangle, color:Color)
-	{
-		this.triangle(new Vector(r.left, r.top), new Vector(r.right, r.top), new Vector(r.right, r.bottom), color);
-		this.triangle(new Vector(r.left, r.top), new Vector(r.right, r.bottom), new Vector(r.left, r.bottom), color);
-	}
-	
-	public hollowRect(r:Rectangle, stroke:number, color:Color)
-	{
-		this.rect(new Rectangle(r.left, r.top, r.width, stroke), color);
-		this.rect(new Rectangle(r.left, r.top + stroke, stroke, r.height - stroke * 2), color);
-		this.rect(new Rectangle(r.right - stroke, r.top + stroke, stroke, r.height - stroke * 2), color);
-		this.rect(new Rectangle(r.left, r.bottom - stroke, r.width, stroke), color);
-	}
-	
-	/**
-	 * Draws a circle. Best used with Shaders.Primitive
-	 */
-	public circle(pos:Vector, rad:number, steps:number, colorA:Color, colorB?:Color)
-	{		
-		if (colorB == undefined)
-			colorB = colorA;
-		
-		this.checkState();
-
-		let uv = this._pixelUVs;
-		let last = new Vector(pos.x + rad, pos.y);
-		for (let i = 1; i <= steps; i ++)
-		{
-			let angle = (i / steps) * Math.PI * 2;
-			let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
-			
-			this.pushUnsafe(pos.x, pos.y, 0, 0, colorA);
-			this.pushUnsafe(last.x, last.y, 0, 0, colorB);
-			this.pushUnsafe(next.x, next.y, 0, 0, colorB);
-			last  = next;
-		}
+		this.rect(x, y, width, stroke, color);
+		this.rect(x, y + stroke, stroke, height - stroke * 2, color);
+		this.rect(x + width - stroke, y + stroke, stroke, height - stroke * 2, color);
+		this.rect(x, y + height - stroke, width, stroke, color);
 	}
 	
 }

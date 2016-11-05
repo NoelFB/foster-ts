@@ -154,7 +154,7 @@ class Entity
 	 */
 	debugRender(camera:Camera):void
 	{
-		Engine.graphics.hollowRect(new Rectangle(this.x - 5, this.y - 5, 10, 10), 1, Color.white);
+		Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, Color.white);
 		
 		for (let i = 0; i < this.components.length; i ++)
 			if (this.components[i].visible)

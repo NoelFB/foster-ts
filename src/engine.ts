@@ -126,6 +126,7 @@ class Engine
 			// init
 			FosterIO.init();
 			Engine.instance.graphics = new Graphics(Engine.instance);
+			Engine.instance.graphics.load();
 			Engine.resize(width, height);
 			Shaders.init();
 			Mouse.init();

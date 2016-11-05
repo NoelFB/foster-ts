@@ -107,7 +107,7 @@ class AtlasReaders
 		let frames = data["frames"];
 		for (var path in frames)
 		{
-			var name = path.replace(".ase", "");
+			var name = path.replace(".ase", "").replace(".png", "");
 			var obj = frames[path];
 			var bounds = obj.frame;
 			

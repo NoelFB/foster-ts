@@ -165,6 +165,7 @@ declare class AssetLoader {
     private loadSound(handle, path, callback?);
     private loadAtlas(data);
     private incrementLoader();
+    private pathify(path);
 }
 /**
  * A static reference to all the Assets currently loaded in the game
@@ -477,6 +478,10 @@ declare class Texture {
      * Creats a new Texture from an HTML Image Element
      */
     static create(image: HTMLImageElement): Texture;
+    /**
+     * Creates a new Texture from the given RGBA array
+     */
+    static createFromData(data: number[], width: number, height: number): Texture;
 }
 declare abstract class Component {
     /**
@@ -620,7 +625,6 @@ declare class Hitgrid extends Collider {
     constructor(tileWidth: number, tileHeight: number, tags?: string[]);
     set(solid: boolean, tx: number, ty: number, columns?: number, rows?: number): void;
     has(tx: number, ty: number, columns?: number, rows?: number): boolean;
-    private debugRect;
     private debugSub;
     debugRender(camera: Camera): void;
 }
@@ -685,6 +689,50 @@ declare class Particle {
     accelY: number;
     frictionX: number;
     frictionY: number;
+}
+declare class Color {
+    private color;
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+    readonly rgba: number[];
+    constructor(r?: number, g?: number, b?: number, a?: number);
+    set(r: number, g: number, b: number, a: number): Color;
+    copy(color: Color): Color;
+    lerp(a: Color, b: Color, p: number): Color;
+    clone(): Color;
+    mult(alpha: number): Color;
+    static white: Color;
+    static black: Color;
+    static red: Color;
+    static green: Color;
+    static blue: Color;
+    static temp: Color;
+}
+declare class Vector {
+    x: number;
+    y: number;
+    constructor(x?: number, y?: number);
+    set(x: number, y: number): Vector;
+    copy(v: Vector): Vector;
+    add(v: Vector): Vector;
+    sub(v: Vector): Vector;
+    mult(v: Vector): Vector;
+    div(v: Vector): Vector;
+    scale(s: number): Vector;
+    rotate(sin: number, cos: number): Vector;
+    transform(m: Matrix): Vector;
+    clone(): Vector;
+    readonly length: number;
+    readonly normal: Vector;
+    normalize(): Vector;
+    static directions: Vector[];
+    static temp0: Vector;
+    static temp1: Vector;
+    static temp2: Vector;
+    private static _zero;
+    static readonly zero: Vector;
 }
 declare class ParticleSystem extends Component {
     template: ParticleTemplate;
@@ -1226,12 +1274,17 @@ declare class Graphics {
     private toscreen;
     private _pixel;
     private _pixelUVs;
+    private _defaultPixel;
     pixel: Texture;
     drawCalls: number;
     /**
      * Creates the Engine.Graphics
      */
     constructor(engine: Engine);
+    /**
+     * Initial load of Graphics and WebGL components
+     */
+    load(): void;
     /**
      * Unloads the Graphics and WebGL stuff
      */
@@ -1309,54 +1362,18 @@ declare class Graphics {
     texture(tex: Texture, posX: number, posY: number, crop?: Rectangle, color?: Color, origin?: Vector, scale?: Vector, rotation?: number, flipX?: boolean, flipY?: boolean): void;
     quad(posX: number, posY: number, width: number, height: number, color?: Color, origin?: Vector, scale?: Vector, rotation?: number): void;
     /**
-     * Draws a rectangle with the Graphics.Pixel texture
+     * Draws a rectangle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
      */
-    pixelRect(bounds: Rectangle, color: Color): void;
+    rect(x: number, y: number, width: number, height: number, color: Color): void;
     /**
-     * Draws a triangle with the Graphics.Pixel texture
-     */
-    pixelTriangle(a: Vector, b: Vector, c: Vector, colA: Color, colB?: Color, colC?: Color): void;
-    /**
-     * Draws a circle with the Graphics.Pixel texture
-     */
-    pixelCircle(pos: Vector, rad: number, steps: number, colorA: Color, colorB?: Color): void;
-    /**
-     * Draws a triangle. Best used with Shaders.Primitive
+     * Draws a triangle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
      */
     triangle(a: Vector, b: Vector, c: Vector, colA: Color, colB?: Color, colC?: Color): void;
     /**
-     * Draws a rectangle. Best used with Shaders.Primitive
-     */
-    rect(r: Rectangle, color: Color): void;
-    hollowRect(r: Rectangle, stroke: number, color: Color): void;
-    /**
-     * Draws a circle. Best used with Shaders.Primitive
+     * Draws a circle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
      */
     circle(pos: Vector, rad: number, steps: number, colorA: Color, colorB?: Color): void;
-}
-declare class Vector {
-    x: number;
-    y: number;
-    constructor(x?: number, y?: number);
-    set(x: number, y: number): Vector;
-    copy(v: Vector): Vector;
-    add(v: Vector): Vector;
-    sub(v: Vector): Vector;
-    mult(v: Vector): Vector;
-    div(v: Vector): Vector;
-    scale(s: number): Vector;
-    rotate(sin: number, cos: number): Vector;
-    transform(m: Matrix): Vector;
-    clone(): Vector;
-    readonly length: number;
-    readonly normal: Vector;
-    normalize(): Vector;
-    static directions: Vector[];
-    static temp0: Vector;
-    static temp1: Vector;
-    static temp2: Vector;
-    private static _zero;
-    static readonly zero: Vector;
+    hollowRect(x: number, y: number, width: number, height: number, stroke: number, color: Color): void;
 }
 declare class GamepadManager {
     static defaultDeadzone: number;
@@ -1755,26 +1772,6 @@ declare class Camera {
     private extentsRect;
     private getExtents();
     readonly extents: Rectangle;
-}
-declare class Color {
-    private color;
-    r: number;
-    g: number;
-    b: number;
-    a: number;
-    readonly rgba: number[];
-    constructor(r?: number, g?: number, b?: number, a?: number);
-    set(r: number, g: number, b: number, a: number): Color;
-    copy(color: Color): Color;
-    lerp(a: Color, b: Color, p: number): Color;
-    clone(): Color;
-    mult(alpha: number): Color;
-    static white: Color;
-    static black: Color;
-    static red: Color;
-    static green: Color;
-    static blue: Color;
-    static temp: Color;
 }
 /**
  * Default Ease methods for Tweening

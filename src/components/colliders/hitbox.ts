@@ -28,6 +28,6 @@ class Hitbox extends Collider
 	
 	public debugRender()
 	{
-		Engine.graphics.hollowRect(this.sceneBounds, 1, Color.red);
+		Engine.graphics.hollowRect(this.sceneLeft, this.sceneTop, this.width, this.height, 1, Color.red);
 	}
 }

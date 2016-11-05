@@ -1,4 +1,6 @@
 /// <reference path="./../../component.ts"/>
+/// <reference path="./../../util/Color.ts"/>
+/// <reference path="./../../util/Vector.ts"/>
 class ParticleSystem extends Component
 {
 	public template:ParticleTemplate;

@@ -232,54 +232,53 @@ class AssetLoader {
         throw "Asset Unloading not Implemented";
     }
     loadTexture(path, callback) {
-        var self = this;
         let gl = Engine.graphics.gl;
         let img = new Image();
-        img.addEventListener('load', function () {
+        img.addEventListener('load', () => {
             let tex = Texture.create(img);
             tex.texture.path = path;
-            Assets.textures[path] = tex;
+            Assets.textures[this.pathify(path)] = tex;
             if (callback != undefined)
                 callback(tex);
-            self.incrementLoader();
+            this.incrementLoader();
         });
         img.src = path;
     }
     loadJson(path, callback) {
         var self = this;
         FosterIO.read(path, (data) => {
-            Assets.json[path] = JSON.parse(data);
+            let p = this.pathify(path);
+            Assets.json[p] = JSON.parse(data);
             if (callback != undefined)
-                callback(Assets.json[path]);
+                callback(Assets.json[p]);
             self.incrementLoader();
         });
     }
     loadXml(path, callback) {
-        var self = this;
         FosterIO.read(path, (data) => {
-            Assets.xml[path] = (new DOMParser()).parseFromString(data, "text/xml");
+            let p = this.pathify(path);
+            Assets.xml[p] = (new DOMParser()).parseFromString(data, "text/xml");
             if (callback != undefined)
-                callback(Assets.xml[path]);
-            self.incrementLoader();
+                callback(Assets.xml[p]);
+            this.incrementLoader();
         });
     }
     loadText(path, callback) {
-        var self = this;
         FosterIO.read(path, (data) => {
-            Assets.text[path] = data;
+            let p = this.pathify(path);
+            Assets.text[p] = data;
             if (callback != undefined)
-                callback(Assets.text[path]);
-            self.incrementLoader();
+                callback(Assets.text[p]);
+            this.incrementLoader();
         });
     }
     loadSound(handle, path, callback) {
-        var self = this;
         let audio = new Audio();
-        audio.addEventListener("loadeddata", function () {
+        audio.addEventListener("loadeddata", () => {
             Assets.sounds[handle] = new AudioSource(path, audio);
             if (callback != undefined)
                 callback(Assets.sounds[handle]);
-            self.incrementLoader();
+            this.incrementLoader();
         });
         audio.src = path;
     }
@@ -312,6 +311,11 @@ class AssetLoader {
             if (this.callback != undefined)
                 this.callback();
         }
+    }
+    pathify(path) {
+        while (path.indexOf("\\") >= 0)
+            path = path.replace("\\", "/");
+        return path;
     }
 }
 /**
@@ -665,7 +669,7 @@ class AtlasReaders {
     static Aseprite(data, into) {
         let frames = data["frames"];
         for (var path in frames) {
-            var name = path.replace(".ase", "");
+            var name = path.replace(".ase", "").replace(".png", "");
             var obj = frames[path];
             var bounds = obj.frame;
             if (obj.trimmed) {
@@ -894,6 +898,18 @@ class Texture {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.bindTexture(gl.TEXTURE_2D, null);
         return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
+    }
+    /**
+     * Creates a new Texture from the given RGBA array
+     */
+    static createFromData(data, width, height) {
+        let gl = Engine.graphics.gl;
+        let tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(data));
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        return new Texture(new FosterWebGLTexture(tex, width, height));
     }
 }
 class Component {
@@ -1158,7 +1174,7 @@ class Hitbox extends Collider {
                 this.tag(tags[i]);
     }
     debugRender() {
-        Engine.graphics.hollowRect(this.sceneBounds, 1, Color.red);
+        Engine.graphics.hollowRect(this.sceneLeft, this.sceneTop, this.width, this.height, 1, Color.red);
     }
 }
 /// <reference path="./collider.ts"/>
@@ -1166,7 +1182,6 @@ class Hitgrid extends Collider {
     constructor(tileWidth, tileHeight, tags) {
         super();
         this.map = {};
-        this.debugRect = new Rectangle();
         this.debugSub = new Color(200, 200, 200, 0.5);
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
@@ -1212,10 +1227,10 @@ class Hitgrid extends Collider {
                     let d = this.has(tx, ty + 1);
                     let px = pos.x + tx * this.tileWidth;
                     let py = pos.y + ty * this.tileHeight;
-                    Engine.graphics.rect(this.debugRect.set(px, py, 1, this.tileHeight), l ? Color.red : this.debugSub);
-                    Engine.graphics.rect(this.debugRect.set(px, py, this.tileWidth, 1), u ? Color.red : this.debugSub);
-                    Engine.graphics.rect(this.debugRect.set(px + this.tileWidth - 1, py, 1, this.tileHeight), r ? Color.red : this.debugSub);
-                    Engine.graphics.rect(this.debugRect.set(px, py + this.tileHeight - 1, this.tileWidth, 1), d ? Color.red : this.debugSub);
+                    Engine.graphics.rect(px, py, 1, this.tileHeight, l ? Color.red : this.debugSub);
+                    Engine.graphics.rect(px, py, this.tileWidth, 1, u ? Color.red : this.debugSub);
+                    Engine.graphics.rect(px + this.tileWidth - 1, py, 1, this.tileHeight, r ? Color.red : this.debugSub);
+                    Engine.graphics.rect(px, py + this.tileHeight - 1, this.tileWidth, 1, d ? Color.red : this.debugSub);
                 }
             }
         }
@@ -1305,7 +1320,145 @@ class Coroutine extends Component {
 }
 class Particle {
 }
+class Color {
+    constructor(r, g, b, a) {
+        this.color = [0, 0, 0, 1];
+        this.r = r || 0;
+        this.g = g || 0;
+        this.b = b || 0;
+        this.a = a || 1;
+    }
+    get r() { return this.color[0]; }
+    set r(v) { this.color[0] = Math.min(1, Math.max(0, v)); }
+    get g() { return this.color[1]; }
+    set g(v) { this.color[1] = Math.min(1, Math.max(0, v)); }
+    get b() { return this.color[2]; }
+    set b(v) { this.color[2] = Math.min(1, Math.max(0, v)); }
+    get a() { return this.color[3]; }
+    set a(v) { this.color[3] = Math.min(1, Math.max(0, v)); }
+    get rgba() { return this.color; }
+    set(r, g, b, a) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
+        this.a = a;
+        return this;
+    }
+    copy(color) {
+        this.r = color.r;
+        this.g = color.g;
+        this.b = color.b;
+        this.a = color.a;
+        return this;
+    }
+    lerp(a, b, p) {
+        this.r = a.r + (b.r - a.r) * p;
+        this.g = a.g + (b.g - a.g) * p;
+        this.b = a.b + (b.b - a.b) * p;
+        this.a = a.a + (b.a - a.a) * p;
+        return this;
+    }
+    clone() {
+        return new Color().copy(this);
+    }
+    mult(alpha) {
+        return this.set(this.r, this.g, this.b, this.a * alpha);
+    }
+}
+Color.white = new Color(1, 1, 1, 1);
+Color.black = new Color(0, 0, 0, 1);
+Color.red = new Color(1, 0, 0, 1);
+Color.green = new Color(0, 1, 0, 1);
+Color.blue = new Color(0, 0, 1, 1);
+Color.temp = new Color();
+class Vector {
+    constructor(x, y) {
+        this.x = 0;
+        this.y = 0;
+        if (x != undefined)
+            this.x = x;
+        if (y != undefined)
+            this.y = y;
+    }
+    set(x, y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+    copy(v) {
+        this.x = v.x;
+        this.y = v.y;
+        return this;
+    }
+    add(v) {
+        this.x += v.x;
+        this.y += v.y;
+        return this;
+    }
+    sub(v) {
+        this.x -= v.x;
+        this.y -= v.y;
+        return this;
+    }
+    mult(v) {
+        this.x *= v.x;
+        this.y *= v.y;
+        return this;
+    }
+    div(v) {
+        this.x /= v.x;
+        this.y /= v.y;
+        return this;
+    }
+    scale(s) {
+        this.x *= s;
+        this.y *= s;
+        return this;
+    }
+    rotate(sin, cos) {
+        let ox = this.x, oy = this.y;
+        this.x = ox * cos - oy * sin;
+        this.y = ox * sin + oy * cos;
+        return this;
+    }
+    transform(m) {
+        let ax = this.x, ay = this.y;
+        this.x = m.mat[0] * ax + m.mat[3] * ay + m.mat[6];
+        this.y = m.mat[1] * ax + m.mat[4] * ay + m.mat[7];
+        return this;
+    }
+    clone() {
+        return new Vector(this.x, this.y);
+    }
+    get length() {
+        return Math.sqrt((this.x * this.x) + (this.y * this.y));
+    }
+    get normal() {
+        let dist = this.length;
+        return new Vector(this.x / dist, this.y / dist);
+    }
+    normalize() {
+        let dist = this.length;
+        this.x /= dist;
+        this.y /= dist;
+        return this;
+    }
+    static get zero() { return Vector._zero.set(0, 0); }
+}
+Vector.directions = [
+    new Vector(-1, 0),
+    new Vector(0, -1),
+    new Vector(1, 0),
+    new Vector(0, 1)
+];
+// temporary vectors used wherever
+Vector.temp0 = new Vector();
+Vector.temp1 = new Vector();
+Vector.temp2 = new Vector();
+Vector._zero = new Vector();
 /// <reference path="./../../component.ts"/>
+/// <reference path="./../../util/Color.ts"/>
+/// <reference path="./../../util/Vector.ts"/>
 class ParticleSystem extends Component {
     constructor(template) {
         super();
@@ -1737,7 +1890,7 @@ class Rectsprite extends Component {
     set height(val) { this.size.y = val; }
     render() {
         // draw with a pixel texture (shader is using textures)
-        if (Engine.graphics.shader.sampler2d != null && Engine.graphics.pixel != null) {
+        if (Engine.graphics.shader.sampler2d != null) {
             Engine.graphics.texture(Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, Color.temp.copy(this.color).mult(this.alpha), Vector.temp0.copy(this.origin).div(this.size), Vector.temp1.copy(this.size).mult(this.scale), this.rotation);
         }
         else {
@@ -2079,6 +2232,7 @@ class Engine {
             // init
             FosterIO.init();
             Engine.instance.graphics = new Graphics(Engine.instance);
+            Engine.instance.graphics.load();
             Engine.resize(width, height);
             Shaders.init();
             Mouse.init();
@@ -2296,7 +2450,7 @@ class Entity {
      * Called via the Debug Renderer
      */
     debugRender(camera) {
-        Engine.graphics.hollowRect(new Rectangle(this.x - 5, this.y - 5, 10, 10), 1, Color.white);
+        Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, Color.white);
         for (let i = 0; i < this.components.length; i++)
             if (this.components[i].visible)
                 this.components[i].debugRender(camera);
@@ -2517,6 +2671,8 @@ class Graphics {
         this.toscreen = new Matrix();
         // pixel drawing
         this._pixel = null;
+        this._pixelUVs = [new Vector(0, 0), new Vector(1, 0), new Vector(1, 1), new Vector(0, 1)];
+        this._defaultPixel = null;
         // utils
         this.drawCalls = 0;
         // temp. vars used for drawing
@@ -2551,6 +2707,8 @@ class Graphics {
             this.nextShader = s;
     }
     set pixel(p) {
+        if (p == null)
+            p = this._defaultPixel;
         let minX = p.bounds.left / p.texture.width;
         let minY = p.bounds.top / p.texture.height;
         let maxX = p.bounds.right / p.texture.width;
@@ -2566,9 +2724,17 @@ class Graphics {
     }
     get pixel() { return this._pixel; }
     /**
+     * Initial load of Graphics and WebGL components
+     */
+    load() {
+        // creates the default pixel texture
+        this.pixel = this._defaultPixel = Texture.createFromData([1, 1, 1, 1], 1, 1);
+    }
+    /**
      * Unloads the Graphics and WebGL stuff
      */
     unload() {
+        this._defaultPixel.dispose();
         this.gl.deleteBuffer(this.vertexBuffer);
         this.gl.deleteBuffer(this.colorBuffer);
         this.gl.deleteBuffer(this.texcoordBuffer);
@@ -2938,25 +3104,25 @@ class Graphics {
         this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
     }
     /**
-     * Draws a rectangle with the Graphics.Pixel texture
+     * Draws a rectangle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
      */
-    pixelRect(bounds, color) {
-        Engine.assert(this._pixel != null, "pixelRect requires the Graphics.pixel Subtexture be set");
-        this.setShaderTexture(this._pixel);
+    rect(x, y, width, height, color) {
+        if (this.shader.sampler2d != null)
+            this.setShaderTexture(this._pixel);
         let uv = this._pixelUVs;
-        this.push(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
-        this.pushUnsafe(bounds.right, bounds.top, uv[1].x, uv[1].y, color);
-        this.pushUnsafe(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
-        this.pushUnsafe(bounds.left, bounds.top, uv[0].x, uv[0].y, color);
-        this.pushUnsafe(bounds.left, bounds.bottom, uv[3].x, uv[3].y, color);
-        this.pushUnsafe(bounds.right, bounds.bottom, uv[2].x, uv[2].y, color);
+        this.push(x, y, uv[0].x, uv[0].y, color);
+        this.pushUnsafe(x + width, y, uv[1].x, uv[1].y, color);
+        this.pushUnsafe(x + width, y + height, uv[2].x, uv[2].y, color);
+        this.pushUnsafe(x, y, uv[0].x, uv[0].y, color);
+        this.pushUnsafe(x, y + height, uv[3].x, uv[3].y, color);
+        this.pushUnsafe(x + width, y + height, uv[2].x, uv[2].y, color);
     }
     /**
-     * Draws a triangle with the Graphics.Pixel texture
+     * Draws a triangle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
      */
-    pixelTriangle(a, b, c, colA, colB, colC) {
-        Engine.assert(this._pixel != null, "pixelTriangle requires the Graphics.pixel Subtexture be set");
-        this.setShaderTexture(this._pixel);
+    triangle(a, b, c, colA, colB, colC) {
+        if (this.shader.sampler2d != null)
+            this.setShaderTexture(this._pixel);
         if (colB == undefined)
             colB = colA;
         if (colC == undefined)
@@ -2967,11 +3133,11 @@ class Graphics {
         this.pushUnsafe(c.x, c.y, uv[2].x, uv[2].y, colC);
     }
     /**
-     * Draws a circle with the Graphics.Pixel texture
+     * Draws a circle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
      */
-    pixelCircle(pos, rad, steps, colorA, colorB) {
-        Engine.assert(this._pixel != null, "pixelCircle requires the Graphics.pixel Subtexture be set");
-        this.setShaderTexture(this._pixel);
+    circle(pos, rad, steps, colorA, colorB) {
+        if (this.shader.sampler2d != null)
+            this.setShaderTexture(this._pixel);
         if (colorB == undefined)
             colorB = colorA;
         this.checkState();
@@ -2986,135 +3152,13 @@ class Graphics {
             last = next;
         }
     }
-    /**
-     * Draws a triangle. Best used with Shaders.Primitive
-     */
-    triangle(a, b, c, colA, colB, colC) {
-        if (colB == undefined)
-            colB = colA;
-        if (colC == undefined)
-            colC = colA;
-        this.push(a.x, a.y, 0, 0, colA);
-        this.pushUnsafe(b.x, b.y, 0, 0, colB);
-        this.pushUnsafe(c.x, c.y, 0, 0, colC);
-    }
-    /**
-     * Draws a rectangle. Best used with Shaders.Primitive
-     */
-    rect(r, color) {
-        this.triangle(new Vector(r.left, r.top), new Vector(r.right, r.top), new Vector(r.right, r.bottom), color);
-        this.triangle(new Vector(r.left, r.top), new Vector(r.right, r.bottom), new Vector(r.left, r.bottom), color);
-    }
-    hollowRect(r, stroke, color) {
-        this.rect(new Rectangle(r.left, r.top, r.width, stroke), color);
-        this.rect(new Rectangle(r.left, r.top + stroke, stroke, r.height - stroke * 2), color);
-        this.rect(new Rectangle(r.right - stroke, r.top + stroke, stroke, r.height - stroke * 2), color);
-        this.rect(new Rectangle(r.left, r.bottom - stroke, r.width, stroke), color);
-    }
-    /**
-     * Draws a circle. Best used with Shaders.Primitive
-     */
-    circle(pos, rad, steps, colorA, colorB) {
-        if (colorB == undefined)
-            colorB = colorA;
-        this.checkState();
-        let uv = this._pixelUVs;
-        let last = new Vector(pos.x + rad, pos.y);
-        for (let i = 1; i <= steps; i++) {
-            let angle = (i / steps) * Math.PI * 2;
-            let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
-            this.pushUnsafe(pos.x, pos.y, 0, 0, colorA);
-            this.pushUnsafe(last.x, last.y, 0, 0, colorB);
-            this.pushUnsafe(next.x, next.y, 0, 0, colorB);
-            last = next;
-        }
+    hollowRect(x, y, width, height, stroke, color) {
+        this.rect(x, y, width, stroke, color);
+        this.rect(x, y + stroke, stroke, height - stroke * 2, color);
+        this.rect(x + width - stroke, y + stroke, stroke, height - stroke * 2, color);
+        this.rect(x, y + height - stroke, width, stroke, color);
     }
 }
-class Vector {
-    constructor(x, y) {
-        this.x = 0;
-        this.y = 0;
-        if (x != undefined)
-            this.x = x;
-        if (y != undefined)
-            this.y = y;
-    }
-    set(x, y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    copy(v) {
-        this.x = v.x;
-        this.y = v.y;
-        return this;
-    }
-    add(v) {
-        this.x += v.x;
-        this.y += v.y;
-        return this;
-    }
-    sub(v) {
-        this.x -= v.x;
-        this.y -= v.y;
-        return this;
-    }
-    mult(v) {
-        this.x *= v.x;
-        this.y *= v.y;
-        return this;
-    }
-    div(v) {
-        this.x /= v.x;
-        this.y /= v.y;
-        return this;
-    }
-    scale(s) {
-        this.x *= s;
-        this.y *= s;
-        return this;
-    }
-    rotate(sin, cos) {
-        let ox = this.x, oy = this.y;
-        this.x = ox * cos - oy * sin;
-        this.y = ox * sin + oy * cos;
-        return this;
-    }
-    transform(m) {
-        let ax = this.x, ay = this.y;
-        this.x = m.mat[0] * ax + m.mat[3] * ay + m.mat[6];
-        this.y = m.mat[1] * ax + m.mat[4] * ay + m.mat[7];
-        return this;
-    }
-    clone() {
-        return new Vector(this.x, this.y);
-    }
-    get length() {
-        return Math.sqrt((this.x * this.x) + (this.y * this.y));
-    }
-    get normal() {
-        let dist = this.length;
-        return new Vector(this.x / dist, this.y / dist);
-    }
-    normalize() {
-        let dist = this.length;
-        this.x /= dist;
-        this.y /= dist;
-        return this;
-    }
-    static get zero() { return Vector._zero.set(0, 0); }
-}
-Vector.directions = [
-    new Vector(-1, 0),
-    new Vector(0, -1),
-    new Vector(1, 0),
-    new Vector(0, 1)
-];
-// temporary vectors used wherever
-Vector.temp0 = new Vector();
-Vector.temp1 = new Vector();
-Vector.temp2 = new Vector();
-Vector._zero = new Vector();
 /// <reference path="./../component.ts"/>
 /// <reference path="./../util/vector.ts"/>
 class GamepadManager {
@@ -3952,57 +3996,6 @@ class Camera {
         return r;
     }
 }
-class Color {
-    constructor(r, g, b, a) {
-        this.color = [0, 0, 0, 1];
-        this.r = r || 0;
-        this.g = g || 0;
-        this.b = b || 0;
-        this.a = a || 1;
-    }
-    get r() { return this.color[0]; }
-    set r(v) { this.color[0] = Math.min(1, Math.max(0, v)); }
-    get g() { return this.color[1]; }
-    set g(v) { this.color[1] = Math.min(1, Math.max(0, v)); }
-    get b() { return this.color[2]; }
-    set b(v) { this.color[2] = Math.min(1, Math.max(0, v)); }
-    get a() { return this.color[3]; }
-    set a(v) { this.color[3] = Math.min(1, Math.max(0, v)); }
-    get rgba() { return this.color; }
-    set(r, g, b, a) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
-        return this;
-    }
-    copy(color) {
-        this.r = color.r;
-        this.g = color.g;
-        this.b = color.b;
-        this.a = color.a;
-        return this;
-    }
-    lerp(a, b, p) {
-        this.r = a.r + (b.r - a.r) * p;
-        this.g = a.g + (b.g - a.g) * p;
-        this.b = a.b + (b.b - a.b) * p;
-        this.a = a.a + (b.a - a.a) * p;
-        return this;
-    }
-    clone() {
-        return new Color().copy(this);
-    }
-    mult(alpha) {
-        return this.set(this.r, this.g, this.b, this.a * alpha);
-    }
-}
-Color.white = new Color(1, 1, 1, 1);
-Color.black = new Color(0, 0, 0, 1);
-Color.red = new Color(1, 0, 0, 1);
-Color.green = new Color(0, 1, 0, 1);
-Color.blue = new Color(0, 0, 1, 1);
-Color.temp = new Color();
 /**
  * Default Ease methods for Tweening
  */

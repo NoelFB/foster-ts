@@ -171,4 +171,20 @@ class Texture
 
 		return new Texture(new FosterWebGLTexture(tex, image.width, image.height));
 	}
+
+	/**
+	 * Creates a new Texture from the given RGBA array
+	 */
+	public static createFromData(data:number[], width:number, height:number):Texture
+	{
+		let gl = Engine.graphics.gl;
+		let tex = gl.createTexture();
+
+		gl.bindTexture(gl.TEXTURE_2D, tex);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(data));
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+		return new Texture(new FosterWebGLTexture(tex, width, height));
+	}
 }

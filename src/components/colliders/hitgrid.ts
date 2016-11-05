@@ -41,8 +41,7 @@ class Hitgrid extends Collider
 						return true;
 		return false;
 	}
-
-	private debugRect:Rectangle = new Rectangle();
+	
 	private debugSub:Color = new Color(200, 200, 200, 0.5);
 	public debugRender(camera:Camera):void
 	{
@@ -69,10 +68,10 @@ class Hitgrid extends Collider
 					let px = pos.x + tx * this.tileWidth;
 					let py = pos.y + ty * this.tileHeight;
 
-					Engine.graphics.rect(this.debugRect.set(px, py, 1, this.tileHeight), l ? Color.red : this.debugSub);
-					Engine.graphics.rect(this.debugRect.set(px, py, this.tileWidth, 1), u ? Color.red : this.debugSub);
-					Engine.graphics.rect(this.debugRect.set(px + this.tileWidth - 1, py, 1, this.tileHeight), r ? Color.red : this.debugSub);
-					Engine.graphics.rect(this.debugRect.set(px, py + this.tileHeight - 1, this.tileWidth, 1), d ? Color.red : this.debugSub);
+					Engine.graphics.rect(px, py, 1, this.tileHeight, l ? Color.red : this.debugSub);
+					Engine.graphics.rect(px, py, this.tileWidth, 1, u ? Color.red : this.debugSub);
+					Engine.graphics.rect(px + this.tileWidth - 1, py, 1, this.tileHeight, r ? Color.red : this.debugSub);
+					Engine.graphics.rect(px, py + this.tileHeight - 1, this.tileWidth, 1, d ? Color.red : this.debugSub);
 				}
 			}
 		}
