@@ -165,21 +165,19 @@ class AssetLoader
 	
 	private loadTexture(path:string, callback?:(texture:Texture)=>void):void
 	{
-		var self = this;
-
 		let gl = Engine.graphics.gl;
 		let img = new Image();
 
-		img.addEventListener('load', function()
+		img.addEventListener('load', () =>
 		{
 			let tex = Texture.create(img);
 			tex.texture.path = path;
-			Assets.textures[path] = tex;
+			Assets.textures[this.pathify(path)] = tex;
 			
 			if (callback != undefined)
 				callback(tex);
 
-			self.incrementLoader();
+			this.incrementLoader();
 		})
 		img.src = path;
 	}
@@ -189,10 +187,11 @@ class AssetLoader
 		var self = this;
 		FosterIO.read(path, (data) =>
 		{
-			Assets.json[path] = JSON.parse(data);
+			let p = this.pathify(path);
+			Assets.json[p] = JSON.parse(data);
 
 			if (callback != undefined)
-				callback(Assets.json[path]);
+				callback(Assets.json[p]);
 				
 			self.incrementLoader();
 		});
@@ -200,42 +199,41 @@ class AssetLoader
 
 	private loadXml(path:string, callback?:(xml:Object)=>void):void
 	{
-		var self = this;
 		FosterIO.read(path, (data) =>
 		{
-			Assets.xml[path] = (new DOMParser()).parseFromString(data, "text/xml");
+			let p = this.pathify(path);
+			Assets.xml[p] = (new DOMParser()).parseFromString(data, "text/xml");
 			
 			if (callback != undefined)
-				callback(Assets.xml[path]);
+				callback(Assets.xml[p]);
 				
-			self.incrementLoader();
+			this.incrementLoader();
 		});
 	}
 	
 	private loadText(path:string, callback?:(text:string)=>void):void
 	{
-		var self = this;
 		FosterIO.read(path, (data) =>
 		{
-			Assets.text[path] = data;
+			let p = this.pathify(path);
+			Assets.text[p] = data;
 			
 			if (callback != undefined)
-				callback(Assets.text[path]);
+				callback(Assets.text[p]);
 				
-			self.incrementLoader();
+			this.incrementLoader();
 		});
 	}
 
 	private loadSound(handle:string, path:string, callback?:(sound:AudioSource)=>void):void
 	{
-		var self = this;
 		let audio = new Audio();
-		audio.addEventListener("loadeddata", function()
+		audio.addEventListener("loadeddata", () =>
 		{
 			Assets.sounds[handle] = new AudioSource(path, audio);
 			if (callback != undefined)
 				callback(Assets.sounds[handle]);
-			self.incrementLoader();
+			this.incrementLoader();
 		});
 		audio.src = path;
 	}
@@ -278,5 +276,12 @@ class AssetLoader
 			if (this.callback != undefined)
 				this.callback();
 		}
+	}
+
+	private pathify(path:string):string
+	{
+		while (path.indexOf("\\") >= 0)
+			path = path.replace("\\", "/");
+		return path;
 	}
 }
