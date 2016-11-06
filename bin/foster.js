@@ -295,12 +295,8 @@ class AssetLoader {
             Assets.atlases[atlas.name] = atlas;
             self.incrementLoader();
         }
-        // load atlas data file  (XML or JSON)
-        if ((/(?:\.([^.]+))?$/).exec(data.data)[1] == "xml")
-            this.loadXml(FosterIO.join(this.root, data.data), (xml) => { atlasdata = xml; check(); });
-        else
-            this.loadJson(FosterIO.join(this.root, data.data), (j) => { atlasdata = j; check(); });
         // load atlas texture file
+        this.loadText(FosterIO.join(this.root, data.data), (text) => { atlasdata = text; check(); });
         this.loadTexture(FosterIO.join(this.root, data.image), (tex) => { texture = tex; check(); });
     }
     incrementLoader() {
@@ -614,9 +610,9 @@ class Atlas {
         this.subtextures = {};
         this.name = name;
         this.texture = texture;
-        this.data = data;
         this.reader = reader;
-        this.reader(this.data, this);
+        this.data = data;
+        this.reader(data, this);
     }
     /**
      * Gets a specific subtexture from the atlas
@@ -667,7 +663,8 @@ class AtlasReaders {
      * Parses Aseprite data from the atlas
      */
     static Aseprite(data, into) {
-        let frames = data["frames"];
+        let json = JSON.parse(data);
+        let frames = json["frames"];
         for (var path in frames) {
             var name = path.replace(".ase", "").replace(".png", "");
             var obj = frames[path];
@@ -3964,6 +3961,10 @@ class Camera {
         this.extentsD = new Vector();
         this.extentsRect = new Rectangle();
     }
+    get x() { return this.position.x; }
+    set x(n) { this.position.x = n; }
+    get y() { return this.position.y; }
+    set y(n) { this.position.y = n; }
     get internal() {
         return this._internal.identity()
             .translate(this.origin.x, this.origin.y)
@@ -4113,6 +4114,13 @@ class FosterIO {
             }
             return result.length > 0 ? result.join("/") : ".";
         }
+    }
+    static extension(path) {
+        let ext = "";
+        let parts = (/(?:\.([^.]+))?$/).exec(path);
+        if (parts.length > 1)
+            ext = parts[1];
+        return ext;
     }
 }
 FosterIO.fs = null;

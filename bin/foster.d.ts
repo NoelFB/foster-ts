@@ -286,7 +286,7 @@ declare class Sound {
     fade(volume: number, duration: number, ease?: (n: number) => number): Sound;
 }
 interface AtlasReader {
-    (data: any, into: Atlas): void;
+    (data: string, into: Atlas): void;
 }
 /**
  * A single Texture which contains subtextures by name
@@ -303,7 +303,7 @@ declare class Atlas {
     /**
      * Raw Atlas Data, in whatever format the atlas was loaded in
      */
-    data: Object;
+    data: string;
     /**
      * The Atlas Data Reader (a method parses the raw data and creates the subtextures)
      */
@@ -314,7 +314,7 @@ declare class Atlas {
     subtextures: {
         [path: string]: Texture;
     };
-    constructor(name: string, texture: Texture, data: Object, reader: AtlasReader);
+    constructor(name: string, texture: Texture, data: string, reader: AtlasReader);
     /**
      * Gets a specific subtexture from the atlas
      * @param name 	the name/path of the subtexture
@@ -338,7 +338,7 @@ declare class AtlasReaders {
     /**
      * Parses Aseprite data from the atlas
      */
-    static Aseprite(data: any, into: Atlas): void;
+    static Aseprite(data: string, into: Atlas): void;
 }
 /**
  * Internal Texture used for Foster during Rendering
@@ -1759,6 +1759,8 @@ declare class Camera {
     origin: Vector;
     scale: Vector;
     rotation: number;
+    x: number;
+    y: number;
     private _matrix;
     private _internal;
     private _mouse;
@@ -1805,6 +1807,7 @@ declare class FosterIO {
     static init(): void;
     static read(path: string, callback: (string) => void): void;
     static join(...paths: string[]): string;
+    static extension(path: string): string;
 }
 declare class Matrix {
     mat: Float32Array;

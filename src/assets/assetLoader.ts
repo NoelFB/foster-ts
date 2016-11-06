@@ -242,7 +242,7 @@ class AssetLoader
 	{
 		var self = this;
 		var texture:Texture = null;
-		var atlasdata:Object = null;
+		var atlasdata:string = null;
 
 		// check to see if both the texture and data file are done
 		// if they are, then create the atlas object
@@ -255,14 +255,9 @@ class AssetLoader
 			Assets.atlases[atlas.name] = atlas;
 			self.incrementLoader();
 		}
-
-		// load atlas data file  (XML or JSON)
-		if ((/(?:\.([^.]+))?$/).exec(data.data)[1] == "xml")
-			this.loadXml(FosterIO.join(this.root, data.data), (xml) => { atlasdata = xml; check(); })
-		else
-			this.loadJson(FosterIO.join(this.root, data.data), (j) => { atlasdata = j; check(); });
-
+		
 		// load atlas texture file
+		this.loadText(FosterIO.join(this.root, data.data), (text) => { atlasdata = text; check(); });
 		this.loadTexture(FosterIO.join(this.root, data.image), (tex) => { texture = tex; check(); });
 	}
 

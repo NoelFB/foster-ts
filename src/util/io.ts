@@ -70,4 +70,13 @@ class FosterIO
 			return result.length > 0 ? result.join("/") : ".";
 		}
 	}
+
+	public static extension(path:string):string
+	{
+		let ext = "";
+		let parts = (/(?:\.([^.]+))?$/).exec(path);
+		if (parts.length > 1)
+			ext = parts[1];
+		return ext;
+	}
 }

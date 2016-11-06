@@ -1,5 +1,5 @@
 
-interface AtlasReader { (data:any, into: Atlas): void; }
+interface AtlasReader { (data:string, into: Atlas): void; }
 
 /**
  * A single Texture which contains subtextures by name
@@ -19,7 +19,7 @@ class Atlas
 	/**
 	 * Raw Atlas Data, in whatever format the atlas was loaded in
 	 */
-	public data:Object;
+	public data:string;
 
 	/**
 	 * The Atlas Data Reader (a method parses the raw data and creates the subtextures)
@@ -31,13 +31,13 @@ class Atlas
 	 */
 	public subtextures:{[path:string]:Texture} = {};
 
-	constructor(name:string, texture:Texture, data:Object, reader:AtlasReader)
+	constructor(name:string, texture:Texture, data:string, reader:AtlasReader)
 	{
 		this.name = name;
 		this.texture = texture;
-		this.data = data;
 		this.reader = reader;
-		this.reader(this.data, this);
+		this.data = data;
+		this.reader(data, this);
 	}
 
 	/**
@@ -102,9 +102,10 @@ class AtlasReaders
 	/**
 	 * Parses Aseprite data from the atlas
 	 */
-	public static Aseprite(data:any, into:Atlas):void
+	public static Aseprite(data:string, into:Atlas):void
 	{
-		let frames = data["frames"];
+		let json = JSON.parse(data);
+		let frames = json["frames"];
 		for (var path in frames)
 		{
 			var name = path.replace(".ase", "").replace(".png", "");
