@@ -10,6 +10,12 @@ class Camera
 	public scale:Vector = new Vector(1, 1);
 	public rotation:number = 0;
 	
+	public get x():number { return this.position.x; }
+	public set x(n:number) { this.position.x = n; }
+	
+	public get y():number { return this.position.y; }
+	public set y(n:number) { this.position.y = n; }
+
 	private _matrix:Matrix = new Matrix();
 	private _internal:Matrix = new Matrix();
 	private _mouse:Vector = new Vector();
