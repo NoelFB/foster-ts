@@ -124,7 +124,8 @@ class AtlasReaders
 				tex = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
 			}
 
-			tex.metadata["duration"] = parseInt(obj.duration);
+			if (obj.duration != undefined)
+				tex.metadata["duration"] = parseInt(obj.duration);
 			into.subtextures[name] = tex;
 		}
 	}
