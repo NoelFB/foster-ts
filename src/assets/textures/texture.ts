@@ -26,6 +26,11 @@ class Texture
 	public center:Vector;
 
 	/**
+	 * Metadata attached to this texture
+	 */
+	public metadata:{[path:string]:any} = {}; 
+
+	/**
 	 * The width of the Texture when rendered (frame.width)
 	 */
 	public get width():number { return this.frame.width; }
