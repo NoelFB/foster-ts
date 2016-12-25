@@ -14,6 +14,22 @@ enum ResolutionStyle
 	FillInteger
 }
 
+class BlendMode
+{
+	public source:number;
+	public dest:number;
+
+	constructor(source:number, dest:number) { this.source = source; this.dest = dest; }
+}
+
+class BlendModes
+{
+	public static normal:BlendMode;
+	public static add:BlendMode;
+	public static multiply:BlendMode;
+	public static screen:BlendMode;
+}
+
 class Graphics
 {
 	// core
@@ -53,6 +69,22 @@ class Graphics
 	{
 		if (this.shader != s && s != null)
 			this.nextShader = s;
+	}
+
+	// blendmode
+	private currentBlendmode:BlendMode = null;
+	private nextBlendmode:BlendMode = null;
+
+	public get blendmode():BlendMode
+	{
+		if (this.nextBlendmode != null)
+			return this.nextBlendmode; 
+		return this.currentBlendmode; 
+	}
+	public set blendmode(bm:BlendMode)
+	{
+		if (this.currentBlendmode != bm && bm != null)
+			this.nextBlendmode = bm;
 	}
 
 	// orthographic matrix
@@ -108,6 +140,12 @@ class Graphics
 		this.gl.disable(this.gl.DEPTH_TEST);
 		this.gl.disable(this.gl.CULL_FACE);
 		this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
+
+		BlendModes.normal = new BlendMode(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
+		BlendModes.add = new BlendMode(this.gl.ONE, this.gl.DST_ALPHA);
+		BlendModes.multiply = new BlendMode(this.gl.DST_COLOR, this.gl.ONE_MINUS_SRC_ALPHA);
+		BlendModes.screen = new BlendMode(this.gl.ONE, this.gl.ONE_MINUS_SRC_COLOR);
+		this.currentBlendmode = BlendModes.normal;
 
 		this.vertexBuffer = this.gl.createBuffer();
 		this.texcoordBuffer = this.gl.createBuffer();
@@ -266,7 +304,7 @@ class Graphics
 	 */
 	public checkState()
 	{
-		if (this.nextShader != null || this.currentShader.dirty)
+		if (this.nextShader != null || this.currentShader.dirty || this.nextBlendmode != null)
 		{
 			// flush existing
 			if (this.currentShader != null)
@@ -290,6 +328,14 @@ class Graphics
 				for (let i = 0; i < this.currentShader.attributes.length; i ++)
 					this.gl.enableVertexAttribArray(this.currentShader.attributes[i].attribute);
 			}
+
+			// blendmode
+			if (this.nextBlendmode != null)
+			{
+				this.currentBlendmode = this.nextBlendmode;
+				this.nextBlendmode = null;
+				this.gl.blendFunc(this.currentBlendmode.source, this.currentBlendmode.dest);
+			}
 			
 			// set shader uniforms
 			let textureCounter = 0;
@@ -306,6 +352,8 @@ class Graphics
 						this.gl.activeTexture((<any>this.gl)["TEXTURE" + textureCounter]);
 						if (uniform.value instanceof Texture)
 							this.gl.bindTexture(this.gl.TEXTURE_2D, (<Texture>uniform.value).texture.webGLTexture);
+						else if (uniform.value instanceof RenderTarget)
+							this.gl.bindTexture(this.gl.TEXTURE_2D, (<RenderTarget>uniform.value).texture.webGLTexture);
 						else
 							this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
 						this.gl.uniform1i(location, textureCounter);

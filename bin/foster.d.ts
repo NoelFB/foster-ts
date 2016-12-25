@@ -418,6 +418,12 @@ declare class Texture {
      */
     center: Vector;
     /**
+     * Metadata attached to this texture
+     */
+    metadata: {
+        [path: string]: any;
+    };
+    /**
      * The width of the Texture when rendered (frame.width)
      */
     readonly width: number;
@@ -1252,6 +1258,17 @@ declare enum ResolutionStyle {
     /** Renders the buffer so that it fills the Screen (cropping the buffer), rounded to an Integer scale */
     FillInteger = 5,
 }
+declare class BlendMode {
+    source: number;
+    dest: number;
+    constructor(source: number, dest: number);
+}
+declare class BlendModes {
+    static normal: BlendMode;
+    static add: BlendMode;
+    static multiply: BlendMode;
+    static screen: BlendMode;
+}
 declare class Graphics {
     private engine;
     canvas: HTMLCanvasElement;
@@ -1270,6 +1287,9 @@ declare class Graphics {
     private currentShader;
     private nextShader;
     shader: Shader;
+    private currentBlendmode;
+    private nextBlendmode;
+    blendmode: BlendMode;
     orthographic: Matrix;
     private toscreen;
     private _pixel;

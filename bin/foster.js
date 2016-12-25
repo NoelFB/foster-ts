@@ -669,14 +669,18 @@ class AtlasReaders {
             var name = path.replace(".ase", "").replace(".png", "");
             var obj = frames[path];
             var bounds = obj.frame;
+            var tex;
             if (obj.trimmed) {
                 var source = obj["spriteSourceSize"];
                 var size = obj["sourceSize"];
-                into.subtextures[name] = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
+                tex = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
             }
             else {
-                into.subtextures[name] = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
+                tex = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
             }
+            if (obj.duration != undefined)
+                tex.metadata["duration"] = parseInt(obj.duration);
+            into.subtextures[name] = tex;
         }
     }
 }
@@ -786,6 +790,10 @@ class Texture {
          * A reference to the full WebGL Texture
          */
         this.texture = null;
+        /**
+         * Metadata attached to this texture
+         */
+        this.metadata = {};
         this.texture = texture;
         this.bounds = bounds || new Rectangle(0, 0, texture.width, texture.height);
         this.frame = frame || new Rectangle(0, 0, this.bounds.width, this.bounds.height);
@@ -2646,6 +2654,11 @@ var ResolutionStyle;
     /** Renders the buffer so that it fills the Screen (cropping the buffer), rounded to an Integer scale */
     ResolutionStyle[ResolutionStyle["FillInteger"] = 5] = "FillInteger";
 })(ResolutionStyle || (ResolutionStyle = {}));
+class BlendMode {
+    constructor(source, dest) { this.source = source; this.dest = dest; }
+}
+class BlendModes {
+}
 class Graphics {
     /**
      * Creates the Engine.Graphics
@@ -2663,6 +2676,9 @@ class Graphics {
         // shader
         this.currentShader = null;
         this.nextShader = null;
+        // blendmode
+        this.currentBlendmode = null;
+        this.nextBlendmode = null;
         // orthographic matrix
         this.orthographic = new Matrix();
         this.toscreen = new Matrix();
@@ -2690,6 +2706,11 @@ class Graphics {
         this.gl.disable(this.gl.DEPTH_TEST);
         this.gl.disable(this.gl.CULL_FACE);
         this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
+        BlendModes.normal = new BlendMode(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
+        BlendModes.add = new BlendMode(this.gl.ONE, this.gl.DST_ALPHA);
+        BlendModes.multiply = new BlendMode(this.gl.DST_COLOR, this.gl.ONE_MINUS_SRC_ALPHA);
+        BlendModes.screen = new BlendMode(this.gl.ONE, this.gl.ONE_MINUS_SRC_COLOR);
+        this.currentBlendmode = BlendModes.normal;
         this.vertexBuffer = this.gl.createBuffer();
         this.texcoordBuffer = this.gl.createBuffer();
         this.colorBuffer = this.gl.createBuffer();
@@ -2702,6 +2723,15 @@ class Graphics {
     set shader(s) {
         if (this.shader != s && s != null)
             this.nextShader = s;
+    }
+    get blendmode() {
+        if (this.nextBlendmode != null)
+            return this.nextBlendmode;
+        return this.currentBlendmode;
+    }
+    set blendmode(bm) {
+        if (this.currentBlendmode != bm && bm != null)
+            this.nextBlendmode = bm;
     }
     set pixel(p) {
         if (p == null)
@@ -2839,7 +2869,7 @@ class Graphics {
      * Checks if the shader was modified, and if so, flushes the current vertices & starts a new draw
      */
     checkState() {
-        if (this.nextShader != null || this.currentShader.dirty) {
+        if (this.nextShader != null || this.currentShader.dirty || this.nextBlendmode != null) {
             // flush existing
             if (this.currentShader != null)
                 this.flush();
@@ -2858,6 +2888,12 @@ class Graphics {
                 for (let i = 0; i < this.currentShader.attributes.length; i++)
                     this.gl.enableVertexAttribArray(this.currentShader.attributes[i].attribute);
             }
+            // blendmode
+            if (this.nextBlendmode != null) {
+                this.currentBlendmode = this.nextBlendmode;
+                this.nextBlendmode = null;
+                this.gl.blendFunc(this.currentBlendmode.source, this.currentBlendmode.dest);
+            }
             // set shader uniforms
             let textureCounter = 0;
             for (let i = 0; i < this.currentShader.uniforms.length; i++) {
@@ -2868,6 +2904,8 @@ class Graphics {
                     if (uniform.type == ShaderUniformType.sampler2D) {
                         this.gl.activeTexture(this.gl["TEXTURE" + textureCounter]);
                         if (uniform.value instanceof Texture)
+                            this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value.texture.webGLTexture);
+                        else if (uniform.value instanceof RenderTarget)
                             this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value.texture.webGLTexture);
                         else
                             this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
@@ -3850,6 +3888,7 @@ class Scene {
         if (list.length == 0)
             list.push(entity);
         else {
+            // todo: replace with a binary search to make it faster
             let i = 0;
             for (i = 0; i < list.length && list[i]._depth < entity._depth; i++)
                 continue;

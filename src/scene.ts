@@ -346,6 +346,7 @@ class Scene
 			list.push(entity);
 		else
 		{
+			// todo: replace with a binary search to make it faster
 			let i = 0;
 			for (i = 0; i < list.length && list[i]._depth < entity._depth; i ++)
 				continue;
