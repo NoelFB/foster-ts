@@ -1,4 +1,4 @@
-class Keys
+class Keyboard
 {
 	private static _down:boolean[] = [];
 	private static _last:boolean[] = [];
@@ -9,12 +9,12 @@ class Keys
 	{
 		window.addEventListener("keydown", function(e)
 		{
-			Keys._next[e.keyCode] = true;
+			Keyboard._next[e.keyCode] = true;
 		});
 		
 		window.addEventListener("keyup", function(e)
 		{
-			Keys._next[e.keyCode] = false;
+			Keyboard._next[e.keyCode] = false;
 		});
 	}
 	
@@ -22,63 +22,63 @@ class Keys
 	{
 		for (let i = 0; i < 256; i ++)
 		{
-			Keys._last[i] = Keys._down[i];
-			Keys._down[i] = Keys._next[i];
+			Keyboard._last[i] = Keyboard._down[i];
+			Keyboard._down[i] = Keyboard._next[i];
 		}
 	}
 	
-	public static down(key:Key):boolean
+	public static check(key:Key):boolean
 	{
-		return (Keys._down[key] == true);
+		return (Keyboard._down[key] == true);
 	}
 	
 	public static pressed(key:Key):boolean
 	{
-		return (Keys._down[key] == true && !Keys._last[key]);
+		return (Keyboard._down[key] == true && !Keyboard._last[key]);
 	}
 	
 	public static released(key:Key):boolean
 	{
-		return (!Keys._down[key] && Keys._last[key] == true);
+		return (!Keyboard._down[key] && Keyboard._last[key] == true);
 	}
 	
 	public static map(name:string, keys:Key[]):void
 	{
-		if (!Keys._map[name])
-			Keys._map[name] = [];
+		if (!Keyboard._map[name])
+			Keyboard._map[name] = [];
 		for (let i = 0; i < keys.length; i ++)
-			Keys._map[name].push(keys[i]);
+			Keyboard._map[name].push(keys[i]);
 	}
 
 	public static maps(list:{[name:string]: Key[]}):void
 	{
 		for (let name in list)
-			Keys.map(name, list[name]);
+			Keyboard.map(name, list[name]);
 	}
 	
-	public static mapDown(key:string):boolean
+	public static mapCheck(key:string):boolean
 	{
-		if (Keys._map[key] != undefined)
-			for (let i = 0; i < Keys._map[key].length; i++)
-				if (Keys.down(Keys._map[key][i]))
+		if (Keyboard._map[key] != undefined)
+			for (let i = 0; i < Keyboard._map[key].length; i++)
+				if (Keyboard.check(Keyboard._map[key][i]))
 					return true;
 		return false;
 	}
 	
 	public static mapPressed(key:string):boolean
 	{
-		if (Keys._map[key] != undefined)
-			for (let i = 0; i < Keys._map[key].length; i++)
-				if (Keys.pressed(Keys._map[key][i]))
+		if (Keyboard._map[key] != undefined)
+			for (let i = 0; i < Keyboard._map[key].length; i++)
+				if (Keyboard.pressed(Keyboard._map[key][i]))
 					return true;
 		return false;
 	}
 	
 	public static mapReleased(key:string):boolean
 	{
-		if (Keys._map[key] != undefined)
-			for (let i = 0; i < Keys._map[key].length; i++)
-				if (Keys.released(Keys._map[key][i]))
+		if (Keyboard._map[key] != undefined)
+			for (let i = 0; i < Keyboard._map[key].length; i++)
+				if (Keyboard.released(Keyboard._map[key][i]))
 					return true;
 		return false;
 		

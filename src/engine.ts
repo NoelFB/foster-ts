@@ -130,7 +130,7 @@ class Engine
 			Engine.resize(width, height);
 			Shaders.init();
 			Mouse.init();
-			Keys.init();
+			Keyboard.init();
 			GamepadManager.init();
 
 			// start update loop
@@ -231,7 +231,7 @@ class Engine
 
 		// update inputs
 		Mouse.update();
-		Keys.update();
+		Keyboard.update();
 
 		// swap scenes
 		if (this.nextScene != null)
