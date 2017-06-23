@@ -27,18 +27,24 @@ class Keyboard
 		}
 	}
 	
-	public static check(key:Key):boolean
+	public static check(key:any):boolean
 	{
+		if (isNaN(key))
+			return Keyboard.mapCheck(<string>key);
 		return (Keyboard._down[key] == true);
 	}
 	
-	public static pressed(key:Key):boolean
+	public static pressed(key:any):boolean
 	{
+		if (isNaN(key))
+			return Keyboard.mapPressed(<string>key);
 		return (Keyboard._down[key] == true && !Keyboard._last[key]);
 	}
 	
-	public static released(key:Key):boolean
+	public static released(key:any):boolean
 	{
+		if (isNaN(key))
+			return Keyboard.mapReleased(<string>key);
 		return (!Keyboard._down[key] && Keyboard._last[key] == true);
 	}
 	

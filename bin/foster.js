@@ -3306,12 +3306,18 @@ class Keyboard {
         }
     }
     static check(key) {
+        if (isNaN(key))
+            return Keyboard.mapCheck(key);
         return (Keyboard._down[key] == true);
     }
     static pressed(key) {
+        if (isNaN(key))
+            return Keyboard.mapPressed(key);
         return (Keyboard._down[key] == true && !Keyboard._last[key]);
     }
     static released(key) {
+        if (isNaN(key))
+            return Keyboard.mapReleased(key);
         return (!Keyboard._down[key] && Keyboard._last[key] == true);
     }
     static map(name, keys) {
@@ -3818,6 +3824,12 @@ class Scene {
         });
         return entity;
     }
+    findEach(className, callback) {
+        this.entities.each((e) => {
+            if (e instanceof className)
+                return callback(e);
+        });
+    }
     findAll(className) {
         let list = [];
         this.entities.each((e) => {
@@ -3831,10 +3843,25 @@ class Scene {
             return this.groups[group].first();
         return null;
     }
+    eachInGroup(group, callback) {
+        if (this.groups[group] != undefined)
+            this.groups[group].each(callback);
+    }
     allInGroup(group) {
         if (this.groups[group] != undefined)
             return this.groups[group];
         return null;
+    }
+    eachInGroups(groups, callback) {
+        let stop = false;
+        for (let i = 0; i < groups.length && !stop; i++) {
+            this.eachInGroup(groups[i], (e) => {
+                let result = callback(e);
+                if (result === false)
+                    stop = true;
+                return result;
+            });
+        }
     }
     allInGroups(groups, into = null) {
         if (into == null || into == undefined)
@@ -4321,7 +4348,7 @@ class ObjectList {
         let count = this.objects.length;
         for (let i = 0; i < count; i++)
             if (this.objects[i] != null)
-                if (callback(this.objects[i]) == false)
+                if (callback(this.objects[i]) === false)
                     break;
     }
     /**

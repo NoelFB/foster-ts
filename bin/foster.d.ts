@@ -1435,9 +1435,9 @@ declare class Keyboard {
     private static _map;
     static init(): void;
     static update(): void;
-    static check(key: Key): boolean;
-    static pressed(key: Key): boolean;
-    static released(key: Key): boolean;
+    static check(key: any): boolean;
+    static pressed(key: any): boolean;
+    static released(key: any): boolean;
     static map(name: string, keys: Key[]): void;
     static maps(list: {
         [name: string]: Key[];
@@ -1725,9 +1725,12 @@ declare class Scene {
      */
     destroy(entity: Entity): void;
     find<T extends Entity>(className: Function): T;
+    findEach<T extends Entity>(className: Function, callback: (e: T) => any): void;
     findAll<T extends Entity>(className: Function): T[];
     firstInGroup(group: string): Entity;
+    eachInGroup(group: string, callback: (e: Entity) => any): void;
     allInGroup(group: string): ObjectList<Entity>;
+    eachInGroups(groups: string[], callback: (e: Entity) => any): void;
     allInGroups(groups: string[], into?: ObjectList<Entity>): ObjectList<Entity>;
     firstColliderInTag(tag: string): Collider;
     allCollidersInTag(tag: string): Collider[];
