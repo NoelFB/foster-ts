@@ -100,7 +100,7 @@ abstract class Collider extends Component
 	
 	public static overlap_hitbox_hitbox(a:Hitbox, b:Hitbox):boolean
 	{
-		return a.sceneRight >= b.sceneLeft && a.sceneBottom >= b.sceneTop && a.sceneLeft < b.sceneRight && a.sceneTop < b.sceneBottom;
+		return a.sceneRight > b.sceneLeft && a.sceneBottom > b.sceneTop && a.sceneLeft < b.sceneRight && a.sceneTop < b.sceneBottom;
 	}
 
 	public static overlap_hitbox_grid(a:Hitbox, b:Hitgrid):boolean

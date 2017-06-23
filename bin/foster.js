@@ -1146,7 +1146,7 @@ class Collider extends Component {
         return false;
     }
     static overlap_hitbox_hitbox(a, b) {
-        return a.sceneRight >= b.sceneLeft && a.sceneBottom >= b.sceneTop && a.sceneLeft < b.sceneRight && a.sceneTop < b.sceneBottom;
+        return a.sceneRight > b.sceneLeft && a.sceneBottom > b.sceneTop && a.sceneLeft < b.sceneRight && a.sceneTop < b.sceneBottom;
     }
     static overlap_hitbox_grid(a, b) {
         let gridPosition = b.scenePosition;
