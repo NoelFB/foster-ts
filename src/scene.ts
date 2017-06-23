@@ -258,6 +258,15 @@ class Scene
 		return entity;
 	}
 
+	public findEach<T extends Entity>(className:Function, callback:(e:T)=>any):void
+	{
+		this.entities.each((e) =>
+		{
+			if (e instanceof className)
+				return callback(<T>e);
+		});
+	}
+
 	public findAll<T extends Entity>(className:Function):T[]
 	{
 		let list:T[] = [];
@@ -276,11 +285,32 @@ class Scene
 		return null;
 	}
 
+	public eachInGroup(group:string, callback:(e:Entity)=>any):void
+	{
+		if (this.groups[group] != undefined)
+			this.groups[group].each(callback);
+	}
+
 	public allInGroup(group:string):ObjectList<Entity>
 	{
 		if (this.groups[group] != undefined)
 			return this.groups[group];
 		return null;
+	}
+
+	public eachInGroups(groups:string[], callback:(e:Entity)=>any):void
+	{
+		let stop = false;
+		for (let i = 0; i < groups.length && !stop; i ++)
+		{
+			this.eachInGroup(groups[i], (e) =>
+			{
+				let result = callback(e);
+				if (result === false)
+					stop = true;
+				return result;
+			});
+		}
 	}
 
 	public allInGroups(groups:string[], into:ObjectList<Entity> = null):ObjectList<Entity>
@@ -297,6 +327,7 @@ class Scene
 
 		return into;
 	}
+	
 
 	public firstColliderInTag(tag:string):Collider
 	{

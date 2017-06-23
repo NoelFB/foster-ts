@@ -43,7 +43,7 @@ class ObjectList<T>
 		let count = this.objects.length;
 		for (let i = 0; i < count; i ++)
 			if (this.objects[i] != null)
-				if (callback(this.objects[i]) == false)
+				if (callback(this.objects[i]) === false)
 					break;
 	}
 
