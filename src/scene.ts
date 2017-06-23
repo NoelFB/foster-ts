@@ -12,20 +12,19 @@ class Scene
 	/**
 	 * A list of all the Entities in the Scene
 	 */
-	public entities:Entity[] = [];
+	public entities:ObjectList<Entity> = new ObjectList<Entity>();
 
 	/**
 	 * A list of all the Renderers in the Scene
 	 */
-	public renderers:Renderer[] = [];
-
+	public renderers:ObjectList<Renderer> = new ObjectList<Renderer>();
+	
 	/**
-	 * List of entities about to be sorted by depth
+	 * List of entities organized by Group
 	 */
-	public sorting:Entity[] = [];
+	public groups:{[id:string]:ObjectList<Entity>} = {};
 	
 	private colliders:any = {};
-	private groups:any = {};
 	private cache:any = {};
 	
 	constructor()
@@ -55,13 +54,11 @@ class Scene
 	 */
 	public dispose():void
 	{
-		for (let i = 0; i < this.renderers.length; i ++)
-			this.renderers[i].dispose();
-		while (this.entities.length > 0)
-			this.destroy(this.entities[0]);
-		this.entities = [];
-		this.sorting = [];
-		this.renderers = [];
+		this.renderers.each((r) => r.dispose());
+		this.renderers.clear();
+		this.entities.each((e) => this.destroy(e));
+		this.entities.clear();
+
 		this.colliders = {};
 		this.groups = {};
 		this.cache = {};
@@ -73,30 +70,29 @@ class Scene
 	public update():void
 	{
 		// update entities
-		let lengthWas = this.entities.length;
-		for (let i = 0; i < this.entities.length; i ++)
+		this.entities.each((e) =>
 		{
-			let entity = this.entities[i];
-			if (!entity.isStarted)
+			if (!e.isStarted)
 			{
-				entity.isStarted = true;
-				entity.started();
+				e.isStarted = true;
+				e.started();
 			}
-			if (entity.active && entity.isStarted)
-				entity.update();
-
-			// in case stuff was removed
-			if (lengthWas > this.entities.length)
-			{
-				i -= (lengthWas - this.entities.length);
-				lengthWas = this.entities.length;
-			}
-		}
+			if (e.active && e.isStarted)
+				e.update();
+		});
 
 		// update renderers
-		for (let i = 0; i < this.renderers.length; i ++)
-			if (this.renderers[i].visible)
-				this.renderers[i].update();
+		this.renderers.each((r) =>
+		{
+			if (r.visible)
+				r.update();
+		});
+
+		// clean dirty lists
+		this.entities.clean();
+		this.renderers.clean();
+		for (let key in this.groups)
+			this.groups[key].clean();
 	}
 
 	/**
@@ -104,33 +100,31 @@ class Scene
 	 */
 	public render():void
 	{
-		// sort entities
-		for (let i = 0; i < this.sorting.length; i ++)
-		{
-			let entity = this.sorting[i];
-			entity._depth = entity._nextDepth;
-			entity._nextDepth = null;
-
-			this._insertEntityInto(entity, this.entities, true);
-			for (let j = 0; j < entity.groups.length; j ++)
-				this._insertEntityInto(entity, this.groups[entity.groups[j]], true);
-		}
-		this.sorting = [];
+		// sort entities (only sorts if required)
+		this.entities.sort((a, b) => b.depth - a.depth);
+		for (let key in this.groups)
+			this.groups[key].sort((a, b) => b.depth - a.depth);
 
 		// pre-render
-		for (let i = 0; i < this.renderers.length; i ++)
-			if (this.renderers[i].visible)
-				this.renderers[i].preRender();
+		this.renderers.each((r) =>
+		{
+			if (r.visible)
+				r.preRender();
+		});
 
 		// render
-		for (let i = 0; i < this.renderers.length; i ++)
-			if (this.renderers[i].visible)
-				this.renderers[i].render();
+		this.renderers.each((r) =>
+		{
+			if (r.visible)
+				r.render();
+		});
 
 		// post-render
-		for (let i = 0; i < this.renderers.length; i ++)
-			if (this.renderers[i].visible)
-				this.renderers[i].postRender();
+		this.renderers.each((r) =>
+		{
+			if (r.visible)
+				r.postRender();
+		});
 				
 		// debug render
 		if (Engine.debugMode)
@@ -139,9 +133,11 @@ class Scene
 			Engine.graphics.shader = Shaders.primitive;
 			Engine.graphics.shader.set("matrix", this.camera.matrix);
 			
-			for (let i = 0; i < this.entities.length; i ++)
-				if (this.entities[i].active)
-					this.entities[i].debugRender(this.camera);
+			this.entities.each((e) =>
+			{
+				if (e.active)
+					e.debugRender(this.camera);
+			});
 		}
 	}
 
@@ -153,7 +149,7 @@ class Scene
 	public add(entity:Entity, position?:Vector):Entity
 	{
 		entity.scene = this;
-		this._insertEntityInto(entity, this.entities, false);
+		this.entities.add(entity);
 
 		if (position != undefined)
 			entity.position.set(position.x, position.y);
@@ -170,8 +166,7 @@ class Scene
 			this._groupEntity(entity, entity.groups[i]);
 
 		// add existing components in the entity
-		for (let i = 0; i < entity.components.length; i ++)
-			this._trackComponent(entity.components[i]);
+		entity.components.each((c) => this._trackComponent(c));
 
 		// add entity
 		entity.added();
@@ -213,23 +208,10 @@ class Scene
 	 */
 	public remove(entity:Entity):void
 	{
-		let index = this.entities.indexOf(entity);
-		if (index >= 0)
-			this.removeAt(index);
-	}
-
-	/**
-	 * Removes an Entity from Scene.entities at the given index
-	 * @param index 	The Index to remove at
-	 */
-	public removeAt(index:number):void
-	{
-		let entity = this.entities[index];
 		entity.removed();
 
 		// untrack all components
-		for (let i = 0; i < entity.components.length; i ++)
-			this._untrackComponent(entity.components[i]);
+		entity.components.each((c) => this._untrackComponent(c));
 
 		// ungroup
 		for  (let i = 0; i < entity.groups.length; i ++)
@@ -238,7 +220,8 @@ class Scene
 		// remove entity
 		entity.isStarted = false;
 		entity.scene = null;
-		this.entities.splice(index, 1);
+		this.entities.remove(entity);
+
 	}
 
 	/**
@@ -246,8 +229,7 @@ class Scene
 	 */
 	public removeAll():void
 	{
-		for (let i = this.entities.length - 1; i >= 0; i --)
-			this.removeAt(i);
+		this.entities.each((e) => this.remove(e));
 	}
 
 	/**
@@ -264,41 +246,56 @@ class Scene
 
 	public find<T extends Entity>(className:Function):T
 	{
-		for (let i = 0; i < this.entities.length; i ++)
-			if (this.entities[i] instanceof className)
-				return <T>this.entities[i];
-		return null;
+		let entity:T = null;
+		this.entities.each((e) =>
+		{
+			if (e instanceof className)
+			{
+				entity = <T>e;
+				return false;
+			}
+		});
+		return entity;
 	}
 
 	public findAll<T extends Entity>(className:Function):T[]
 	{
 		let list:T[] = [];
-		for (let i = 0; i < this.entities.length; i ++)
-			if (this.entities[i] instanceof className)
-				list.push(<T>this.entities[i]);
+		this.entities.each((e) =>
+		{
+			if (e instanceof className)
+				list.push(<T>e);
+		});
 		return list;
 	}
 
-	public firstEntityInGroup(group:string):Entity
+	public firstInGroup(group:string):Entity
 	{
-		if (this.groups[group] != undefined && this.groups[group].length > 0)
-			return this.groups[group][0];
+		if (this.groups[group] != undefined && this.groups[group].count > 0)
+			return this.groups[group].first();
 		return null;
 	}
 
-	public allEntitiesInGroup(group:string):Entity[]
+	public allInGroup(group:string):ObjectList<Entity>
 	{
 		if (this.groups[group] != undefined)
 			return this.groups[group];
-		return [];
+		return null;
 	}
 
-	public allEntitiesInGroups(groups:string[]):Entity[]
+	public allInGroups(groups:string[], into:ObjectList<Entity> = null):ObjectList<Entity>
 	{
-		let lists:Entity[] = [];
+		if (into == null || into == undefined)
+			into = new ObjectList<Entity>();
+
 		for (let i = 0; i < groups.length; i ++)
-			lists.concat(this.allEntitiesInGroup(groups[i]));
-		return lists;
+		{
+			let list = this.allInGroup(groups[i]);
+			if (list != null)
+				list.each((e) => into.add(e));
+		}
+
+		return into;
 	}
 
 	public firstColliderInTag(tag:string):Collider
@@ -318,62 +315,31 @@ class Scene
 	public addRenderer(renderer:Renderer):Renderer
 	{
 		renderer.scene = this;
-		this.renderers.push(renderer);
+		this.renderers.add(renderer);
 		return renderer;
 	}
 
 	public removeRenderer(renderer:Renderer, dispose:boolean):Renderer
 	{
-		let index = this.renderers.indexOf(renderer);
-		if (index >= 0)
-			this.renderers.splice(index, 1);
+		this.renderers.remove(renderer);
 		if (dispose)
 			renderer.dispose();
 		renderer.scene = null;
 		return renderer;
 	}
 
-	public _insertEntityInto(entity:Entity, list:Entity[], removeFrom:boolean)
-	{
-		if (removeFrom)
-		{
-			let index = list.indexOf(entity);
-			if (index >= 0)
-				list.splice(index, 1);
-		}
-
-		if (list.length == 0)
-			list.push(entity);
-		else
-		{
-			// todo: replace with a binary search to make it faster
-			let i = 0;
-			for (i = 0; i < list.length && list[i]._depth < entity._depth; i ++)
-				continue;
-			list.splice(i, 0, entity);
-		}
-	}
-
 	public _groupEntity(entity:Entity, group:string)
 	{
 		if (this.groups[group] == undefined)
-			this.groups[group] = [];
+			this.groups[group] = new ObjectList<Entity>();
 
-		this._insertEntityInto(entity, this.groups[group], false);
+		this.groups[group].add(entity);
 	}
 
 	public _ungroupEntity(entity:Entity, group:string)
 	{
 		if (this.groups[group] != undefined)
-		{
-			let index = this.groups[group].indexOf(entity);
-			if (index >= 0)
-			{
-				this.groups[group].splice(index, 1);
-				if (this.groups[group].length <= 0)
-					delete this.groups[group];
-			}
-		}
+			this.groups[group].remove(entity);
 	}
 
 	public _trackComponent(component:Component)

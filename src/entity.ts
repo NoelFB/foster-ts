@@ -45,35 +45,31 @@ class Entity
 	/**
 	 * List of all Entity components
 	 */
-	public components:Component[] = [];
+	public components:ObjectList<Component> = new ObjectList<Component>();
 
 	/**
 	 * List of all Groups the Entity is in
 	 */
 	public groups:string[] = [];
 	
-	public _depth:number = 0;
-	public _nextDepth:number = null;
+	private _depth:number = 0;
 	
 	/**
 	 * The Render-Depth of the Entity (lower = rendered later)
 	 */
-	get depth() 
+	get depth():number
 	{
-		if (this._nextDepth != null)
-			return this._nextDepth; 
-		return this._depth; 
+		return this._depth;
 	}
-	set depth(val)
+	set depth(val:number)
 	{
-		if (this.scene != null)
+		this._depth = val;
+		if  (this.scene != null)
 		{
-			if (this._nextDepth != null)
-				this.scene.sorting.push(this);
-			this._nextDepth = val;
+			this.scene.entities.unsorted = true;
+			for (let i = 0; i < this.groups.length; i ++)
+				this.scene.groups[this.groups[i]].unsorted = true;
 		}
-		else
-			this._depth = val;
 	}
 
 	constructor()
@@ -134,9 +130,11 @@ class Entity
 	 */
 	update():void
 	{
-		for (let i = 0; i < this.components.length; i ++)
-			if (this.components[i].active)
-				this.components[i].update();
+		this.components.each((c) =>
+		{
+			if (c.active)
+				c.update();
+		});
 	}
 
 	/**
@@ -144,9 +142,11 @@ class Entity
 	 */
 	render(camera:Camera):void
 	{
-		for (let i = 0; i < this.components.length; i ++)
-			if (this.components[i].visible)
-				this.components[i].render(camera);
+		this.components.each((c) =>
+		{
+			if (c.visible)
+				c.render(camera);
+		});
 	}
 
 	/**
@@ -156,9 +156,11 @@ class Entity
 	{
 		Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, Color.white);
 		
-		for (let i = 0; i < this.components.length; i ++)
-			if (this.components[i].visible)
-				this.components[i].debugRender(camera);
+		this.components.each((c) =>
+		{
+			if (c.visible)
+				c.debugRender(camera);
+		});
 	}
 
 	/**
@@ -166,7 +168,7 @@ class Entity
 	 */
 	add(component:Component):void
 	{
-		this.components.push(component);
+		this.components.add(component);
 		component.entity = this;
 		component.addedToEntity();
 
@@ -179,15 +181,11 @@ class Entity
 	 */
 	remove(component:Component):void
 	{
-		let index = this.components.indexOf(component);
-		if (index >= 0)
-		{
-			this.components.splice(index, 1);
-			component.removedFromEntity();
-			component.entity = null;
-			if (this.scene != null)
-				this.scene._untrackComponent(component);
-		}
+		this.components.remove(component);
+		component.removedFromEntity();
+		component.entity = null;
+		if (this.scene != null)
+			this.scene._untrackComponent(component);
 	}
 
 	/**
@@ -195,7 +193,7 @@ class Entity
 	 */
 	removeAll()
 	{
-		for (let i = this.components.length - 1; i >= 0; i --)
+		for (let i = this.components.count - 1; i >= 0; i --)
 			this.remove(this.components[i]);
 	}
 	
@@ -204,10 +202,16 @@ class Entity
 	 */
 	find<T extends Component>(className:Function):T
 	{
-		for (let i = 0; i < this.components.length; i ++)
-			if (this.components[i] instanceof className)
-				return <T>this.components[i];
-		return null;
+		let component:T = null;
+		this.components.each((c) =>
+		{
+			if (c instanceof className)
+			{
+				component = <T>c;
+				return false;
+			}
+		});
+		return component;
 	}
 
 	/**
@@ -216,9 +220,11 @@ class Entity
 	findAll<T extends Component>(className:Function):T[]
 	{
 		let list:T[] = [];
-		for (let i = 0; i < this.components.length; i ++)
-			if (this.components[i] instanceof className)
-				list.push(<T>this.components[i]);
+		this.components.each((c) =>
+		{
+			if (c instanceof className)
+				list.push(<T>c);
+		})
 		return list;
 	}
 

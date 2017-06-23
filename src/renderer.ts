@@ -89,10 +89,12 @@ abstract class Renderer
 		let camera = this.getActiveCamera();
 
 		// draw each entity
-		let list = (this.groupsMask.length > 0 ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
-		for (let i = list.length - 1; i >= 0; i --)
-			if (list[i].visible)
-				list[i].render(camera);
+		let list = (this.groupsMask.length > 0 ? this.scene.allInGroups(this.groupsMask) : this.scene.entities);
+		list.each((e) => 
+		{
+			if (e.visible)
+				e.render(camera);
+		});
 	}
 
 	private getActiveCamera():Camera

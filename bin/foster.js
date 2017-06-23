@@ -2241,7 +2241,7 @@ class Engine {
             Engine.resize(width, height);
             Shaders.init();
             Mouse.init();
-            Keys.init();
+            Keyboard.init();
             GamepadManager.init();
             // start update loop
             Engine.instance.step();
@@ -2296,7 +2296,7 @@ class Engine {
         this.graphics.update();
         // update inputs
         Mouse.update();
-        Keys.update();
+        Keyboard.update();
         // swap scenes
         if (this.nextScene != null) {
             if (this.scene != null) {
@@ -2370,13 +2370,12 @@ class Entity {
         /**
          * List of all Entity components
          */
-        this.components = [];
+        this.components = new ObjectList();
         /**
          * List of all Groups the Entity is in
          */
         this.groups = [];
         this._depth = 0;
-        this._nextDepth = null;
     }
     /**
      * X position of the Entity in the Scene
@@ -2392,18 +2391,15 @@ class Entity {
      * The Render-Depth of the Entity (lower = rendered later)
      */
     get depth() {
-        if (this._nextDepth != null)
-            return this._nextDepth;
         return this._depth;
     }
     set depth(val) {
+        this._depth = val;
         if (this.scene != null) {
-            if (this._nextDepth != null)
-                this.scene.sorting.push(this);
-            this._nextDepth = val;
+            this.scene.entities.unsorted = true;
+            for (let i = 0; i < this.groups.length; i++)
+                this.scene.groups[this.groups[i]].unsorted = true;
         }
-        else
-            this._depth = val;
     }
     /**
      * Called the first time the entity is added to a scene (after constructor, before added)
@@ -2439,32 +2435,35 @@ class Entity {
      * Called every game-step, if this entity is in a Scene and Active
      */
     update() {
-        for (let i = 0; i < this.components.length; i++)
-            if (this.components[i].active)
-                this.components[i].update();
+        this.components.each((c) => {
+            if (c.active)
+                c.update();
+        });
     }
     /**
      * Called via a Renderer, if Visible
      */
     render(camera) {
-        for (let i = 0; i < this.components.length; i++)
-            if (this.components[i].visible)
-                this.components[i].render(camera);
+        this.components.each((c) => {
+            if (c.visible)
+                c.render(camera);
+        });
     }
     /**
      * Called via the Debug Renderer
      */
     debugRender(camera) {
         Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, Color.white);
-        for (let i = 0; i < this.components.length; i++)
-            if (this.components[i].visible)
-                this.components[i].debugRender(camera);
+        this.components.each((c) => {
+            if (c.visible)
+                c.debugRender(camera);
+        });
     }
     /**
      * Adds a Component to this Entity
      */
     add(component) {
-        this.components.push(component);
+        this.components.add(component);
         component.entity = this;
         component.addedToEntity();
         if (this.scene != null)
@@ -2474,39 +2473,41 @@ class Entity {
      * Removes a Components from this Entity
      */
     remove(component) {
-        let index = this.components.indexOf(component);
-        if (index >= 0) {
-            this.components.splice(index, 1);
-            component.removedFromEntity();
-            component.entity = null;
-            if (this.scene != null)
-                this.scene._untrackComponent(component);
-        }
+        this.components.remove(component);
+        component.removedFromEntity();
+        component.entity = null;
+        if (this.scene != null)
+            this.scene._untrackComponent(component);
     }
     /**
      * Removes all Components from this Entity
      */
     removeAll() {
-        for (let i = this.components.length - 1; i >= 0; i--)
+        for (let i = this.components.count - 1; i >= 0; i--)
             this.remove(this.components[i]);
     }
     /**
      * Finds the first component in this Entity of the given Class
      */
     find(className) {
-        for (let i = 0; i < this.components.length; i++)
-            if (this.components[i] instanceof className)
-                return this.components[i];
-        return null;
+        let component = null;
+        this.components.each((c) => {
+            if (c instanceof className) {
+                component = c;
+                return false;
+            }
+        });
+        return component;
     }
     /**
      * Finds all components in this Entity of the given Class
      */
     findAll(className) {
         let list = [];
-        for (let i = 0; i < this.components.length; i++)
-            if (this.components[i] instanceof className)
-                list.push(this.components[i]);
+        this.components.each((c) => {
+            if (c instanceof className)
+                list.push(c);
+        });
         return list;
     }
     /**
@@ -3289,66 +3290,66 @@ class ButtonState {
         return this._last && !this._next;
     }
 }
-class Keys {
+class Keyboard {
     static init() {
         window.addEventListener("keydown", function (e) {
-            Keys._next[e.keyCode] = true;
+            Keyboard._next[e.keyCode] = true;
         });
         window.addEventListener("keyup", function (e) {
-            Keys._next[e.keyCode] = false;
+            Keyboard._next[e.keyCode] = false;
         });
     }
     static update() {
         for (let i = 0; i < 256; i++) {
-            Keys._last[i] = Keys._down[i];
-            Keys._down[i] = Keys._next[i];
+            Keyboard._last[i] = Keyboard._down[i];
+            Keyboard._down[i] = Keyboard._next[i];
         }
     }
-    static down(key) {
-        return (Keys._down[key] == true);
+    static check(key) {
+        return (Keyboard._down[key] == true);
     }
     static pressed(key) {
-        return (Keys._down[key] == true && !Keys._last[key]);
+        return (Keyboard._down[key] == true && !Keyboard._last[key]);
     }
     static released(key) {
-        return (!Keys._down[key] && Keys._last[key] == true);
+        return (!Keyboard._down[key] && Keyboard._last[key] == true);
     }
     static map(name, keys) {
-        if (!Keys._map[name])
-            Keys._map[name] = [];
+        if (!Keyboard._map[name])
+            Keyboard._map[name] = [];
         for (let i = 0; i < keys.length; i++)
-            Keys._map[name].push(keys[i]);
+            Keyboard._map[name].push(keys[i]);
     }
     static maps(list) {
         for (let name in list)
-            Keys.map(name, list[name]);
+            Keyboard.map(name, list[name]);
     }
-    static mapDown(key) {
-        if (Keys._map[key] != undefined)
-            for (let i = 0; i < Keys._map[key].length; i++)
-                if (Keys.down(Keys._map[key][i]))
+    static mapCheck(key) {
+        if (Keyboard._map[key] != undefined)
+            for (let i = 0; i < Keyboard._map[key].length; i++)
+                if (Keyboard.check(Keyboard._map[key][i]))
                     return true;
         return false;
     }
     static mapPressed(key) {
-        if (Keys._map[key] != undefined)
-            for (let i = 0; i < Keys._map[key].length; i++)
-                if (Keys.pressed(Keys._map[key][i]))
+        if (Keyboard._map[key] != undefined)
+            for (let i = 0; i < Keyboard._map[key].length; i++)
+                if (Keyboard.pressed(Keyboard._map[key][i]))
                     return true;
         return false;
     }
     static mapReleased(key) {
-        if (Keys._map[key] != undefined)
-            for (let i = 0; i < Keys._map[key].length; i++)
-                if (Keys.released(Keys._map[key][i]))
+        if (Keyboard._map[key] != undefined)
+            for (let i = 0; i < Keyboard._map[key].length; i++)
+                if (Keyboard.released(Keyboard._map[key][i]))
                     return true;
         return false;
     }
 }
-Keys._down = [];
-Keys._last = [];
-Keys._next = [];
-Keys._map = {};
+Keyboard._down = [];
+Keyboard._last = [];
+Keyboard._next = [];
+Keyboard._map = {};
 var Key;
 (function (Key) {
     Key[Key["backspace"] = 8] = "backspace";
@@ -3577,10 +3578,11 @@ class Renderer {
     drawEntities() {
         let camera = this.getActiveCamera();
         // draw each entity
-        let list = (this.groupsMask.length > 0 ? this.scene.allEntitiesInGroups(this.groupsMask) : this.scene.entities);
-        for (let i = list.length - 1; i >= 0; i--)
-            if (list[i].visible)
-                list[i].render(camera);
+        let list = (this.groupsMask.length > 0 ? this.scene.allInGroups(this.groupsMask) : this.scene.entities);
+        list.each((e) => {
+            if (e.visible)
+                e.render(camera);
+        });
     }
     getActiveCamera() {
         return (this.camera || this.scene.camera);
@@ -3632,17 +3634,16 @@ class Scene {
         /**
          * A list of all the Entities in the Scene
          */
-        this.entities = [];
+        this.entities = new ObjectList();
         /**
          * A list of all the Renderers in the Scene
          */
-        this.renderers = [];
+        this.renderers = new ObjectList();
         /**
-         * List of entities about to be sorted by depth
+         * List of entities organized by Group
          */
-        this.sorting = [];
-        this.colliders = {};
         this.groups = {};
+        this.colliders = {};
         this.cache = {};
         this.camera = new Camera();
         this.addRenderer(new SpriteRenderer());
@@ -3661,13 +3662,10 @@ class Scene {
      * Disposes this scene
      */
     dispose() {
-        for (let i = 0; i < this.renderers.length; i++)
-            this.renderers[i].dispose();
-        while (this.entities.length > 0)
-            this.destroy(this.entities[0]);
-        this.entities = [];
-        this.sorting = [];
-        this.renderers = [];
+        this.renderers.each((r) => r.dispose());
+        this.renderers.clear();
+        this.entities.each((e) => this.destroy(e));
+        this.entities.clear();
         this.colliders = {};
         this.groups = {};
         this.cache = {};
@@ -3677,60 +3675,57 @@ class Scene {
      */
     update() {
         // update entities
-        let lengthWas = this.entities.length;
-        for (let i = 0; i < this.entities.length; i++) {
-            let entity = this.entities[i];
-            if (!entity.isStarted) {
-                entity.isStarted = true;
-                entity.started();
+        this.entities.each((e) => {
+            if (!e.isStarted) {
+                e.isStarted = true;
+                e.started();
             }
-            if (entity.active && entity.isStarted)
-                entity.update();
-            // in case stuff was removed
-            if (lengthWas > this.entities.length) {
-                i -= (lengthWas - this.entities.length);
-                lengthWas = this.entities.length;
-            }
-        }
+            if (e.active && e.isStarted)
+                e.update();
+        });
         // update renderers
-        for (let i = 0; i < this.renderers.length; i++)
-            if (this.renderers[i].visible)
-                this.renderers[i].update();
+        this.renderers.each((r) => {
+            if (r.visible)
+                r.update();
+        });
+        // clean dirty lists
+        this.entities.clean();
+        this.renderers.clean();
+        for (let key in this.groups)
+            this.groups[key].clean();
     }
     /**
      * Called when the Scene should be rendered, and renders each of its Renderers
      */
     render() {
-        // sort entities
-        for (let i = 0; i < this.sorting.length; i++) {
-            let entity = this.sorting[i];
-            entity._depth = entity._nextDepth;
-            entity._nextDepth = null;
-            this._insertEntityInto(entity, this.entities, true);
-            for (let j = 0; j < entity.groups.length; j++)
-                this._insertEntityInto(entity, this.groups[entity.groups[j]], true);
-        }
-        this.sorting = [];
+        // sort entities (only sorts if required)
+        this.entities.sort((a, b) => b.depth - a.depth);
+        for (let key in this.groups)
+            this.groups[key].sort((a, b) => b.depth - a.depth);
         // pre-render
-        for (let i = 0; i < this.renderers.length; i++)
-            if (this.renderers[i].visible)
-                this.renderers[i].preRender();
+        this.renderers.each((r) => {
+            if (r.visible)
+                r.preRender();
+        });
         // render
-        for (let i = 0; i < this.renderers.length; i++)
-            if (this.renderers[i].visible)
-                this.renderers[i].render();
+        this.renderers.each((r) => {
+            if (r.visible)
+                r.render();
+        });
         // post-render
-        for (let i = 0; i < this.renderers.length; i++)
-            if (this.renderers[i].visible)
-                this.renderers[i].postRender();
+        this.renderers.each((r) => {
+            if (r.visible)
+                r.postRender();
+        });
         // debug render
         if (Engine.debugMode) {
             Engine.graphics.setRenderTarget(Engine.graphics.buffer);
             Engine.graphics.shader = Shaders.primitive;
             Engine.graphics.shader.set("matrix", this.camera.matrix);
-            for (let i = 0; i < this.entities.length; i++)
-                if (this.entities[i].active)
-                    this.entities[i].debugRender(this.camera);
+            this.entities.each((e) => {
+                if (e.active)
+                    e.debugRender(this.camera);
+            });
         }
     }
     /**
@@ -3740,7 +3735,7 @@ class Scene {
      */
     add(entity, position) {
         entity.scene = this;
-        this._insertEntityInto(entity, this.entities, false);
+        this.entities.add(entity);
         if (position != undefined)
             entity.position.set(position.x, position.y);
         // first time for this entity
@@ -3752,8 +3747,7 @@ class Scene {
         for (let i = 0; i < entity.groups.length; i++)
             this._groupEntity(entity, entity.groups[i]);
         // add existing components in the entity
-        for (let i = 0; i < entity.components.length; i++)
-            this._trackComponent(entity.components[i]);
+        entity.components.each((c) => this._trackComponent(c));
         // add entity
         entity.added();
         return entity;
@@ -3787,34 +3781,22 @@ class Scene {
      * @param entity 	The entity to remove
      */
     remove(entity) {
-        let index = this.entities.indexOf(entity);
-        if (index >= 0)
-            this.removeAt(index);
-    }
-    /**
-     * Removes an Entity from Scene.entities at the given index
-     * @param index 	The Index to remove at
-     */
-    removeAt(index) {
-        let entity = this.entities[index];
         entity.removed();
         // untrack all components
-        for (let i = 0; i < entity.components.length; i++)
-            this._untrackComponent(entity.components[i]);
+        entity.components.each((c) => this._untrackComponent(c));
         // ungroup
         for (let i = 0; i < entity.groups.length; i++)
             this._ungroupEntity(entity, entity.groups[i]);
         // remove entity
         entity.isStarted = false;
         entity.scene = null;
-        this.entities.splice(index, 1);
+        this.entities.remove(entity);
     }
     /**
      * Removes every Entity from the Scene
      */
     removeAll() {
-        for (let i = this.entities.length - 1; i >= 0; i--)
-            this.removeAt(i);
+        this.entities.each((e) => this.remove(e));
     }
     /**
      * Destroys the given entity (calls Entity.destroy, sets Entity.instantiated to false)
@@ -3827,33 +3809,42 @@ class Scene {
         entity.isCreated = false;
     }
     find(className) {
-        for (let i = 0; i < this.entities.length; i++)
-            if (this.entities[i] instanceof className)
-                return this.entities[i];
-        return null;
+        let entity = null;
+        this.entities.each((e) => {
+            if (e instanceof className) {
+                entity = e;
+                return false;
+            }
+        });
+        return entity;
     }
     findAll(className) {
         let list = [];
-        for (let i = 0; i < this.entities.length; i++)
-            if (this.entities[i] instanceof className)
-                list.push(this.entities[i]);
+        this.entities.each((e) => {
+            if (e instanceof className)
+                list.push(e);
+        });
         return list;
     }
-    firstEntityInGroup(group) {
-        if (this.groups[group] != undefined && this.groups[group].length > 0)
-            return this.groups[group][0];
+    firstInGroup(group) {
+        if (this.groups[group] != undefined && this.groups[group].count > 0)
+            return this.groups[group].first();
         return null;
     }
-    allEntitiesInGroup(group) {
+    allInGroup(group) {
         if (this.groups[group] != undefined)
             return this.groups[group];
-        return [];
+        return null;
     }
-    allEntitiesInGroups(groups) {
-        let lists = [];
-        for (let i = 0; i < groups.length; i++)
-            lists.concat(this.allEntitiesInGroup(groups[i]));
-        return lists;
+    allInGroups(groups, into = null) {
+        if (into == null || into == undefined)
+            into = new ObjectList();
+        for (let i = 0; i < groups.length; i++) {
+            let list = this.allInGroup(groups[i]);
+            if (list != null)
+                list.each((e) => into.add(e));
+        }
+        return into;
     }
     firstColliderInTag(tag) {
         if (this.colliders[tag] != undefined && this.colliders[tag].length > 0)
@@ -3867,48 +3858,24 @@ class Scene {
     }
     addRenderer(renderer) {
         renderer.scene = this;
-        this.renderers.push(renderer);
+        this.renderers.add(renderer);
         return renderer;
     }
     removeRenderer(renderer, dispose) {
-        let index = this.renderers.indexOf(renderer);
-        if (index >= 0)
-            this.renderers.splice(index, 1);
+        this.renderers.remove(renderer);
         if (dispose)
             renderer.dispose();
         renderer.scene = null;
         return renderer;
     }
-    _insertEntityInto(entity, list, removeFrom) {
-        if (removeFrom) {
-            let index = list.indexOf(entity);
-            if (index >= 0)
-                list.splice(index, 1);
-        }
-        if (list.length == 0)
-            list.push(entity);
-        else {
-            // todo: replace with a binary search to make it faster
-            let i = 0;
-            for (i = 0; i < list.length && list[i]._depth < entity._depth; i++)
-                continue;
-            list.splice(i, 0, entity);
-        }
-    }
     _groupEntity(entity, group) {
         if (this.groups[group] == undefined)
-            this.groups[group] = [];
-        this._insertEntityInto(entity, this.groups[group], false);
+            this.groups[group] = new ObjectList();
+        this.groups[group].add(entity);
     }
     _ungroupEntity(entity, group) {
-        if (this.groups[group] != undefined) {
-            let index = this.groups[group].indexOf(entity);
-            if (index >= 0) {
-                this.groups[group].splice(index, 1);
-                if (this.groups[group].length <= 0)
-                    delete this.groups[group];
-            }
-        }
+        if (this.groups[group] != undefined)
+            this.groups[group].remove(entity);
     }
     _trackComponent(component) {
         if (component.entity == null || component.entity.scene != this)
@@ -4316,6 +4283,110 @@ class Matrix {
         this.mat[6] = x;
         this.mat[7] = y;
         return this;
+    }
+}
+/**
+ * Custom list class that allows entries to be removed while the list is being iterated over
+ * Used for Entity and Renderer lists (so you can iterate over entities and remove them)
+ */
+class ObjectList {
+    constructor() {
+        this.objects = [];
+    }
+    get count() { return this._count; }
+    /**
+     * Adds an object to the List
+     * @param object the object to add
+     */
+    add(object) {
+        this.objects.push(object);
+        this._count++;
+        this.unsorted = true;
+        return object;
+    }
+    /**
+     * Gets the first entry in the list
+     */
+    first() {
+        let entry = null;
+        for (let i = 0; i < this.objects.length && entry == null; i++)
+            entry = this.objects[i];
+        return entry;
+    }
+    /**
+     * Iterates over every object in the List. Return false in the callback to break
+     * @param callback
+     */
+    each(callback) {
+        let count = this.objects.length;
+        for (let i = 0; i < count; i++)
+            if (this.objects[i] != null)
+                if (callback(this.objects[i]) == false)
+                    break;
+    }
+    /**
+     * Gets an object at the given index
+     * @param index
+     */
+    at(index) {
+        for (let i = index; i < this.objects.length; i++)
+            if (this.objects[i] != null)
+                return this.objects[i];
+        return null;
+    }
+    /**
+     * Sorts the list by the compare function
+     * @param compare
+     */
+    sort(compare) {
+        if (this.unsorted) {
+            for (let i = 0; i < this.objects.length - 1; ++i) {
+                let j = i + 1;
+                while (j > 0 && this.objects[j - 1] != null && this.objects[j] != null && compare(this.objects[j - 1], this.objects[j]) > 0) {
+                    let temp = this.objects[j - 1];
+                    this.objects[j - 1] = this.objects[j];
+                    this.objects[j--] = temp;
+                }
+            }
+            this.unsorted = false;
+        }
+    }
+    /**
+     * Removes the given object from the list. Returns true if removed
+     * @param object
+     */
+    remove(object) {
+        let index = this.objects.indexOf(object);
+        if (index >= 0) {
+            this.objects[index] = null;
+            this._count--;
+            this.dirty = true;
+            return true;
+        }
+        return false;
+    }
+    /**
+     * Clears the entire list
+     */
+    clear() {
+        for (let i = 0; i < this.objects.length; i++)
+            this.objects[i] = null;
+        this._count = 0;
+        this.dirty = true;
+    }
+    /**
+     * Cleans the list (removing null entries)
+     */
+    clean() {
+        if (this.dirty) {
+            if (this.count <= 0)
+                this.objects = [];
+            else {
+                for (let i = this.objects.length - 1; i >= 0; i--)
+                    if (this.objects[i] == null)
+                        this.objects.splice(i, 1);
+            }
+        }
     }
 }
 class Rectangle {

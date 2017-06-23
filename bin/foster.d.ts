@@ -1114,13 +1114,12 @@ declare class Entity {
     /**
      * List of all Entity components
      */
-    components: Component[];
+    components: ObjectList<Component>;
     /**
      * List of all Groups the Entity is in
      */
     groups: string[];
-    _depth: number;
-    _nextDepth: number;
+    private _depth;
     /**
      * The Render-Depth of the Entity (lower = rendered later)
      */
@@ -1429,21 +1428,21 @@ declare class ButtonState {
     pressed(): boolean;
     released(): boolean;
 }
-declare class Keys {
+declare class Keyboard {
     private static _down;
     private static _last;
     private static _next;
     private static _map;
     static init(): void;
     static update(): void;
-    static down(key: Key): boolean;
+    static check(key: Key): boolean;
     static pressed(key: Key): boolean;
     static released(key: Key): boolean;
     static map(name: string, keys: Key[]): void;
     static maps(list: {
         [name: string]: Key[];
     }): void;
-    static mapDown(key: string): boolean;
+    static mapCheck(key: string): boolean;
     static mapPressed(key: string): boolean;
     static mapReleased(key: string): boolean;
 }
@@ -1660,17 +1659,18 @@ declare class Scene {
     /**
      * A list of all the Entities in the Scene
      */
-    entities: Entity[];
+    entities: ObjectList<Entity>;
     /**
      * A list of all the Renderers in the Scene
      */
-    renderers: Renderer[];
+    renderers: ObjectList<Renderer>;
     /**
-     * List of entities about to be sorted by depth
+     * List of entities organized by Group
      */
-    sorting: Entity[];
+    groups: {
+        [id: string]: ObjectList<Entity>;
+    };
     private colliders;
-    private groups;
     private cache;
     constructor();
     /**
@@ -1716,11 +1716,6 @@ declare class Scene {
      */
     remove(entity: Entity): void;
     /**
-     * Removes an Entity from Scene.entities at the given index
-     * @param index 	The Index to remove at
-     */
-    removeAt(index: number): void;
-    /**
      * Removes every Entity from the Scene
      */
     removeAll(): void;
@@ -1731,14 +1726,13 @@ declare class Scene {
     destroy(entity: Entity): void;
     find<T extends Entity>(className: Function): T;
     findAll<T extends Entity>(className: Function): T[];
-    firstEntityInGroup(group: string): Entity;
-    allEntitiesInGroup(group: string): Entity[];
-    allEntitiesInGroups(groups: string[]): Entity[];
+    firstInGroup(group: string): Entity;
+    allInGroup(group: string): ObjectList<Entity>;
+    allInGroups(groups: string[], into?: ObjectList<Entity>): ObjectList<Entity>;
     firstColliderInTag(tag: string): Collider;
     allCollidersInTag(tag: string): Collider[];
     addRenderer(renderer: Renderer): Renderer;
     removeRenderer(renderer: Renderer, dispose: boolean): Renderer;
-    _insertEntityInto(entity: Entity, list: Entity[], removeFrom: boolean): void;
     _groupEntity(entity: Entity, group: string): void;
     _ungroupEntity(entity: Entity, group: string): void;
     _trackComponent(component: Component): void;
@@ -1846,6 +1840,54 @@ declare class Matrix {
     fromRotation(rad: number): Matrix;
     fromScale(x: number, y: number): Matrix;
     fromTranslation(x: number, y: number): Matrix;
+}
+/**
+ * Custom list class that allows entries to be removed while the list is being iterated over
+ * Used for Entity and Renderer lists (so you can iterate over entities and remove them)
+ */
+declare class ObjectList<T> {
+    private objects;
+    unsorted: boolean;
+    private dirty;
+    private _count;
+    readonly count: number;
+    /**
+     * Adds an object to the List
+     * @param object the object to add
+     */
+    add(object: T): T;
+    /**
+     * Gets the first entry in the list
+     */
+    first(): T;
+    /**
+     * Iterates over every object in the List. Return false in the callback to break
+     * @param callback
+     */
+    each(callback: (object: T) => any): void;
+    /**
+     * Gets an object at the given index
+     * @param index
+     */
+    at(index: number): T;
+    /**
+     * Sorts the list by the compare function
+     * @param compare
+     */
+    sort(compare: (a: T, b: T) => number): void;
+    /**
+     * Removes the given object from the list. Returns true if removed
+     * @param object
+     */
+    remove(object: T): boolean;
+    /**
+     * Clears the entire list
+     */
+    clear(): void;
+    /**
+     * Cleans the list (removing null entries)
+     */
+    clean(): void;
 }
 declare class Rectangle {
     x: number;
