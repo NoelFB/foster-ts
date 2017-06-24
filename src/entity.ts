@@ -165,7 +165,7 @@ class Entity
 	/**
 	 * Adds a Component to this Entity
 	 */
-	add(component:Component):void
+	add<T extends Component>(component:T):T
 	{
 		this.components.add(component);
 		component.entity = this;
@@ -173,18 +173,21 @@ class Entity
 
 		if (this.scene != null)
 			this.scene._trackComponent(component);
+
+		return component;
 	}
 
 	/**
 	 * Removes a Components from this Entity
 	 */
-	remove(component:Component):void
+	remove<T extends Component>(component:T):T
 	{
 		this.components.remove(component);
 		component.removedFromEntity();
 		component.entity = null;
 		if (this.scene != null)
 			this.scene._untrackComponent(component);
+		return component;
 	}
 
 	/**
