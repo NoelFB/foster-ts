@@ -1,5 +1,3 @@
-/// <reference path="./fosterWebGLTexture.ts"/>
-
 /**
  * A Texture used for Rendering
  */

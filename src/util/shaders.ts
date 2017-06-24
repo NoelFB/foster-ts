@@ -1,5 +1,3 @@
-/// <reference path="./shader.ts" />
-
 /**
  * Default 2D shaders
  */

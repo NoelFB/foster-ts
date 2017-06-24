@@ -1,7 +1,7 @@
-/// <reference path="./../../component.ts"/>
 abstract class Collider extends Component
 {
 	public tags:string[] = [];
+	public type:string; // should be the Class.name of the lowest parent collider, ex Hitbox.name or Hitgrid.name, etc
 	
 	public tag(tag:string):void
 	{
@@ -80,22 +80,25 @@ abstract class Collider extends Component
 		return list;
 	}
 	
+	public static overlaptest = {};
+	public static registerOverlapTest(fromType:Function, toType:Function, test:(a:Collider, b:Collider)=>boolean)
+	{
+		if (Collider.overlaptest[fromType.name] == undefined)
+			Collider.overlaptest[fromType.name] = {};
+		if (Collider.overlaptest[toType.name] == undefined)
+			Collider.overlaptest[toType.name] = {};
+		Collider.overlaptest[fromType.name][toType.name] = (a, b) => { return test(a, b); };
+		Collider.overlaptest[toType.name][fromType.name] = (a, b) => { return test(b, a); };
+	}
+	public static registerDefaultOverlapTests()
+	{
+		Collider.registerOverlapTest(Hitbox, Hitbox, Collider.overlap_hitbox_hitbox);
+		Collider.registerOverlapTest(Hitbox, Hitgrid, Collider.overlap_hitbox_grid);
+	}
+
 	public static overlap(a:Collider, b:Collider):boolean
 	{
-		if (a instanceof Hitbox && b instanceof Hitbox)
-		{
-			return Collider.overlap_hitbox_hitbox(a as Hitbox, b as Hitbox);
-		}
-		else if (a instanceof Hitbox && b instanceof Hitgrid)
-		{
-			return Collider.overlap_hitbox_grid(a as Hitbox, b as Hitgrid);
-		}
-		else if (a instanceof Hitgrid && b instanceof Hitbox)
-		{
-			return Collider.overlap_hitbox_grid(b as Hitbox, a as Hitgrid);
-		}
-		
-		return false;
+		return Collider.overlaptest[a.type][b.type](a, b);
 	}
 	
 	public static overlap_hitbox_hitbox(a:Hitbox, b:Hitbox):boolean

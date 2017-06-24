@@ -704,7 +704,6 @@ class FosterWebGLTexture {
         }
     }
 }
-/// <reference path="./fosterWebGLTexture.ts"/>
 /**
  * The Render Target is used for rendering graphics to
  */
@@ -767,7 +766,6 @@ class RenderTarget {
         return new RenderTarget(frameBuffer, new FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
     }
 }
-/// <reference path="./fosterWebGLTexture.ts"/>
 /**
  * A Texture used for Rendering
  */
@@ -992,7 +990,6 @@ class Component {
      */
     debugRender(camera) { }
 }
-/// <reference path="./../component.ts"/>
 class Alarm extends Component {
     constructor() {
         super();
@@ -1066,7 +1063,6 @@ class Alarm extends Component {
         return alarm;
     }
 }
-/// <reference path="./../../component.ts"/>
 class Collider extends Component {
     constructor() {
         super(...arguments);
@@ -1128,17 +1124,20 @@ class Collider extends Component {
         this.y -= y || 0;
         return list;
     }
+    static registerOverlapTest(fromType, toType, test) {
+        if (Collider.overlaptest[fromType.name] == undefined)
+            Collider.overlaptest[fromType.name] = {};
+        if (Collider.overlaptest[toType.name] == undefined)
+            Collider.overlaptest[toType.name] = {};
+        Collider.overlaptest[fromType.name][toType.name] = (a, b) => { return test(a, b); };
+        Collider.overlaptest[toType.name][fromType.name] = (a, b) => { return test(b, a); };
+    }
+    static registerDefaultOverlapTests() {
+        Collider.registerOverlapTest(Hitbox, Hitbox, Collider.overlap_hitbox_hitbox);
+        Collider.registerOverlapTest(Hitbox, Hitgrid, Collider.overlap_hitbox_grid);
+    }
     static overlap(a, b) {
-        if (a instanceof Hitbox && b instanceof Hitbox) {
-            return Collider.overlap_hitbox_hitbox(a, b);
-        }
-        else if (a instanceof Hitbox && b instanceof Hitgrid) {
-            return Collider.overlap_hitbox_grid(a, b);
-        }
-        else if (a instanceof Hitgrid && b instanceof Hitbox) {
-            return Collider.overlap_hitbox_grid(b, a);
-        }
-        return false;
+        return Collider.overlaptest[a.type][b.type](a, b);
     }
     static overlap_hitbox_hitbox(a, b) {
         return a.sceneRight > b.sceneLeft && a.sceneBottom > b.sceneTop && a.sceneLeft < b.sceneRight && a.sceneTop < b.sceneBottom;
@@ -1156,7 +1155,7 @@ class Collider extends Component {
         return false;
     }
 }
-/// <reference path="./collider.ts"/>
+Collider.overlaptest = {};
 class Hitbox extends Collider {
     get sceneLeft() { return this.scenePosition.x + this.left; }
     get sceneRight() { return this.scenePosition.x + this.left + this.width; }
@@ -1165,6 +1164,7 @@ class Hitbox extends Collider {
     get sceneBounds() { return new Rectangle(this.sceneLeft, this.sceneTop, this.width, this.height); }
     constructor(left, top, width, height, tags) {
         super();
+        this.type = Hitbox.name;
         this.left = left;
         this.top = top;
         this.width = width;
@@ -1177,12 +1177,12 @@ class Hitbox extends Collider {
         Engine.graphics.hollowRect(this.sceneLeft, this.sceneTop, this.width, this.height, 1, Color.red);
     }
 }
-/// <reference path="./collider.ts"/>
 class Hitgrid extends Collider {
     constructor(tileWidth, tileHeight, tags) {
         super();
         this.map = {};
         this.debugSub = new Color(200, 200, 200, 0.5);
+        this.type = Hitgrid.name;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
         if (tags != undefined)
@@ -1236,7 +1236,6 @@ class Hitgrid extends Collider {
         }
     }
 }
-/// <reference path="./../component.ts"/>
 /**
  * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
  * More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
@@ -1459,9 +1458,8 @@ Vector.temp0 = new Vector();
 Vector.temp1 = new Vector();
 Vector.temp2 = new Vector();
 Vector._zero = new Vector();
-/// <reference path="./../../component.ts"/>
-/// <reference path="./../../util/Color.ts"/>
-/// <reference path="./../../util/Vector.ts"/>
+/// <reference path="./../../util/color.ts"/>
+/// <reference path="./../../util/vector.ts"/>
 class ParticleSystem extends Component {
     constructor(template) {
         super();
@@ -1744,7 +1742,6 @@ class ParticleTemplate {
     }
 }
 ParticleTemplate.templates = {};
-/// <reference path="./colliders/hitbox.ts"/>
 class Physics extends Hitbox {
     constructor(left, top, width, height, tags, solids) {
         super(left, top, width, height, tags);
@@ -1856,7 +1853,6 @@ class Physics extends Hitbox {
         this.remainder.x = this.remainder.y = 0;
     }
 }
-/// <reference path="./../../component.ts"/>
 class Graphic extends Component {
     constructor(texture, position) {
         super();
@@ -1886,7 +1882,6 @@ class Graphic extends Component {
         Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
 }
-/// <reference path="./../../component.ts"/>
 class Rectsprite extends Component {
     constructor(width, height, color) {
         super();
@@ -1914,7 +1909,6 @@ class Rectsprite extends Component {
         }
     }
 }
-/// <reference path="./graphic.ts"/>
 class Sprite extends Graphic {
     constructor(animation) {
         super(null);
@@ -1983,7 +1977,6 @@ class Sprite extends Graphic {
             super.render(camera);
     }
 }
-/// <reference path="./../../component.ts"/>
 class Tilemap extends Component {
     constructor(texture, tileWidth, tileHeight) {
         super();
@@ -2049,7 +2042,6 @@ class Tilemap extends Component {
         }
     }
 }
-/// <reference path="./../component.ts"/>
 class Tween extends Component {
     constructor() {
         super();
@@ -2258,6 +2250,7 @@ class Engine {
             console.log("%c " + c + " ENGINE START " + c + " ", "background: #222; color: #ff44aa;");
             Engine.instance.root = document.getElementsByTagName("body")[0];
             // init
+            Collider.registerDefaultOverlapTests();
             FosterIO.init();
             Engine.instance.graphics = new Graphics(Engine.instance);
             Engine.instance.graphics.load();
@@ -3223,8 +3216,6 @@ class Graphics {
         this.rect(x, y + height - stroke, width, stroke, color);
     }
 }
-/// <reference path="./../component.ts"/>
-/// <reference path="./../util/vector.ts"/>
 class GamepadManager {
     static init() {
         window.addEventListener("gamepadconnected", GamepadManager.onAddController, false);
@@ -3486,7 +3477,6 @@ var Key;
     Key[Key["closeBraket"] = 221] = "closeBraket";
     Key[Key["singleQuote"] = 222] = "singleQuote";
 })(Key || (Key = {}));
-/// <reference path="./../util/vector.ts"/>
 class Mouse {
     static get x() { return this._position.x; }
     static get y() { return this._position.y; }
@@ -3498,6 +3488,8 @@ class Mouse {
     static get rightPressed() { return this._right && !this._rightWas; }
     static get rightReleased() { return !this._right && this._rightWas; }
     static init() {
+        Mouse._position = new Vector(0, 0);
+        Mouse._positionNext = new Vector(0, 0);
         Engine.root.addEventListener("mousemove", function (e) {
             Mouse.absolute = new Vector(e.pageX, e.pageY);
             Mouse.setNextMouseTo(e.pageX, e.pageY);
@@ -3547,8 +3539,6 @@ class Mouse {
         Mouse._positionNext = new Vector((pageX - screen.left - scaled.left) / scale.x, (pageY - screen.top - scaled.top) / scale.y);
     }
 }
-Mouse._position = new Vector(0, 0);
-Mouse._positionNext = new Vector(0, 0);
 Mouse.absolute = new Vector(0, 0);
 /**
  * Used by the Scene to render. A Scene can have multiple renderers that essentially act as separate layers / draw calls
@@ -3634,7 +3624,6 @@ class Renderer {
         this.target = null;
     }
 }
-/// <reference path="./../renderer.ts"/>
 /**
  * Uses the Primitive Shader when rendering
  */
@@ -3645,7 +3634,6 @@ class PrimitiveRenderer extends Renderer {
         this.shaderCameraUniformName = "matrix";
     }
 }
-/// <reference path="./../renderer.ts"/>
 /**
  * Uses the Texture Shader when rendering
  */
@@ -4003,7 +3991,6 @@ class Calc {
         return list[Math.floor(Math.random() * list.length)];
     }
 }
-/// <reference path="./vector.ts"/>
 /**
  * Camera used to create a Matrix during rendering. Scenes and Renderers may have Cameras
  */
@@ -4723,7 +4710,6 @@ setGLUniformValue[ShaderUniformType.matrix3d] = (gl, location, value) => {
 setGLUniformValue[ShaderUniformType.matrix4d] = (gl, location, value) => {
     gl.uniformMatrix2fv(location, false, value);
 };
-/// <reference path="./shader.ts" />
 /**
  * Default 2D shaders
  */

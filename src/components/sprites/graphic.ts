@@ -1,4 +1,3 @@
-/// <reference path="./../../component.ts"/>
 class Graphic extends Component
 {
 

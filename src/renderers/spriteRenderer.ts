@@ -1,5 +1,3 @@
-/// <reference path="./../renderer.ts"/>
-
 /**
  * Uses the Texture Shader when rendering
  */

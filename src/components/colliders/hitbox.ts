@@ -1,4 +1,3 @@
-/// <reference path="./collider.ts"/>
 class Hitbox extends Collider
 {
 	public left:number;
@@ -16,6 +15,7 @@ class Hitbox extends Collider
 	{
 		super();
 		
+		this.type = Hitbox.name;
 		this.left = left;
 		this.top = top;
 		this.width = width;

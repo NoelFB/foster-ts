@@ -125,6 +125,7 @@ class Engine
 			Engine.instance.root = document.getElementsByTagName("body")[0];
 
 			// init
+			Collider.registerDefaultOverlapTests();
 			FosterIO.init();
 			Engine.instance.graphics = new Graphics(Engine.instance);
 			Engine.instance.graphics.load();

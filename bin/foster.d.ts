@@ -599,6 +599,7 @@ declare class Alarm extends Component {
 }
 declare abstract class Collider extends Component {
     tags: string[];
+    type: string;
     tag(tag: string): void;
     untag(tag: string): void;
     check(tag: string, x?: number, y?: number): boolean;
@@ -606,6 +607,9 @@ declare abstract class Collider extends Component {
     collide(tag: string, x: number, y: number): Collider;
     collides(tags: string[], x?: number, y?: number): Collider;
     collideAll(tag: string, x?: number, y?: number): Collider[];
+    static overlaptest: {};
+    static registerOverlapTest(fromType: Function, toType: Function, test: (a: Collider, b: Collider) => boolean): void;
+    static registerDefaultOverlapTests(): void;
     static overlap(a: Collider, b: Collider): boolean;
     static overlap_hitbox_hitbox(a: Hitbox, b: Hitbox): boolean;
     static overlap_hitbox_grid(a: Hitbox, b: Hitgrid): boolean;

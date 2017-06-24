@@ -1,5 +1,3 @@
-/// <reference path="./fosterWebGLTexture.ts"/>
-
 /**
  * The Render Target is used for rendering graphics to
  */

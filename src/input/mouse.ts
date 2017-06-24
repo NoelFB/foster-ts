@@ -1,4 +1,3 @@
-/// <reference path="./../util/vector.ts"/>
 class Mouse
 {
 	
@@ -8,8 +7,8 @@ class Mouse
 	private static _right:boolean;
 	private static _rightWas:boolean;
 	private static _rightNext:boolean;
-	private static _position:Vector = new Vector(0,0);
-	private static _positionNext:Vector = new Vector(0,0);
+	private static _position:Vector;
+	private static _positionNext:Vector;
 	
 	public static get x():number { return this._position.x; }
 	public static get y():number  { return this._position.y; }
@@ -25,6 +24,9 @@ class Mouse
 	
 	public static init():void
 	{
+		Mouse._position = new Vector(0,0);
+		Mouse._positionNext = new Vector(0,0);
+
 		Engine.root.addEventListener("mousemove", function(e)
 		{
 			Mouse.absolute = new Vector(e.pageX, e.pageY);

@@ -1,5 +1,3 @@
-/// <reference path="./vector.ts"/>
-
 /**
  * Camera used to create a Matrix during rendering. Scenes and Renderers may have Cameras
  */

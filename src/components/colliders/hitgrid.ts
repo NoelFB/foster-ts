@@ -1,4 +1,3 @@
-/// <reference path="./collider.ts"/>
 class Hitgrid extends Collider
 {
 	public tileWidth:number;
@@ -10,6 +9,7 @@ class Hitgrid extends Collider
 	{
 		super();
 
+		this.type = Hitgrid.name;
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
 

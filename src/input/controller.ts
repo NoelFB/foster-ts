@@ -1,6 +1,3 @@
-/// <reference path="./../component.ts"/>
-/// <reference path="./../util/vector.ts"/>
-
 class GamepadManager
 {
 	public static defaultDeadzone:number = 0.3;
