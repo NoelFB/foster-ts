@@ -252,15 +252,18 @@ class Engine
 		if (this.scene != null)
 			this.scene.update()
 
-		// begin drawing
-		this.graphics.reset();
+		if (this.nextScene == null)
+		{
+			// begin drawing
+			this.graphics.reset();
 
-		// render current scene
-		if (this.scene != null)
-			this.scene.render();
+			// render current scene
+			if (this.scene != null)
+				this.scene.render();
 
-		// final flush on graphics
-		this.graphics.finalize();
+			// final flush on graphics
+			this.graphics.finalize();
+		}
 
 		// update sounds
 		for (let i = 0; i < Sound.active.length; i ++)
