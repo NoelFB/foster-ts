@@ -1,7 +1,7 @@
 /**
- * An animation template handles a single Animation in an Animation Set (ex. Player.Run)
+ * An animation template handles a single Animation in an Sprite Template (ex. Player.Run)
  */
-class AnimationTemplate
+class SpriteAnimationTemplate
 {
 	/**
 	 * The name of the Animation

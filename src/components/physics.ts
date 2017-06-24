@@ -22,6 +22,13 @@ class Physics extends Hitbox
 		if (this.speed.y != 0)
 			this.moveY(this.speed.y * Engine.delta);
 	}
+
+	public moveBy(amount:Vector):boolean
+	{
+		var movedX = this.moveX(amount.x);
+		var movedY = this.moveY(amount.y);
+		return movedX && movedY;
+	}
 	
 	public move(x:number, y:number):boolean
 	{

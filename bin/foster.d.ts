@@ -1,7 +1,7 @@
 /**
- * An animation template handles a single Animation in an Animation Set (ex. Player.Run)
+ * An animation template handles a single Animation in an Sprite Template (ex. Player.Run)
  */
-declare class AnimationTemplate {
+declare class SpriteAnimationTemplate {
     /**
      * The name of the Animation
      */
@@ -33,63 +33,63 @@ declare class AnimationTemplate {
     constructor(name: string, speed: number, frames: Texture[], loops?: boolean, position?: Vector, origin?: Vector);
 }
 /**
- * Animation Set holds a list of Animation Templates, referenced by name
+ * Sprite Bank holds all the Sprite templates in the game
  */
-declare class AnimationSet {
+declare class SpriteBank {
     /**
-     * The animation set name
+     * Reference to all the Animations
+     */
+    static bank: {
+        [name: string]: SpriteTemplate;
+    };
+    /**
+     * Creates a new Animation Set of the given Name
+     */
+    static create(name: string): SpriteTemplate;
+    /**
+     * Gets an Animation of the given name
+     */
+    static get(name: string): SpriteTemplate;
+    /**
+     * Checks if an animation with the given name exists
+     */
+    static has(name: string): boolean;
+}
+/**
+ * Sprite Template holds a list of Animation Templates, referenced by name
+ */
+declare class SpriteTemplate {
+    /**
+     * The Sprite Template name
      */
     name: string;
     /**
      * A list of all the animation template, by their name
      */
     animations: {
-        [name: string]: AnimationTemplate;
+        [name: string]: SpriteAnimationTemplate;
     };
     /**
      * First animation template
      */
-    first: AnimationTemplate;
+    first: SpriteAnimationTemplate;
     constructor(name: string);
     /**
      * Adds a new Animation Template to this set
      */
-    add(name: string, speed: number, frames: Texture[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
+    add(name: string, speed: number, frames: Texture[], loops: boolean, position?: Vector, origin?: Vector): SpriteTemplate;
     /**
      * Adds a new frame-based Animation Template to this set
      */
-    addFrameAnimation(name: string, speed: number, tex: Texture, frameWidth: number, frameHeight: number, frames: number[], loops: boolean, position?: Vector, origin?: Vector): AnimationSet;
+    addFrameAnimation(name: string, speed: number, tex: Texture, frameWidth: number, frameHeight: number, frames: number[], loops: boolean, position?: Vector, origin?: Vector): SpriteTemplate;
     /**
      * Gets an animation template by its name
      */
-    get(name: string): AnimationTemplate;
+    get(name: string): SpriteAnimationTemplate;
     /**
      * Checks if an animation template exists by the given name
      */
     has(name: string): boolean;
-}
-/**
- * Animation Bank holds all the Animations in the game
- */
-declare class AnimationBank {
-    /**
-     * Reference to all the Animations
-     */
-    static bank: {
-        [name: string]: AnimationSet;
-    };
-    /**
-     * Creates a new Animation Set of the given Name
-     */
-    static create(name: string): AnimationSet;
-    /**
-     * Gets an Animation of the given name
-     */
-    static get(name: string): AnimationSet;
-    /**
-     * Checks if an animation with the given name exists
-     */
-    static has(name: string): boolean;
 }
 /**
  * Loads a set of assets
@@ -730,8 +730,9 @@ declare class Vector {
     transform(m: Matrix): Vector;
     clone(): Vector;
     readonly length: number;
+    readonly angle: number;
     readonly normal: Vector;
-    normalize(): Vector;
+    normalize(length?: number): Vector;
     static directions: Vector[];
     static temp0: Vector;
     static temp1: Vector;
@@ -832,6 +833,7 @@ declare class Physics extends Hitbox {
     private remainder;
     constructor(left: number, top: number, width: number, height: number, tags?: string[], solids?: string[]);
     update(): void;
+    moveBy(amount: Vector): boolean;
     move(x: number, y: number): boolean;
     moveX(amount: number): boolean;
     moveXAbsolute(amount: number): boolean;
@@ -875,9 +877,9 @@ declare class Sprite extends Graphic {
     private _animation;
     private _playing;
     private _frame;
-    readonly animation: AnimationSet;
-    readonly playing: AnimationTemplate;
-    readonly frame: number;
+    readonly animation: SpriteTemplate;
+    readonly playing: SpriteAnimationTemplate;
+    frame: number;
     rate: number;
     constructor(animation: string);
     play(name: string, restart?: boolean): void;
@@ -1166,11 +1168,11 @@ declare class Entity {
     /**
      * Adds a Component to this Entity
      */
-    add(component: Component): void;
+    add<T extends Component>(component: T): T;
     /**
      * Removes a Components from this Entity
      */
-    remove(component: Component): void;
+    remove<T extends Component>(component: T): T;
     /**
      * Removes all Components from this Entity
      */

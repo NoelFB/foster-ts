@@ -85,6 +85,11 @@ class Vector
 	{
 		return Math.sqrt((this.x * this.x) + (this.y * this.y));
 	}
+
+	public get angle():number
+	{
+		return Math.atan2(this.y, this.x);
+	}
 	
 	public get normal():Vector
 	{
@@ -92,11 +97,11 @@ class Vector
 		return new Vector(this.x / dist, this.y / dist);
 	}
 
-	public normalize():Vector
+	public normalize(length:number = 1):Vector
 	{
 		let dist = this.length;
-		this.x /= dist;
-		this.y /= dist;
+		this.x = (this.x / dist) * length;
+		this.y = (this.y / dist) * length;
 		return this;
 	}
 

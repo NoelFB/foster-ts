@@ -1,21 +1,31 @@
 /// <reference path="./graphic.ts"/>
 class Sprite extends Graphic
 {
-	private _animation:AnimationSet = null;
-	private _playing:AnimationTemplate = null;
+	private _animation:SpriteTemplate = null;
+	private _playing:SpriteAnimationTemplate = null;
 	private _frame:number = 0;
 
-	public get animation():AnimationSet { return this._animation; }
-	public get playing():AnimationTemplate { return this._playing; }
+	public get animation():SpriteTemplate { return this._animation; }
+	public get playing():SpriteAnimationTemplate { return this._playing; }
 	public get frame():number { return Math.floor(this._frame); }
+	public set frame(n:number)
+	{
+		this._frame = n;
+		if (this.playing != null)
+		{
+			this._frame = Calc.clamp(n, 0, this.playing.frames.length);
+			this.texture = this.playing.frames[this.frame];
+		}
+
+	}
 	public rate:number = 1;
 
 	constructor(animation:string)
 	{
 		super(null);
 
-		Engine.assert(AnimationBank.has(animation), "Missing animation '" + animation + "'!");
-		this._animation = AnimationBank.get(animation);
+		Engine.assert(SpriteBank.has(animation), "Missing animation '" + animation + "'!");
+		this._animation = SpriteBank.get(animation);
 		this.texture = this._animation.first.frames[0];
 	}
 
@@ -46,13 +56,15 @@ class Sprite extends Graphic
 		if (this.playing != null)
 		{
 			this._frame += this.playing.speed * this.rate * Engine.delta;
-			if (this.frame >= this.playing.frames.length)
+			if (this.frame >= this.playing.frames.length || this.frame < 0)
 			{
 				// loop this animation
 				if (this.playing.loops)
 				{
 					while (this._frame >= this.playing.frames.length)
 						this._frame -= this.playing.frames.length;
+					while (this._frame < 0)
+						this._frame += this.playing.frames.length;
 				}
 				// goto next animation
 				else if (this.playing.goto != null && this.playing.goto.length > 0)
@@ -64,7 +76,10 @@ class Sprite extends Graphic
 				else
 				{
 					this.active = false;
-					this._frame = this.playing.frames.length - 1;
+					if (this.frame >= this.playing.frames.length)
+						this._frame = this.playing.frames.length - 1;
+					else
+						this._frame = 0;
 				}
 			}
 

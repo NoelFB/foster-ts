@@ -1,7 +1,7 @@
 /**
- * An animation template handles a single Animation in an Animation Set (ex. Player.Run)
+ * An animation template handles a single Animation in an Sprite Template (ex. Player.Run)
  */
-class AnimationTemplate {
+class SpriteAnimationTemplate {
     constructor(name, speed, frames, loops, position, origin) {
         /**
          * If this animation should loop
@@ -19,11 +19,39 @@ class AnimationTemplate {
         this.origin = (origin || new Vector(0, 0));
     }
 }
-/// <reference path="./animationTemplate.ts"/>
 /**
- * Animation Set holds a list of Animation Templates, referenced by name
+ * Sprite Bank holds all the Sprite templates in the game
  */
-class AnimationSet {
+class SpriteBank {
+    /**
+     * Creates a new Animation Set of the given Name
+     */
+    static create(name) {
+        var animSet = new SpriteTemplate(name);
+        SpriteBank.bank[name] = animSet;
+        return animSet;
+    }
+    /**
+     * Gets an Animation of the given name
+     */
+    static get(name) {
+        return SpriteBank.bank[name];
+    }
+    /**
+     * Checks if an animation with the given name exists
+     */
+    static has(name) {
+        return SpriteBank.bank[name] != undefined;
+    }
+}
+/**
+ * Reference to all the Animations
+ */
+SpriteBank.bank = {};
+/**
+ * Sprite Template holds a list of Animation Templates, referenced by name
+ */
+class SpriteTemplate {
     constructor(name) {
         /**
          * A list of all the animation template, by their name
@@ -35,7 +63,7 @@ class AnimationSet {
      * Adds a new Animation Template to this set
      */
     add(name, speed, frames, loops, position, origin) {
-        let anim = new AnimationTemplate(name, speed, frames, loops, position, origin);
+        let anim = new SpriteAnimationTemplate(name, speed, frames, loops, position, origin);
         this.animations[name] = anim;
         if (this.first == null)
             this.first = anim;
@@ -53,7 +81,7 @@ class AnimationSet {
             let ty = Math.floor(index / columns) * frameWidth;
             texFrames.push(tex.getSubtexture(new Rectangle(tx, ty, frameWidth, frameHeight)));
         }
-        let anim = new AnimationTemplate(name, speed, texFrames, loops, position, origin);
+        let anim = new SpriteAnimationTemplate(name, speed, texFrames, loops, position, origin);
         this.animations[name] = anim;
         if (this.first == null)
             this.first = anim;
@@ -72,36 +100,6 @@ class AnimationSet {
         return this.animations[name] != undefined;
     }
 }
-/// <reference path="./animationSet.ts"/>
-/**
- * Animation Bank holds all the Animations in the game
- */
-class AnimationBank {
-    /**
-     * Creates a new Animation Set of the given Name
-     */
-    static create(name) {
-        var animSet = new AnimationSet(name);
-        AnimationBank.bank[name] = animSet;
-        return animSet;
-    }
-    /**
-     * Gets an Animation of the given name
-     */
-    static get(name) {
-        return AnimationBank.bank[name];
-    }
-    /**
-     * Checks if an animation with the given name exists
-     */
-    static has(name) {
-        return AnimationBank.bank[name] != undefined;
-    }
-}
-/**
- * Reference to all the Animations
- */
-AnimationBank.bank = {};
 /**
  * Loads a set of assets
  */
@@ -910,6 +908,9 @@ class Texture {
     static createFromData(data, width, height) {
         let gl = Engine.graphics.gl;
         let tex = gl.createTexture();
+        let input = [];
+        for (let i = 0; i < data.length; i++)
+            input[i] = Math.floor(data[i] * 255);
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(data));
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -1432,14 +1433,17 @@ class Vector {
     get length() {
         return Math.sqrt((this.x * this.x) + (this.y * this.y));
     }
+    get angle() {
+        return Math.atan2(this.y, this.x);
+    }
     get normal() {
         let dist = this.length;
         return new Vector(this.x / dist, this.y / dist);
     }
-    normalize() {
+    normalize(length = 1) {
         let dist = this.length;
-        this.x /= dist;
-        this.y /= dist;
+        this.x = (this.x / dist) * length;
+        this.y = (this.y / dist) * length;
         return this;
     }
     static get zero() { return Vector._zero.set(0, 0); }
@@ -1756,6 +1760,11 @@ class Physics extends Hitbox {
         if (this.speed.y != 0)
             this.moveY(this.speed.y * Engine.delta);
     }
+    moveBy(amount) {
+        var movedX = this.moveX(amount.x);
+        var movedY = this.moveY(amount.y);
+        return movedX && movedY;
+    }
     move(x, y) {
         var movedX = this.moveX(x);
         var movedY = this.moveY(y);
@@ -1913,13 +1922,20 @@ class Sprite extends Graphic {
         this._playing = null;
         this._frame = 0;
         this.rate = 1;
-        Engine.assert(AnimationBank.has(animation), "Missing animation '" + animation + "'!");
-        this._animation = AnimationBank.get(animation);
+        Engine.assert(SpriteBank.has(animation), "Missing animation '" + animation + "'!");
+        this._animation = SpriteBank.get(animation);
         this.texture = this._animation.first.frames[0];
     }
     get animation() { return this._animation; }
     get playing() { return this._playing; }
     get frame() { return Math.floor(this._frame); }
+    set frame(n) {
+        this._frame = n;
+        if (this.playing != null) {
+            this._frame = Calc.clamp(n, 0, this.playing.frames.length);
+            this.texture = this.playing.frames[this.frame];
+        }
+    }
     play(name, restart) {
         if (this.animation == null)
             return;
@@ -1938,11 +1954,13 @@ class Sprite extends Graphic {
     update() {
         if (this.playing != null) {
             this._frame += this.playing.speed * this.rate * Engine.delta;
-            if (this.frame >= this.playing.frames.length) {
+            if (this.frame >= this.playing.frames.length || this.frame < 0) {
                 // loop this animation
                 if (this.playing.loops) {
                     while (this._frame >= this.playing.frames.length)
                         this._frame -= this.playing.frames.length;
+                    while (this._frame < 0)
+                        this._frame += this.playing.frames.length;
                 }
                 else if (this.playing.goto != null && this.playing.goto.length > 0) {
                     let next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
@@ -1950,7 +1968,10 @@ class Sprite extends Graphic {
                 }
                 else {
                     this.active = false;
-                    this._frame = this.playing.frames.length - 1;
+                    if (this.frame >= this.playing.frames.length)
+                        this._frame = this.playing.frames.length - 1;
+                    else
+                        this._frame = 0;
                 }
             }
             if (this.playing != null)
@@ -2313,13 +2334,15 @@ class Engine {
         // update scene
         if (this.scene != null)
             this.scene.update();
-        // begin drawing
-        this.graphics.reset();
-        // render current scene
-        if (this.scene != null)
-            this.scene.render();
-        // final flush on graphics
-        this.graphics.finalize();
+        if (this.nextScene == null) {
+            // begin drawing
+            this.graphics.reset();
+            // render current scene
+            if (this.scene != null)
+                this.scene.render();
+            // final flush on graphics
+            this.graphics.finalize();
+        }
         // update sounds
         for (let i = 0; i < Sound.active.length; i++)
             Sound.active[i].update();
@@ -2342,7 +2365,7 @@ class Engine {
  * Foster Engine version
  * major.minor.build
  */
-Engine.version = "0.1.1";
+Engine.version = "0.1.11";
 Engine._volume = 1;
 Engine._muted = false;
 Engine.instance = null;
@@ -2471,6 +2494,7 @@ class Entity {
         component.addedToEntity();
         if (this.scene != null)
             this.scene._trackComponent(component);
+        return component;
     }
     /**
      * Removes a Components from this Entity
@@ -2481,6 +2505,7 @@ class Entity {
         component.entity = null;
         if (this.scene != null)
             this.scene._untrackComponent(component);
+        return component;
     }
     /**
      * Removes all Components from this Entity

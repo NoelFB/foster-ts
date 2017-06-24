@@ -1,24 +1,22 @@
-/// <reference path="./animationTemplate.ts"/>
-
 /**
- * Animation Set holds a list of Animation Templates, referenced by name
+ * Sprite Template holds a list of Animation Templates, referenced by name
  */
-class AnimationSet
+class SpriteTemplate
 {
 	/**
-	 * The animation set name
+	 * The Sprite Template name
 	 */
 	public name:string;
 
 	/**
 	 * A list of all the animation template, by their name
 	 */
-	public animations:{[name:string]: AnimationTemplate} = {};
+	public animations:{[name:string]: SpriteAnimationTemplate} = {};
 
 	/**
 	 * First animation template
 	 */
-	public first:AnimationTemplate;
+	public first:SpriteAnimationTemplate;
 	
 	constructor(name:string)
 	{
@@ -28,9 +26,9 @@ class AnimationSet
 	/**
 	 * Adds a new Animation Template to this set
 	 */
-	public add(name:string, speed:number, frames:Texture[], loops:boolean, position?:Vector, origin?:Vector):AnimationSet
+	public add(name:string, speed:number, frames:Texture[], loops:boolean, position?:Vector, origin?:Vector):SpriteTemplate
 	{
-		let anim = new AnimationTemplate(name, speed, frames, loops, position, origin);
+		let anim = new SpriteAnimationTemplate(name, speed, frames, loops, position, origin);
 		
 		this.animations[name] = anim;
 		if (this.first == null)
@@ -42,7 +40,7 @@ class AnimationSet
 	/**
 	 * Adds a new frame-based Animation Template to this set
 	 */
-	public addFrameAnimation(name:string, speed:number, tex:Texture, frameWidth:number, frameHeight:number, frames:number[], loops:boolean, position?:Vector, origin?:Vector):AnimationSet
+	public addFrameAnimation(name:string, speed:number, tex:Texture, frameWidth:number, frameHeight:number, frames:number[], loops:boolean, position?:Vector, origin?:Vector):SpriteTemplate
 	{
 		let columns = Math.floor(tex.width / frameWidth);
 		let texFrames:Texture[] = [];
@@ -53,7 +51,7 @@ class AnimationSet
 			let ty = Math.floor(index / columns) * frameWidth;
 			texFrames.push(tex.getSubtexture(new Rectangle(tx, ty, frameWidth, frameHeight)));
 		}
-		let anim = new AnimationTemplate(name, speed, texFrames, loops, position, origin);
+		let anim = new SpriteAnimationTemplate(name, speed, texFrames, loops, position, origin);
 
 		this.animations[name] = anim;
 		if (this.first == null)
@@ -65,7 +63,7 @@ class AnimationSet
 	/**
 	 * Gets an animation template by its name
 	 */
-	public get(name:string):AnimationTemplate
+	public get(name:string):SpriteAnimationTemplate
 	{
 		return this.animations[name];
 	}
