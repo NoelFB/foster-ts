@@ -654,7 +654,7 @@ class Atlas {
         // get sorted list
         let listed = [];
         for (let i = 0; i < found.length; i++)
-            listed.push(found[i]);
+            listed.push(found[i].tex);
         return listed;
     }
 }
@@ -920,7 +920,10 @@ class Texture {
 class Component {
     constructor() {
         this._entity = null;
-        this._scene = null;
+        /**
+         * The Scene containing this Component
+         */
+        this.scene = null;
         /**
          * Whether this Component should be updated
          */
@@ -942,15 +945,6 @@ class Component {
         if (this._entity != null && val != null)
             throw "This Component is already attached to an Entity";
         this._entity = val;
-    }
-    /**
-     * The Scene containing this Component
-     */
-    get scene() { return this._scene; }
-    set scene(val) {
-        if (this._scene != null && val != null)
-            throw "This Component is already attached to a Scene";
-        this._scene = val;
     }
     /**
      * The Local X position of the Component, relative to the Entity
@@ -1490,8 +1484,11 @@ class ParticleSystem extends Component {
         }
     }
     render(camera) {
-        if (Engine.graphics.pixel == null)
-            throw "Particle System requires Engine.graphis.pixel to be set";
+        let tex = this.template.texture;
+        if (tex == null)
+            tex = Engine.graphics.pixel;
+        if (tex == null)
+            throw "Particle requires a Texture";
         let pos = this.position;
         if (this.renderRelativeToEntity)
             pos = this.scenePosition;
@@ -1506,7 +1503,7 @@ class ParticleSystem extends Component {
             let rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
             let alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
             let color = ParticleSystem.color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp)).mult(alpha);
-            Engine.graphics.texture(Engine.graphics.pixel, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
+            Engine.graphics.texture(tex, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
         }
     }
     burst(x, y, direction, rangeX, rangeY, count) {
@@ -1563,6 +1560,7 @@ ParticleSystem.origin = new Vector(0.5, 0.5);
 ParticleSystem.scale = new Vector(0, 0);
 class ParticleTemplate {
     constructor(name) {
+        this.texture = null;
         this.speedBase = 0;
         this.speedRange = 0;
         this.accelBaseX = 0;
@@ -1600,6 +1598,10 @@ class ParticleTemplate {
         this.durationRange = 1;
         this.name = name;
         ParticleTemplate.templates[name] = this;
+    }
+    tex(texture) {
+        this.texture = texture;
+        return this;
     }
     speed(Base, Range) {
         this.speedBase = Base;
@@ -2338,8 +2340,9 @@ class Engine {
 }
 /**
  * Foster Engine version
+ * major.minor.build
  */
-Engine.version = "0.1.0";
+Engine.version = "0.1.1";
 Engine._volume = 1;
 Engine._muted = false;
 Engine.instance = null;
@@ -2394,8 +2397,8 @@ class Entity {
         return this._depth;
     }
     set depth(val) {
-        this._depth = val;
-        if (this.scene != null) {
+        if (this.scene != null && this._depth != val) {
+            this._depth = val;
             this.scene.entities.unsorted = true;
             for (let i = 0; i < this.groups.length; i++)
                 this.scene.groups[this.groups[i]].unsorted = true;

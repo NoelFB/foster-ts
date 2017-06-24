@@ -20,8 +20,9 @@ class Engine
 {
 	/**
 	 * Foster Engine version
+	 * major.minor.build
 	 */
-	public static version:string = "0.1.0";
+	public static version:string = "0.1.11";
 
 	/**
 	 * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)

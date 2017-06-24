@@ -91,7 +91,7 @@ class Atlas
 		// get sorted list
 		let listed:Texture[] = [];
 		for (let i = 0; i < found.length; i ++)
-			listed.push(found[i]);
+			listed.push(found[i].tex);
 		return listed;
 	}
 }

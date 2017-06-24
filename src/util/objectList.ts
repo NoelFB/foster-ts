@@ -77,7 +77,6 @@ class ObjectList<T>
 					this.objects[j--] = temp;
 				}
 			}
-
 			this.unsorted = false;
 		}
 	}

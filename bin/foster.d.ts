@@ -499,7 +499,6 @@ declare abstract class Component {
      * The Scene containing this Component
      */
     scene: Scene;
-    private _scene;
     /**
      * Whether this Component should be updated
      */
@@ -758,6 +757,7 @@ declare class ParticleTemplate {
         [name: string]: ParticleTemplate;
     };
     name: string;
+    texture: Texture;
     speedBase: number;
     speedRange: number;
     accelBaseX: number;
@@ -794,6 +794,7 @@ declare class ParticleTemplate {
     durationBase: number;
     durationRange: number;
     constructor(name: string);
+    tex(texture: Texture): ParticleTemplate;
     speed(Base: number, Range?: number): ParticleTemplate;
     accelX(Base: number, Range?: number): ParticleTemplate;
     accelY(Base: number, Range?: number): ParticleTemplate;
@@ -981,6 +982,7 @@ declare enum Client {
 declare class Engine {
     /**
      * Foster Engine version
+     * major.minor.build
      */
     static version: string;
     /**
@@ -1119,11 +1121,11 @@ declare class Entity {
      * List of all Groups the Entity is in
      */
     groups: string[];
-    private _depth;
     /**
      * The Render-Depth of the Entity (lower = rendered later)
      */
     depth: number;
+    private _depth;
     constructor();
     /**
      * Called the first time the entity is added to a scene (after constructor, before added)

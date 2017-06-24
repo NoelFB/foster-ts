@@ -44,8 +44,11 @@ class ParticleSystem extends Component
 
 	public render(camera:Camera):void
 	{
-		if (Engine.graphics.pixel == null)
-			throw "Particle System requires Engine.graphis.pixel to be set";
+		let tex = this.template.texture;
+		if (tex == null)
+			tex = Engine.graphics.pixel;
+		if (tex == null)
+			throw "Particle requires a Texture";
 
 		let pos = this.position;
 		if (this.renderRelativeToEntity)
@@ -65,7 +68,7 @@ class ParticleSystem extends Component
 			let alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
 			let color = ParticleSystem.color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp)).mult(alpha);
 
-			Engine.graphics.texture(Engine.graphics.pixel, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
+			Engine.graphics.texture(tex, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
 		}
 	}
 

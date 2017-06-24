@@ -52,8 +52,6 @@ class Entity
 	 */
 	public groups:string[] = [];
 	
-	private _depth:number = 0;
-	
 	/**
 	 * The Render-Depth of the Entity (lower = rendered later)
 	 */
@@ -63,14 +61,15 @@ class Entity
 	}
 	set depth(val:number)
 	{
-		this._depth = val;
-		if  (this.scene != null)
+		if  (this.scene != null && this._depth != val)
 		{
+			this._depth = val;
 			this.scene.entities.unsorted = true;
 			for (let i = 0; i < this.groups.length; i ++)
 				this.scene.groups[this.groups[i]].unsorted = true;
 		}
 	}
+	private _depth:number = 0;
 
 	constructor()
 	{

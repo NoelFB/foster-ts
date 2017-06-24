@@ -16,14 +16,7 @@ abstract class Component
 	/**
 	 * The Scene containing this Component
 	 */
-	get scene() { return this._scene; }
-	set scene(val:Scene)
-	{
-		if (this._scene != null && val != null)
-			throw "This Component is already attached to a Scene";
-		this._scene = val;
-	}
-	private _scene:Scene = null;
+	public scene:Scene = null;
 	
 	/**
 	 * Whether this Component should be updated

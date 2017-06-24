@@ -4,6 +4,7 @@ class ParticleTemplate
 	public static templates:{[name:string]:ParticleTemplate;} = {};
 
 	public name:string;
+	public texture:Texture = null;
 	public speedBase:number = 0;
 	public speedRange:number = 0;
 	
@@ -52,6 +53,12 @@ class ParticleTemplate
 	{
 		this.name = name;
 		ParticleTemplate.templates[name] = this;
+	}
+
+	public tex(texture:Texture):ParticleTemplate
+	{
+		this.texture = texture;
+		return this;
 	}
 
 	public speed(Base:number, Range?:number):ParticleTemplate
