@@ -1,3 +1,4 @@
+/// <reference path="./../../component.ts"/>
 class Tilemap extends Component
 {
 	public texture:Texture;

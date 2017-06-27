@@ -1,6 +1,8 @@
 /**
  * Default 2D shaders
  */
+
+/// <reference path="./shader.ts"/>
 class Shaders
 {
 	/**

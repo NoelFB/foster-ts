@@ -2,6 +2,7 @@
  * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
  * More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
  */
+/// <reference path="./../component.ts"/>
 class Coroutine extends Component
 {
 

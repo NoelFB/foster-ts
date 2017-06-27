@@ -1,3 +1,4 @@
+/// <reference path="../../component.ts"/>
 abstract class Collider extends Component
 {
 	public tags:string[] = [];

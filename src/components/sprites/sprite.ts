@@ -1,3 +1,4 @@
+/// <reference path="./graphic.ts"/>
 class Sprite extends Graphic
 {
 	private _animation:SpriteTemplate = null;

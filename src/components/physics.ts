@@ -1,3 +1,4 @@
+/// <reference path="colliders/hitbox.ts"/>
 class Physics extends Hitbox
 {
 	public solids:string[] = [];

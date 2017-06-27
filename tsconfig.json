@@ -3,7 +3,7 @@
 	{
 		"target": "es6",
 		"sourceMap": false,
-		"outFile": "foster.js",
+		"outFile": "bin/foster.js",
 		"declaration": true
 	},
 	"exclude": [
