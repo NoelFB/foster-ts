@@ -11,7 +11,7 @@ var gulp = require("gulp"),
 	{	
 		return tsProject.src()
 			.pipe(tsProject())
-			.pipe(gulp.dest(bin));
+			.pipe(gulp.dest("./"));
 	});
 
 	gulp.task("clean", function()

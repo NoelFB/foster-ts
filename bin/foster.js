@@ -990,6 +990,7 @@ class Component {
      */
     debugRender(camera) { }
 }
+/// <reference path="./../component.ts"/>
 class Alarm extends Component {
     constructor() {
         super();
@@ -1063,6 +1064,7 @@ class Alarm extends Component {
         return alarm;
     }
 }
+/// <reference path="../../component.ts"/>
 class Collider extends Component {
     constructor() {
         super(...arguments);
@@ -1156,6 +1158,7 @@ class Collider extends Component {
     }
 }
 Collider.overlaptest = {};
+/// <reference path="collider.ts"/>
 class Hitbox extends Collider {
     get sceneLeft() { return this.scenePosition.x + this.left; }
     get sceneRight() { return this.scenePosition.x + this.left + this.width; }
@@ -1177,6 +1180,7 @@ class Hitbox extends Collider {
         Engine.graphics.hollowRect(this.sceneLeft, this.sceneTop, this.width, this.height, 1, Color.red);
     }
 }
+/// <reference path="collider.ts"/>
 class Hitgrid extends Collider {
     constructor(tileWidth, tileHeight, tags) {
         super();
@@ -1240,6 +1244,7 @@ class Hitgrid extends Collider {
  * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
  * More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
  */
+/// <reference path="./../component.ts"/>
 class Coroutine extends Component {
     /**
      * @param call? 	if set, immediately starts he Coroutine with the given Iterator
@@ -1460,6 +1465,7 @@ Vector.temp2 = new Vector();
 Vector._zero = new Vector();
 /// <reference path="./../../util/color.ts"/>
 /// <reference path="./../../util/vector.ts"/>
+/// <reference path="./../../component.ts"/>
 class ParticleSystem extends Component {
     constructor(template) {
         super();
@@ -1742,6 +1748,7 @@ class ParticleTemplate {
     }
 }
 ParticleTemplate.templates = {};
+/// <reference path="colliders/hitbox.ts"/>
 class Physics extends Hitbox {
     constructor(left, top, width, height, tags, solids) {
         super(left, top, width, height, tags);
@@ -1853,6 +1860,7 @@ class Physics extends Hitbox {
         this.remainder.x = this.remainder.y = 0;
     }
 }
+/// <reference path="./../../component.ts"/>
 class Graphic extends Component {
     constructor(texture, position) {
         super();
@@ -1882,6 +1890,7 @@ class Graphic extends Component {
         Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
 }
+/// <reference path="./../../component.ts"/>
 class Rectsprite extends Component {
     constructor(width, height, color) {
         super();
@@ -1909,6 +1918,7 @@ class Rectsprite extends Component {
         }
     }
 }
+/// <reference path="./graphic.ts"/>
 class Sprite extends Graphic {
     constructor(animation) {
         super(null);
@@ -1977,6 +1987,7 @@ class Sprite extends Graphic {
             super.render(camera);
     }
 }
+/// <reference path="./../../component.ts"/>
 class Tilemap extends Component {
     constructor(texture, tileWidth, tileHeight) {
         super();
@@ -2042,6 +2053,7 @@ class Tilemap extends Component {
         }
     }
 }
+/// <reference path="./../component.ts"/>
 class Tween extends Component {
     constructor() {
         super();
@@ -3627,6 +3639,7 @@ class Renderer {
 /**
  * Uses the Primitive Shader when rendering
  */
+/// <reference path="./../renderer.ts"/>
 class PrimitiveRenderer extends Renderer {
     constructor() {
         super();
@@ -3637,6 +3650,7 @@ class PrimitiveRenderer extends Renderer {
 /**
  * Uses the Texture Shader when rendering
  */
+/// <reference path="./../renderer.ts"/>
 class SpriteRenderer extends Renderer {
     constructor() {
         super();
@@ -4713,6 +4727,7 @@ setGLUniformValue[ShaderUniformType.matrix4d] = (gl, location, value) => {
 /**
  * Default 2D shaders
  */
+/// <reference path="./shader.ts"/>
 class Shaders {
     /**
      * Initializes Default Shaders (called automatically by the Engine)
