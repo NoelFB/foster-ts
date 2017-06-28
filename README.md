@@ -1,9 +1,7 @@
 # foster
 ###### A WebGL + TypeScript 2D Game framework with a Scene -> Entity -> Component model.
 
-★ **still very work in progress** ★
-
-and has frequent, breaking changes. Not worrying about backwards compatability with updates. Use at own risk.
+★ **still very work in progress** ★ and has frequent, breaking changes. Not worrying about backwards compatability with updates. Use at own risk.
 
 #### Goals
  - Lightweight framework to be easily used for GameJam games
@@ -30,5 +28,4 @@ and has frequent, breaking changes. Not worrying about backwards compatability w
  - Compile the typescript to the `bin` directory with `tsc`
 
 #### [Foster Examples](https://github.com/NoelFB/foster.examples)
-#### [API Documentation](api.md) (incomplete)
 #### [MIT License](license.md)
