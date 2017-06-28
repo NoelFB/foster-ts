@@ -9,14 +9,11 @@
     "email": "thenberry@gmail.com",
     "url": "http://noelberry.ca/"
   },
-  "repository": { 
-	"type" : "git", 
-	"url" : "https://github.com/NoelFB/foster.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NoelFB/foster.git"
   },
   "devDependencies": {
-    "del": "^2.2.2",
-    "gulp": "^3.9.1",
-    "gulp-typescript": "^3.1.2",
-    "typescript": "^2.1.4"
+    "typescript": "^2.5.0-dev.20170628"
   }
 }
