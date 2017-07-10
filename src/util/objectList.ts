@@ -8,7 +8,7 @@ class ObjectList<T>
 
 	public unsorted:boolean;
 	private dirty:boolean;
-	private _count:number;
+	private _count:number = 0;
 	public get count():number { return this._count; }
 
 	/**
