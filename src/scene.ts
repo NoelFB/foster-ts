@@ -24,7 +24,7 @@ class Scene
 	 */
 	public groups:{[id:string]:ObjectList<Entity>} = {};
 	
-	private colliders:any = {};
+	private colliders:{[key:string]:Collider[]} = {};
 	private cache:any = {};
 	
 	constructor()
@@ -332,7 +332,7 @@ class Scene
 	public firstColliderInTag(tag:string):Collider
 	{
 		if (this.colliders[tag] != undefined && this.colliders[tag].length > 0)
-			return this.colliders[tag];
+			return this.colliders[tag][0];
 		return null;
 	}
 
