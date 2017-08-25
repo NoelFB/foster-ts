@@ -2,10 +2,11 @@
  * Custom list class that allows entries to be removed while the list is being iterated over
  * Used for Entity and Renderer lists (so you can iterate over entities and remove them)
  */
-class ObjectList<T>
+export class ObjectList<T>
 {
-	private objects:T[] = [];
+	[key: string]: any
 
+	private objects:T[] = [];
 	public unsorted:boolean;
 	private dirty:boolean;
 	private _count:number = 0;
@@ -22,7 +23,12 @@ class ObjectList<T>
 		this.unsorted = true;
 		return object;
 	}
-	
+
+	public contains(object:T):boolean
+	{
+		return object != null && this.objects.indexOf(object) >= 0;
+	}
+
 	/**
 	 * Gets the first entry in the list
 	 */
@@ -34,13 +40,24 @@ class ObjectList<T>
 		return entry;
 	}
 
+	_iterating = false;
+
+	public map<V>(callback:(object:T)=>V):V[]
+	{
+		const count = this.objects.length;
+		let res:V[] = [];
+		for (let i = 0; i < count; ++i)
+			res.push(callback(this.objects[i]));
+		return res;
+	}
+
 	/**
 	 * Iterates over every object in the List. Return false in the callback to break
-	 * @param callback 
+	 * @param callback
 	 */
 	public each(callback:(object:T)=>any):void
 	{
-		let count = this.objects.length;
+		const count = this.objects.length;
 		for (let i = 0; i < count; i ++)
 			if (this.objects[i] != null)
 				if (callback(this.objects[i]) === false)
@@ -49,7 +66,7 @@ class ObjectList<T>
 
 	/**
 	 * Gets an object at the given index
-	 * @param index 
+	 * @param index
 	 */
 	public at(index:number):T
 	{
@@ -61,7 +78,7 @@ class ObjectList<T>
 
 	/**
 	 * Sorts the list by the compare function
-	 * @param compare 
+	 * @param compare
 	 */
 	public sort(compare:(a:T, b:T)=>number):void
 	{
@@ -72,7 +89,7 @@ class ObjectList<T>
 				let j = i + 1;
 				while (j > 0 && this.objects[j - 1] != null && this.objects[j] != null && compare(this.objects[j - 1], this.objects[j]) > 0)
 				{
-					let temp = this.objects[j - 1];
+					const temp = this.objects[j - 1];
 					this.objects[j - 1] = this.objects[j];
 					this.objects[j--] = temp;
 				}
@@ -83,11 +100,11 @@ class ObjectList<T>
 
 	/**
 	 * Removes the given object from the list. Returns true if removed
-	 * @param object 
+	 * @param object
 	 */
 	public remove(object:T):boolean
 	{
-		let index = this.objects.indexOf(object);
+		const index = this.objects.indexOf(object);
 		if  (index >= 0)
 		{
 			this.objects[index] = null;

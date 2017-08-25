@@ -1,8 +1,19 @@
 /**
  * Used by the Scene to render. A Scene can have multiple renderers that essentially act as separate layers / draw calls
  */
-abstract class Renderer
+import {RenderTarget} from "./assets/textures/renderTarget";
+import {Entity} from "./entity";
+import {Engine} from "./engine";
+import {Scene} from "./scene";
+import {Camera} from "./util/camera";
+import {Color} from "./util/color";
+import {ObjectList} from "./util/objectList";
+import {Shader} from "./util/shader";
+
+export abstract class Renderer
 {
+	sortOrder:number = 0;
+	
 	/**
 	 * If this renderer is visible
 	 */
@@ -75,22 +86,26 @@ abstract class Renderer
 		}
 		else
 			Engine.graphics.setRenderTarget(Engine.graphics.buffer);
-		
+
 		// set to our shader, and set main Matrix to the camera with fallback to Scene camera
 		Engine.graphics.shader = this.shader;
 		Engine.graphics.shader.set(this.shaderCameraUniformName, this.getActiveCamera().matrix);
 	}
 
+	getEntitiesToRender():ObjectList<Entity>
+	{
+		return this.groupsMask.length > 0 ? this.scene.allInGroups(this.groupsMask) : this.scene.entities;
+	}
+
 	/**
 	 * Draws all the entities
 	 */
-	public drawEntities():void
+	public drawEntities()
 	{
-		let camera = this.getActiveCamera();
+		const camera = this.getActiveCamera();
 
 		// draw each entity
-		let list = (this.groupsMask.length > 0 ? this.scene.allInGroups(this.groupsMask) : this.scene.entities);
-		list.each((e) => 
+		this.getEntitiesToRender().each((e) => 
 		{
 			if (e.visible)
 				e.render(camera);

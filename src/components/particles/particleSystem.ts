@@ -1,28 +1,44 @@
-/// <reference path="./../../util/color.ts"/>
-/// <reference path="./../../util/vector.ts"/>
-/// <reference path="./../../component.ts"/>
+import {Component} from "../../component";
+import {Engine} from "../../engine";
+import {Calc} from "../../util/calc";
+import {Camera} from "../../util/camera";
+import {Color} from "../../util/color";
+import {Vector} from "../../util/vector";
+import {Particle} from "./particle";
+import {ParticleTemplate} from "./particleTemplate";
 
-class ParticleSystem extends Component
+export class ParticleSystem extends Component
 {
-	public template:ParticleTemplate;
+	public get template():ParticleTemplate { return ParticleTemplate.templates[this.templateName]; }
+
+	private templateName:string;
 	public renderRelativeToEntity:boolean = false;
 	private particles:Particle[] = [];
+	public get numActiveParticles() { return this.particles.length; }
 	private static cache:Particle[] = [];
+
+	get activeParticles() { return this.particles; }
 
 	// temp values used during rendering so we aren't creating new ones every frame
 	private static color:Color = new Color();
 	private static origin:Vector = new Vector(0.5, 0.5);
 	private static scale:Vector = new Vector(0, 0);
 
-	constructor(template:string)
+	constructor(template:string|object)
 	{
 		super();
-		this.template = ParticleTemplate.templates[template];
+		if (typeof template === "object")
+			template = (template as any).template as string;
+
+		console.assert(typeof template === "string");
+		console.assert(ParticleTemplate.templates[template]);
+
+		this.templateName = template;
 	}
 
 	public update():void
 	{
-		let dt = Engine.delta;
+		const dt = Engine.delta;
 		for (let i = this.particles.length - 1; i >= 0; i --)
 		{
 			let p = this.particles[i];
@@ -49,25 +65,24 @@ class ParticleSystem extends Component
 		if (tex == null)
 			tex = Engine.graphics.pixel;
 		if (tex == null)
-			throw "Particle requires a Texture";
+			throw new Error("Particle requires a Texture");
 
 		let pos = this.position;
 		if (this.renderRelativeToEntity)
 			pos = this.scenePosition;
-		
-		let t = this.template;
-		for (let i = 0; i < this.particles.length; i ++)
-		{
-			let p = this.particles[i];
-			let lerp = p.percent;
 
-			let x = pos.x + p.x;
-			let y = pos.y + p.y;
-			let scaleX = p.scaleFromX + (p.scaleToX - p.scaleFromX) * t.scaleXEaser(lerp);
-			let scaleY = p.scaleFromY + (p.scaleToY - p.scaleFromY) * t.scaleYEaser(lerp);
-			let rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
-			let alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
-			let color = ParticleSystem.color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp)).mult(alpha);
+		const t = this.template;
+		for (const p of this.particles)
+		{
+			const lerp = p.percent;
+
+			const x = pos.x + p.x;
+			const y = pos.y + p.y;
+			const scaleX = p.scaleFromX + (p.scaleToX - p.scaleFromX) * t.scaleXEaser(lerp);
+			const scaleY = p.scaleFromY + (p.scaleToY - p.scaleFromY) * t.scaleYEaser(lerp);
+			const rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
+			const alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
+			const color = ParticleSystem.color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp)).mult(alpha);
 
 			Engine.graphics.texture(tex, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
 		}
@@ -75,38 +90,35 @@ class ParticleSystem extends Component
 
 	public burst(x:number, y:number, direction:number, rangeX?:number, rangeY?:number, count?:number)
 	{
-		let t = this.template;
+		const t = this.template;
 
-		if (rangeX == undefined || rangeX == null)
+		if (rangeX === undefined || rangeX === null)
 			rangeX = 0;
-		if (rangeY == undefined || rangeY == null)
+		if (rangeY === undefined || rangeY === null)
 			rangeY = 0;
-		if (count == undefined)
+		if (count === undefined)
 			count = 1;
 
 		for (let i = 0; i < count; i ++)
 		{
-			let duration = t.durationBase + Calc.range(t.durationRange);
+			const duration = t.durationBase + Calc.range(t.durationRange);
 			if (duration <= 0)
 				continue;
 
 			// get particle
 			let p:Particle = null;
 			if (ParticleSystem.cache.length > 0)
-			{
-				p = ParticleSystem.cache[0];
-				ParticleSystem.cache.splice(0, 1);
-			}
+				p = ParticleSystem.cache.splice(0, 1)[0];
 			else
 				p = new Particle();
 
-			let speed = t.speedBase + Calc.range(t.speedRange);
+			const speed = t.speedBase + Calc.range(t.speedRange);
 
 			// spawn particle
 			p.percent 		= 0;
 			p.duration 		= duration;
-			p.x 			= x + Calc.range(rangeX);
-			p.y 			= y + Calc.range(rangeY);
+			p.x 			= this.scenePosition.x + x + Calc.range(rangeX);
+			p.y 			= this.scenePosition.y + y + Calc.range(rangeY);
 			p.colorFrom 	= Calc.choose(t.colorsFrom);
 			p.colorTo 		= Calc.choose(t.colorsTo);
 			p.speedX 		= Math.cos(direction) * speed;
@@ -122,11 +134,10 @@ class ParticleSystem extends Component
 			p.rotationFrom 	= t.rotationFromBase + Calc.range(t.rotationFromRange);
 			p.rotationTo 	= t.rotationToBase + Calc.range(t.rotationToRange);
 			p.alphaFrom 	= t.alphaFromBase + Calc.range(t.alphaFromRange);
-			p.alphaTo 	= t.alphaToBase + Calc.range(t.alphaToRange);
+			p.alphaTo 		= t.alphaToBase + Calc.range(t.alphaToRange);
 
 			// addd
-			this.particles.push(p);	
+			this.particles.push(p);
 		}
 	}
-
 }

@@ -1,8 +1,15 @@
-/// <reference path="./../../component.ts"/>
-class Graphic extends Component
-{
+import {Texture} from "../../assets/textures/texture";
+import {Component} from "../../component";
+import {Engine} from "../../engine";
+import {Camera} from "../../util/camera";
+import {Color} from "../../util/color";
+import {Rectangle} from "../../util/rectangle";
+import {Vector} from "../../util/vector";
 
-	public texture:Texture;	
+export class Graphic extends Component
+{
+	public toString():string { return `<Graphic ${this.texture.bounds} of ${this.texture.texture.path}>`; }
+	public texture:Texture;
 	public crop:Rectangle;
 	public scale:Vector = new Vector(1, 1);
 	public origin:Vector = new Vector(0, 0);
@@ -11,14 +18,30 @@ class Graphic extends Component
 	public flipY:boolean = false;
 	public color:Color = Color.white.clone();
 	public alpha:number = 1;
-	
+
 	public get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
 	public get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
-	
+
+	public get sceneBounds() { return new Rectangle(this.sceneX, this.sceneY, this.width, this.height); }
+
+	private static sp = new Vector();
+	public get sceneCenterX() { return this.getScenePosition(Graphic.sp).x + this.width/2; }
+	public get sceneCenterY() { return this.getScenePosition(Graphic.sp).y + this.height/2; }
+
+	public set sceneCenterX(x:number)
+	{
+		this.position.x = x - (this.entity ? this.entity.x : 0) + this.width/2;
+	}
+
+	public set sceneCenterY(y:number)
+	{
+		this.position.y = y - (this.entity ? this.entity.y : 0) + this.height/2;
+	}
+
 	constructor(texture:Texture, position?:Vector)
 	{
 		super();
-		
+
 		if (texture != null)
 		{
 			this.texture = texture;
@@ -38,20 +61,20 @@ class Graphic extends Component
 	{
 		this.origin.set(this.width * x, this.height * y);
 	}
-	
+
 	public render(camera:Camera):void
 	{
 		Engine.graphics.texture
 		(
-			this.texture, 
+			this.texture,
 			this.scenePosition.x,
-			this.scenePosition.y, 
-			this.crop, 
-			Color.temp.copy(this.color).mult(this.alpha), 
-			this.origin, 
-			this.scale, 
-			this.rotation, 
-			this.flipX, 
+			this.scenePosition.y,
+			this.crop,
+			Color.temp.copy(this.color).mult(this.alpha),
+			this.origin,
+			this.scale,
+			this.rotation,
+			this.flipX,
 			this.flipY
 		);
 	}

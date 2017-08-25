@@ -1,8 +1,12 @@
+import {Engine} from "../engine";
+import {Matrix} from "../util/matrix";
+import {Vector} from "../util/vector";
+
 /**
  * A Foster Shader used for Rendering
  * For Pre-existing shaders, see Shaders.ts
  */
-class Shader
+export class Shader
 {
 	/**
 	 * The WebGL Shader Program
@@ -28,62 +32,74 @@ class Shader
 	 * A direct reference to the Sampler2D Uniform
 	 */
 	public sampler2d:ShaderUniform;
-	
-	private uniformsByName:any = {};
-	
-	/**
-	 * Creates a new Shader from the given vertex and fragment shader code, with the given uniforms and attributes
-	 */
-	constructor(vertex:string, fragment:string, uniforms:ShaderUniform[], attributes:ShaderAttribute[])
+
+	private uniformsByName:{[key:string]:ShaderUniform} = {};
+
+	setProgramText(vertex:string, fragment:string):void
 	{
-		let gl = Engine.graphics.gl;
-		
+		const gl = Engine.graphics.gl;
+
 		// vertex shader
-		let vertexShader = gl.createShader(gl.VERTEX_SHADER);
+		const vertexShader = gl.createShader(gl.VERTEX_SHADER);
 		gl.shaderSource(vertexShader, vertex);
 		gl.compileShader(vertexShader);
 		if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))
-			throw "An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertexShader);
-			
+			throw new Error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(vertexShader));
+
 		// fragment shader
-		let fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+		const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 		gl.shaderSource(fragmentShader, fragment);
 		gl.compileShader(fragmentShader);
 		if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))
-			throw "An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragmentShader);
-			
+			throw new Error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(fragmentShader));
+
+		if (this.program)
+		{
+			gl.deleteProgram(this.program);
+		}
+
 		// program
 		this.program = gl.createProgram();
 		gl.attachShader(this.program, vertexShader);
 		gl.attachShader(this.program, fragmentShader);
 		gl.linkProgram(this.program);
-		
+
 		if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
-			throw "Unable to initialize the shader program.";
-			
+			throw new Error("Unable to initialize the shader program.");
+
 		gl.deleteShader(vertexShader);
 		gl.deleteShader(fragmentShader);
-			
+
 		// attributes
-		this.attributes = attributes;
-		for (let i = 0; i < this.attributes.length; i ++)
-			this.attributes[i].attribute = gl.getAttribLocation(this.program, this.attributes[i].name);
-			
+		for (const attribute of this.attributes)
+			attribute.attribute = gl.getAttribLocation(this.program, attribute.name);
+
 		// uniforms
-		this.uniforms = uniforms;
-		for (let i = 0; i < this.uniforms.length; i ++)
+		for (const uniform of this.uniforms)
 		{
-			let uniform = this.uniforms[i];
 			this.uniformsByName[uniform.name] = uniform;
 			uniform.shader = this;
 			uniform.uniform = gl.getUniformLocation(this.program, uniform.name);
-			
+
 			// first sampler2D gets set
-			if (uniform.type == ShaderUniformType.sampler2D && this.sampler2d == null)
+			if (uniform.type === ShaderUniformType.sampler2D && this.sampler2d == null)
 				this.sampler2d = uniform;
 		}
 	}
-	
+
+	/**
+	 * Creates a new Shader from the given vertex and fragment shader code, with the given uniforms and attributes
+	 */
+	constructor(vertex:string, fragment:string, uniforms:ShaderUniform[], attributes:ShaderAttribute[])
+	{
+		const gl = Engine.graphics.gl;
+
+		this.attributes = attributes;
+		this.uniforms = uniforms;
+
+		this.setProgramText(vertex, fragment);
+	}
+
 	/**
 	 * Sets the Uniform of the given name to the value
 	 * @param name 	the name of the uniform
@@ -98,7 +114,7 @@ class Shader
 /**
  * Shader Uniform Types
  */
-enum ShaderUniformType
+export enum ShaderUniformType
 {
 	// normal ones
 	float,
@@ -120,15 +136,15 @@ enum ShaderUniformType
 	int3Array,
 	int4,
 	int4Array,
-	
+
 	// special case for sampler2D
-	sampler2D
+	sampler2D,
 }
 
 /**
  * A Shader Uniform instance
  */
-class ShaderUniform
+export class ShaderUniform
 {
 	private _shader:Shader;
 	private _value:any = null;
@@ -148,11 +164,9 @@ class ShaderUniform
 			this.dirty = true;
 		}
 	}
-	
+
 	public set shader(s:Shader)
 	{
-		if (this._shader != null)
-			throw "This Uniform is already attached to a shader";
 		this._shader = s;
 	}
 	
@@ -167,22 +181,22 @@ class ShaderUniform
 /**
  * Shader Attribute Types
  */
-enum ShaderAttributeType
+export enum ShaderAttributeType
 {
 	Position,
 	Texcoord,
-	Color
+	Color,
 }
 
 /**
  * A Shader Attribute Instance
  */
-class ShaderAttribute
+export class ShaderAttribute
 {
 	public name:string;
 	public type:ShaderAttributeType;
 	public attribute:number;
-	
+
 	constructor(name:string, type:ShaderAttributeType)
 	{
 		this.name = name;
@@ -193,13 +207,12 @@ class ShaderAttribute
 /**
  * Dictionary of Methods to handle setting GL Uniform Values
  */
-var setGLUniformValue:{[type:number]:(gl:WebGLRenderingContext, location:WebGLUniformLocation, value:any)=>void} = {};
+export const setGLUniformValue:{[type:number]:(gl:WebGLRenderingContext, location:WebGLUniformLocation, value:any)=>void} = {};
 
 // float
-setGLUniformValue[ShaderUniformType.float] = (gl, location, value) => 
-	{ 
-		gl.uniform1f(location, value); 
-	}
+setGLUniformValue[ShaderUniformType.float] = (gl, location, value) => {
+	gl.uniform1f(location, value);
+};
 
 // float 2
 setGLUniformValue[ShaderUniformType.float2] = (gl, location, value) =>
@@ -313,7 +326,6 @@ setGLUniformValue[ShaderUniformType.matrix3d] = (gl, location, value) =>
 	}
 
 // matrix 4d
-setGLUniformValue[ShaderUniformType.matrix4d] = (gl, location, value) =>
-	{
-		gl.uniformMatrix2fv(location, false, value);
-	}
+setGLUniformValue[ShaderUniformType.matrix4d] = (gl, location, value) => {
+	gl.uniformMatrix2fv(location, false, value);
+};

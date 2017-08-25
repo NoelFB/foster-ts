@@ -1,4 +1,7 @@
-class GamepadManager
+import {Component} from "../component";
+import {Vector} from "../util/vector";
+
+export class GamepadManager
 {
 	public static defaultDeadzone:number = 0.3;
 	private static controllers:ControllerInput[] = [];
@@ -9,26 +12,41 @@ class GamepadManager
 		window.addEventListener("gamepaddisconnected", GamepadManager.onRemoveController, false);
 	}
 
-	static onAddController(event:any):void
+	static update()
 	{
-		for (var i = 0; i < GamepadManager.controllers.length; i++)
-		{
-			if (GamepadManager.controllers[i].gamepad == event.gamepad)
+		for (const controller of GamepadManager.controllers)
+			controller.update();
+	}
+
+	static onAddController(event:GamepadEvent):void
+	{
+		for (const controller of GamepadManager.controllers)
+			if (controller.gamepad === event.gamepad)
 				return; // We already have this controller, must be a reconnect.
-		}
 		if (event.gamepad.id.includes("Unknown Gamepad"))
 			return; // On some platforms each x360 controller was showing up twice and only one of them was queryable. -_-
-		GamepadManager.controllers.push(new ControllerInput(event.gamepad));
+
+		GamepadManager.controllers[event.gamepad.index] = new ControllerInput(event.gamepad);
 	}
 
 	private static onRemoveController(event:any):void
 	{
-		console.log("A gamepad was disconnected, please reconnect.")
+		delete this.controllers[event.gamepad.index];
 	}
 
 	public static getController(index:number):ControllerInput
 	{
-		return GamepadManager.controllers[index];
+		const controller = GamepadManager.controllers[index];
+		if (controller)
+			return controller;
+		for (const c of navigator.getGamepads())
+		{
+			if (c && c.index === index)
+			{
+				const newcontroller = GamepadManager.controllers[index] = new ControllerInput(c);
+				return newcontroller;
+			}
+		}
 	}
 
 	public static numControllers():number
@@ -43,7 +61,7 @@ class GamepadManager
 	}
 }
 
-class ControllerInput extends Component
+class ControllerInput
 {
 	public gamepad:Gamepad;
 	private deadzone:number;
@@ -56,7 +74,6 @@ class ControllerInput extends Component
 
 	constructor(pad:Gamepad, deadzone:number = GamepadManager.defaultDeadzone)
 	{
-		super();
 		this.gamepad = pad;
 		this.deadzone = deadzone;
 		for (var i : number = 0; i < pad.buttons.length; i++)
@@ -65,7 +82,7 @@ class ControllerInput extends Component
 
 	public update():void
 	{
-		var gamepad = this.queryGamepad();
+		const gamepad = this.gamepad = this.queryGamepad();
 		this.leftStick.x = gamepad.axes[0];
 		this.leftStick.y = gamepad.axes[1];
 		this.rightStick.x = gamepad.axes[2];
@@ -109,10 +126,10 @@ class ControllerInput extends Component
 	}
 }
 
-class ButtonState
+export class ButtonState
 {
-	private _last:boolean;
-	private _next:boolean;
+	_last:boolean;
+	_next:boolean;
 
 	constructor()
 	{

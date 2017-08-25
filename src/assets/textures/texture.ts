@@ -1,7 +1,13 @@
+import {Engine} from "../../engine";
+import {Color} from "../../util/color";
+import {Rectangle} from "../../util/rectangle";
+import {Vector} from "../../util/vector";
+import {FosterWebGLTexture} from "./fosterWebGLTexture"
+
 /**
  * A Texture used for Rendering
  */
-class Texture
+export class Texture
 {
 	/**
 	 * The cropped Bounds of the Texture within its WebGL Texture
@@ -26,7 +32,7 @@ class Texture
 	/**
 	 * Metadata attached to this texture
 	 */
-	public metadata:{[path:string]:any} = {}; 
+	public metadata:{[path:string]:any} = {};
 
 	/**
 	 * The width of the Texture when rendered (frame.width)
@@ -64,11 +70,11 @@ class Texture
 	 */
 	public getSubtexture(clip:Rectangle, sub?:Texture):Texture
 	{
-		if (sub == undefined)
+		if (sub === undefined)
 			sub = new Texture(this.texture);
 		else
 			sub.texture = this.texture;
-		
+
 		sub.bounds.x = this.bounds.x + Math.max(0, Math.min(this.bounds.width, clip.x + this.frame.x));
 		sub.bounds.y = this.bounds.y + Math.max(0, Math.min(this.bounds.height, clip.y + this.frame.y));
 		sub.bounds.width = Math.max(0, this.bounds.x + Math.min(this.bounds.width, clip.x + this.frame.x + clip.width) - sub.bounds.x);
@@ -90,11 +96,11 @@ class Texture
 	{
 		return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
 	}
-	
+
 	public toString():string
 	{
-		return (this.texture.path + 
-		": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" + 
+		return (this.texture.path +
+		": [" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
 		"frame["+ this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height +"]");
 	}
 
@@ -121,7 +127,7 @@ class Texture
 	{
 		Engine.graphics.texture(this, position.x, position.y, null, color, this.center, scale, rotation, flipX, flipY);
 	}
-	
+
 	/**
 	 * Draws a cropped version of this texture, center aligned
 	 */
@@ -155,17 +161,43 @@ class Texture
 		this.texture = null;
 	}
 
+	static makeTransparent(image:HTMLImageElement, colorKey:Color):HTMLCanvasElement
+	{
+		const canvas:HTMLCanvasElement = document.createElement("canvas");
+		canvas.width = image.width;
+		canvas.height = image.height;
+
+		const ctx = canvas.getContext("2d");
+		ctx.drawImage(image, 0, 0);
+		const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		const data = imageData.data;
+		for (let i = 0; i < data.length; i+=4) {
+			if (data[i + 0] === colorKey.r &&
+				data[i + 1] === colorKey.g &&
+				data[i + 2] === colorKey.b)
+			{
+				data[i + 3] = 0; // set alpha to 0
+			}
+		}
+		ctx.putImageData(imageData, 0, 0);
+
+		return canvas;
+	}
+
 	/**
 	 * Creats a new Texture from an HTML Image Element
 	 */
-	public static create(image:HTMLImageElement):Texture
+	public static create(image:HTMLImageElement, colorKey:Color):Texture
 	{
-		let gl = Engine.graphics.gl;
-		let tex = gl.createTexture();
-			
+		const gl = Engine.graphics.gl;
+		const tex = gl.createTexture();
+
 		gl.bindTexture(gl.TEXTURE_2D, tex);
 		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+		if (colorKey)
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, Texture.makeTransparent(image, colorKey));
+		else
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -180,10 +212,10 @@ class Texture
 	 */
 	public static createFromData(data:number[], width:number, height:number):Texture
 	{
-		let gl = Engine.graphics.gl;
-		let tex = gl.createTexture();
+		const gl = Engine.graphics.gl;
+		const tex = gl.createTexture();
 
-		let input = [];
+		const input = [];
 		for (let i = 0; i < data.length;  i ++)
 			input[i] = Math.floor(data[i] * 255);
 

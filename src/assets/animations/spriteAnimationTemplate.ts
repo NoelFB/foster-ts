@@ -1,7 +1,10 @@
+import {Vector} from "../../util/vector";
+import {Texture} from "../textures/texture";
+
 /**
  * An animation template handles a single Animation in an Sprite Template (ex. Player.Run)
  */
-class SpriteAnimationTemplate
+export class SpriteAnimationTemplate
 {
 	/**
 	 * The name of the Animation
@@ -36,7 +39,7 @@ class SpriteAnimationTemplate
 	/**
 	 * What animation(s) the Sprite should go to next upon completion
 	 */
-	public goto:string[] = null;
+	public goto:string[]|null = null;
 	
 	constructor(name:string, speed:number, frames:Texture[], loops?:boolean, position?:Vector, origin?:Vector)
 	{

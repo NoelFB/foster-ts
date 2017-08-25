@@ -1,6 +1,5 @@
-class Matrix
+export class Matrix
 {
-
 	public mat:Float32Array = new Float32Array(9);
 
 	public constructor()
@@ -157,7 +156,7 @@ class Matrix
 		this.mat[3] = c * a10 - s * a00;
 		this.mat[4] = c * a11 - s * a01;
 		this.mat[5] = c * a12 - s * a02;
-		
+
 		return this;
 	}
 
@@ -189,7 +188,8 @@ class Matrix
 
 	public fromRotation(rad:number):Matrix
 	{
-		var s = Math.sin(rad), c = Math.cos(rad);
+		const s = Math.sin(rad);
+		const c = Math.cos(rad);
 		this.identity();
 		this.mat[0] = c;
 		this.mat[1] = -s;
@@ -213,5 +213,4 @@ class Matrix
 		this.mat[7] = y;
 		return this;
 	}
-
 }

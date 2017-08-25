@@ -1,4 +1,10 @@
-class Sound
+import {Engine} from "../../engine";
+import {Calc} from "../../util";
+import {Assets} from "../assets";
+import {AudioGroup} from "./AudioGroup";
+import {AudioSource} from "./AudioSource";
+
+export class Sound
 {
 	public static active:Sound[] = [];
 
@@ -8,7 +14,7 @@ class Sound
 	private loadedEvent:()=>void;
 	private started:boolean = false;
 	private groups:string[] = [];
-	
+
 	private fadeFrom:number;
 	private fadeTo:number;
 	private fadePercent:number = 1;
@@ -67,8 +73,8 @@ class Sound
 	{
 		this.source = Assets.sounds[handle];
 		if (groups && groups.length > 0)
-			for (let i = 0; i < groups.length; i ++)
-				this.group(groups[i]);
+			for (const group of groups)
+				this.group(group);
 	}
 
 	/**
@@ -78,7 +84,7 @@ class Sound
 	{
 		// should this sound loop?
 		this.loop = loop;
-		
+
 		// reset current sound if we're playing something already
 		if (this.sound != null && this.started)
 		{
@@ -88,27 +94,27 @@ class Sound
 		}
 		// request a new sound instance & play it (or wait until it's loaded)
 		else
-		{	
+		{
 			this.sound = this.source.requestSound();
 			if (this.sound != null)
 			{
 				if (this.sound.readyState < 3)
 				{
-					var self = this;
+					const self = this;
 					self.loadedEvent = () =>
 					{
 						if (self.sound != null)
 							self.internalPlay();
 						self.sound.removeEventListener("loadeddata", self.loadedEvent);
 						self.loadedEvent = null;
-					}
+					};
 					this.sound.addEventListener("loadeddata", self.loadedEvent);
 				}
 				else
 					this.internalPlay();
 			}
 		}
-		
+
 		return this;
 	}
 
@@ -153,13 +159,13 @@ class Sound
 				if (this.loadedEvent != null)
 					this.sound.removeEventListener("loadeddata", this.loadedEvent);
 			}
-			
+
 			this.sound = null;
 			this.started = false;
 			this._paused = false;
 			this.fadePercent = 1;
 
-			let i = Sound.active.indexOf(this);
+			const i = Sound.active.indexOf(this);
 			if (i >= 0)
 				Sound.active.splice(i, 1);
 		}
@@ -176,7 +182,7 @@ class Sound
 
 	public ungroup(group:string):Sound
 	{
-		let index = this.groups.indexOf(group);
+		const index = this.groups.indexOf(group);
 		if (index >= 0)
 		{
 			this.groups.splice(index, 1);
@@ -203,15 +209,15 @@ class Sound
 	{
 		this.started = true;
 		Sound.active.push(this);
-		
-		var self = this;
+
+		const self = this;
 		this.endEvent = () => { self.stop(); };
 
 		this.sound.addEventListener("ended", this.endEvent);
 		this.sound.loop = this.loop;
 		this.internalUpdateVolume();
 		this.internalUpdateMuted();
-		
+
 		if (!this._paused)
 			this.sound.play();
 	}
@@ -221,8 +227,8 @@ class Sound
 		if  (this.started)
 		{
 			let groupVolume = 1;
-			for  (let i = 0; i < this.groups.length; i ++)
-				groupVolume *= AudioGroup.volume(this.groups[i]);
+			for  (const group of this.groups)
+				groupVolume *= AudioGroup.volume(group);
 			this.sound.volume = this._volume * groupVolume * Engine.volume;
 		}
 	}

@@ -1,42 +1,48 @@
-/// <reference path="colliders/hitbox.ts"/>
-class Physics extends Hitbox
+import {Engine} from "../engine";
+import {Calc} from "../util/calc";
+import {Vector} from "../util/vector";
+import {Collider, Hitbox} from "./colliders";
+
+export class Physics extends Hitbox
 {
 	public solids:string[] = [];
+	public onCollide:Array<(horizontal:boolean, collider:Collider) => void> = [];
 	public onCollideX:(hit:Collider) => void;
 	public onCollideY:(hit:Collider) => void;
 	public speed:Vector = new Vector(0, 0);
-	
+
 	private remainder:Vector = new Vector(0, 0);
-	
-	constructor(left:number, top:number, width:number, height:number, tags?:string[], solids?:string[])
+
+	constructor({left, top, width, height, tags, solids}:
+		{left:number, top:number, width:number, height:number, tags?:string[], solids?:string[]})
 	{
-		super(left, top, width, height, tags);
-		if (solids != undefined)
+		super({left, top, width, height, tags});
+		if (solids !== undefined)
 			this.solids = solids;
 	}
-	
+
 	public update()
 	{
-		if (this.speed.x != 0)
+		if (this.speed.x !== 0)
 			this.moveX(this.speed.x * Engine.delta);
-		if (this.speed.y != 0)
+		if (this.speed.y !== 0)
 			this.moveY(this.speed.y * Engine.delta);
 	}
 
 	public moveBy(amount:Vector):boolean
 	{
-		var movedX = this.moveX(amount.x);
-		var movedY = this.moveY(amount.y);
+		const movedX = this.moveX(amount.x);
+		const movedY = this.moveY(amount.y);
 		return movedX && movedY;
 	}
-	
+
 	public move(x:number, y:number):boolean
 	{
-		var movedX = this.moveX(x);
-		var movedY = this.moveY(y);
+		const movedX = this.moveX(x);
+		const movedY = this.moveY(y);
 		return movedX && movedY;
 	}
-	
+
 	public moveX(amount:number):boolean
 	{
 		let moveBy = amount + this.remainder.x;
@@ -44,39 +50,43 @@ class Physics extends Hitbox
 		moveBy -= this.remainder.x;
 		return this.moveXAbsolute(moveBy);
 	}
-	
+
 	public moveXAbsolute(amount:number):boolean
 	{
+		const entity = this.entity;
 		if (this.solids.length <= 0)
 		{
-			this.entity.x += Math.round(amount);
+			entity.x += Math.round(amount);
 		}
 		else
 		{
-			let sign = Calc.sign(amount);
+			const sign = Calc.sign(amount);
 			amount = Math.abs(Math.round(amount));
-			
+
 			while (amount > 0)
 			{
-				let hit = this.collides(this.solids, sign, 0);
-				if (hit != null)
+				const hit = this.collides(this.solids, sign, 0);
+				const isMe = hit && hit.entity ? hit.entity === entity : false;
+				if (hit != null && !isMe)
 				{
 					this.remainder.x = 0;
 					if (this.onCollideX != null)
 						this.onCollideX(hit);
+					for (const cb of this.onCollide)
+						cb(true, hit);
 					return false;
 				}
 				else
 				{
-					this.entity.x += sign;
+					entity.x += sign;
 					amount -= 1;
 				}
 			}
 		}
-		
+
 		return true;
 	}
-	
+
 	public moveY(amount:number):boolean
 	{
 		let moveBy = amount + this.remainder.y;
@@ -84,39 +94,43 @@ class Physics extends Hitbox
 		moveBy -= this.remainder.y;
 		return this.moveYAbsolute(moveBy);
 	}
-	
+
 	public moveYAbsolute(amount:number):boolean
 	{
+		const entity = this.entity;
 		if (this.solids.length <= 0)
 		{
-			this.entity.y += Math.round(amount);
+			entity.y += Math.round(amount);
 		}
 		else
 		{
-			let sign = Calc.sign(amount);
+			const sign = Calc.sign(amount);
 			amount = Math.abs(Math.round(amount));
-			
+
 			while (amount > 0)
 			{
-				let hit = this.collides(this.solids, 0, sign);
-				if (hit != null)
+				const hit = this.collides(this.solids, 0, sign);
+				const isMe = hit && hit.entity ? hit.entity === entity : false;
+				if (hit != null && !isMe)
 				{
 					this.remainder.y = 0;
 					if (this.onCollideY != null)
 						this.onCollideY(hit);
+					for (const cb of this.onCollide)
+						cb(false, hit);
 					return false;
 				}
 				else
 				{
-					this.entity.y += sign;
+					entity.y += sign;
 					amount -= 1;
 				}
 			}
 		}
-		
+
 		return true;
 	}
-	
+
 	public friction(fx:number, fy:number):Physics
 	{
 		if (this.speed.x < 0)
@@ -132,9 +146,9 @@ class Physics extends Hitbox
 
 	public maxspeed(mx?:number, my?:number):Physics
 	{
-		if (mx != undefined && mx != null)
+		if (mx !== undefined && mx !== null)
 			this.speed.x = Math.max(-mx, Math.min(mx, this.speed.x));
-		if (my != undefined && my != null)
+		if (my !== undefined && my !== null)
 			this.speed.y = Math.max(-my, Math.min(my, this.speed.y));
 		return this;
 	}
