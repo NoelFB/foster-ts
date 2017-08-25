@@ -67,10 +67,10 @@ export abstract class Renderer
 	/**
 	 * Renders the Renderer. Calls drawBegin and then drawEntities
 	 */
-	public render():number
+	public render():void
 	{
 		this.drawBegin();
-		return this.drawEntities();
+		this.drawEntities();
 	}
 
 	/**
@@ -100,22 +100,16 @@ export abstract class Renderer
 	/**
 	 * Draws all the entities
 	 */
-	public drawEntities():number
+	public drawEntities()
 	{
 		const camera = this.getActiveCamera();
-		let count = 0;
 
 		// draw each entity
 		this.getEntitiesToRender().each((e) => 
 		{
 			if (e.visible)
-			{
 				e.render(camera);
-				++count;
-			}
 		});
-
-		return count;
 	}
 
 	private getActiveCamera():Camera

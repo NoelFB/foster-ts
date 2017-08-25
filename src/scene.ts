@@ -72,16 +72,11 @@ export class Scene
 		this.cache = {};
 	}
 
-	earlyUpdate:Array<()=>void> = [];
-
 	/**
 	 * Called every frame and updates the Scene
 	 */
 	public update():void
 	{
-		for (const cb of this.earlyUpdate)
-			cb();
-
 		// update entities
 		this.entities.each((e) =>
 		{
@@ -93,12 +88,6 @@ export class Scene
 			if (e.active && e.isStarted)
 				e.update();
 		});
-
-		this.entities.each((e) =>
-		{
-			if (e.active && e.isStarted)
-				e.lateUpdate();
-		})
 
 		for (const e of this._markedForDestruction)
 			this.destroy(e);
@@ -155,8 +144,6 @@ export class Scene
 			Engine.graphics.shader = Shaders.primitive;
 			Engine.graphics.shader.set("matrix", this.camera.matrix);
 
-			this.debugRender(this.camera);
-
 			this.entities.each((e) =>
 			{
 				if (e.active)
@@ -164,8 +151,6 @@ export class Scene
 			});
 		}
 	}
-
-	public debugRender(camera:Camera) {}
 
 	/**
 	 * Adds the given Entity to this Scene
@@ -391,7 +376,6 @@ export class Scene
 	{
 		renderer.scene = this;
 		this.renderers.add(renderer);
-		this.renderers.sort((a, b) => Calc.cmp(a.sortOrder, b.sortOrder));
 		return renderer;
 	}
 

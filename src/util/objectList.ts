@@ -58,32 +58,10 @@ export class ObjectList<T>
 	public each(callback:(object:T)=>any):void
 	{
 		const count = this.objects.length;
-		this._iterating = true;
 		for (let i = 0; i < count; i ++)
 			if (this.objects[i] != null)
 				if (callback(this.objects[i]) === false)
 					break;
-		this._iterating = false;
-		if (this._moveAfters.length > 0)
-		{
-			for (const [obj, index] of this._moveAfters)
-				if (this.remove(obj))
-					this.objects.splice(index, 0, obj);
-			this._moveAfters = [];
-			this.dirty = true;
-			this.clean();
-		}
-	}
-
-	_moveAfters:Array<[T, number]> = [];
-
-	public moveAfter(obj:T, index:number)
-	{
-		if (this._iterating)
-			this._moveAfters.push([obj, index]);
-		else
-			if (this.remove(obj))
-				this.objects.splice(index, 0, obj);
 	}
 
 	/**
@@ -136,7 +114,6 @@ export class ObjectList<T>
 		}
 		return false;
 	}
-
 
 	/**
 	 * Clears the entire list

@@ -163,7 +163,6 @@ export class Vector
 	public static temp4:Vector = new Vector();
 	public static temp5:Vector = new Vector();
 
-	// TODO: freeze these?
 	public static up:Vector = new Vector(0, -1);
 	public static down:Vector = new Vector(0, 1);
 	public static left:Vector = new Vector(-1, 0);

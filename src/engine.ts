@@ -273,7 +273,6 @@ export class Engine
 		// time management!
 		const time = Date.now();
 		this.dt = this.paused ? 0 : Math.floor(time - this.lastTime) / 1000 * this.timeScale;
-		//this.elapsed = this.elapsed + this.dt;//Math.floor(time - this.startTime) / 1000;
 		this.lastTime = time;
 		this.frameCount++;
 		this.elapsed += this.dt;

@@ -107,28 +107,6 @@ export class Atlas
 
 export class AtlasReaders
 {
-	public static DoodleStudio(data:string, into:Atlas):void
-	{
-		const json = JSON.parse(data);
-		const loops = json["playbackMode"] !== "once";
-		const frames = json["frames"];
-		let i = 0;
-		
-		if (json["playbackMode"] === "loopbackandforth")
-			frames.push(...frames.slice(0, frames.length-1).reverse());
-
-		for (const frame of frames)
-		{
-			const bounds = frame.rect;
-			const boundsRect = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
-			const tex:Texture = new Texture(into.texture.texture, boundsRect);
-			tex.metadata["duration"] = frame.duration;
-			tex.metadata["loops"] = loops; // TODO: this is a hack. loops should be for the animation, not per texture
-			into.subtextures["main " + i] = tex;
-			++i;
-		}
-	}
-
 	/**
 	 * Parses Aseprite data from the atlas
 	 */

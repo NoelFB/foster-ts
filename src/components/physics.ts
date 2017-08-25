@@ -6,12 +6,9 @@ import {Collider, Hitbox} from "./colliders";
 export class Physics extends Hitbox
 {
 	public solids:string[] = [];
-
 	public onCollide:Array<(horizontal:boolean, collider:Collider) => void> = [];
-
 	public onCollideX:(hit:Collider) => void;
 	public onCollideY:(hit:Collider) => void;
-
 	public speed:Vector = new Vector(0, 0);
 
 	private remainder:Vector = new Vector(0, 0);

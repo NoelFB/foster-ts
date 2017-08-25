@@ -202,24 +202,7 @@ export class Entity
 	 */
 	debugRender(camera:Camera):void
 	{
-		//	Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, Color.white);
-
-		const n = 3; // size of arrow
-		const length = 9;
-
-		Engine.graphics.triangle(
-			Vector.temp0.set(this.x + length,     this.y),
-			Vector.temp1.set(this.x + length - n, this.y - n),
-			Vector.temp2.set(this.x + length - n, this.y + n),
-			Color.red);
-		Engine.graphics.rect(this.x, this.y, 10, 1, Color.red);
-
-		Engine.graphics.triangle(
-			Vector.temp0.set(this.x,     this.y - length),
-			Vector.temp1.set(this.x - n, this.y - length + n),
-			Vector.temp2.set(this.x + n, this.y - length + n),
-			Color.green);
-		Engine.graphics.rect(this.x, this.y, 1, -10, Color.green);
+		Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, Color.white);
 
 		this.components.each((c) =>
 		{

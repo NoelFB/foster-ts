@@ -9,13 +9,6 @@ import {Shader} from "./util/shader";
 import {Shaders} from "./util/shaders";
 import {Vector} from "./util/vector";
 
-interface FillTextCall {
-	text:string;
-	x:number;
-	y:number;
-	maxWidth?:number;
-}
-
 export enum ResolutionStyle
 {
 	/** Renders the buffer at the Center of the Screen with no scaling */
@@ -53,7 +46,6 @@ export class Graphics
 	// core
 	private engine:Engine;
 	public canvas:HTMLCanvasElement;
-	public textCanvas:HTMLCanvasElement;
 	public gl:WebGLRenderingContext;
 	public textContext:CanvasRenderingContext2D;
 	public buffer:RenderTarget;
@@ -163,17 +155,7 @@ export class Graphics
 		}) as WebGLRenderingContext;
 		Graphics._initCanvas(this.canvas);
 
-		// create the text debug overlay
-		if (process.env.NODE_ENV !== "production")
-		{
-			this.textCanvas = document.createElement("canvas");
-			this.textCanvas.classList.add("text");
-			this.textContext = this.textCanvas.getContext("2d");
-			Graphics._initCanvas(this.textCanvas);
-		}
-
 		this.gl.enable(this.gl.BLEND);
-		this._updateStateFlags();
 		this.gl.disable(this.gl.CULL_FACE);
 		this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
 
@@ -186,37 +168,6 @@ export class Graphics
 		this.vertexBuffer = this.gl.createBuffer();
 		this.texcoordBuffer = this.gl.createBuffer();
 		this.colorBuffer = this.gl.createBuffer();
-	}
-
-	_lastDepthTestEnabled:boolean|number = -1;
-
-	_updateStateFlags()
-	{
-		if (this._lastDepthTestEnabled !== this.depthTestEnabled)
-		{
-			this._lastDepthTestEnabled = this.depthTestEnabled;
-			console.log("depth test enabled: " + this.depthTestEnabled);
-		}
-
-		this.glSetEnabled(this.gl.DEPTH_TEST, this.depthTestEnabled);
-
-		if (this.depthTestEnabled)
-		{
-			this.gl.depthFunc(this.gl.LESS);
-			this.gl.disable(this.gl.BLEND);
-		}
-		else
-		{
-			this.gl.enable(this.gl.BLEND);
-		}
-	}
-
-	glSetEnabled(glenum:number, enabled:boolean)
-	{
-		if (enabled)
-			this.gl.enable(glenum);
-		else
-			this.gl.disable(glenum);
 	}
 
 	/**
@@ -278,8 +229,6 @@ export class Graphics
 	public update():void
 	{
 		Graphics.checkCanvasSize(this.canvas);
-		if (this.textCanvas)
-			Graphics.checkCanvasSize(this.textCanvas);
 	}
 
 	/**
@@ -330,14 +279,6 @@ export class Graphics
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 	}
 
-	_texts:FillTextCall[] = [];
-
-	public fillText(text:string, x:number, y:number, maxWidth?:number)
-	{
-		if (process.env.NODE_ENV !== "production")
-			this._texts.push({text, x, y, maxWidth});
-	}
-
 	/**
 	 * Resets the Graphics rendering
 	 */
@@ -351,7 +292,6 @@ export class Graphics
 		this.texcoords = [];
 		this.setRenderTarget(this.buffer);
 		this.clear(this.clearColor);
-		this._updateStateFlags();
 	}
 
 	/**
@@ -551,13 +491,13 @@ export class Graphics
 	 * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
 	 * @param color optional color for the vertex
 	 */
-	public push(x:number, y:number, u:number, v:number, color?:Color, z=0)
+	public push(x:number, y:number, u:number, v:number, color?:Color)
 	{
 		// shader was changed
 		this.checkState();
 
 		// append
-		this.vertices.push(x, y, z);
+		this.vertices.push(x, y);
 		this.texcoords.push(u, v);
 		if (color !== undefined && color !== null)
 			this.colors.push(color.r, color.g, color.b, color.a);
@@ -572,9 +512,9 @@ export class Graphics
 	 * @param v		Y position in the texture (v) (only used in shaders with sampler2d)
 	 * @param color optional color for the vertex
 	 */
-	public pushUnsafe(x:number, y:number, u:number, v:number, color?:Color, z=0)
+	public pushUnsafe(x:number, y:number, u:number, v:number, color?:Color)
 	{
-		this.vertices.push(x, y, z);
+		this.vertices.push(x, y);
 		this.texcoords.push(u, v);
 		if (color !== undefined && color !== null)
 			this.colors.push(color.r, color.g, color.b, color.a);
@@ -583,13 +523,13 @@ export class Graphics
 	/**
 	 * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
 	 */
-	public pushList(pos:Vector[], uv:Vector[], color:Color[], z=0)
+	public pushList(pos:Vector[], uv:Vector[], color:Color[])
 	{
 		this.checkState();
 
 		for (let i = 0; i < pos.length; i ++)
 		{
-			this.vertices.push(pos[i].x, pos[i].y, z);
+			this.vertices.push(pos[i].x, pos[i].y);
 			if (uv !== undefined && uv !== null)
 				this.texcoords.push(uv[i].x, uv[i].y);
 			if (color !== undefined && color !== null)
@@ -615,8 +555,7 @@ export class Graphics
 		crop?:Rectangle, color?:Color,
 		origin?:Vector, scale?:Vector, rotation?:number,
 		flipX?:boolean, flipY?:boolean,
-		width?:number, height?:number,
-		z=0)
+		width?:number, height?:number)
 	{
 		this.setShaderTexture(tex);
 
@@ -694,12 +633,12 @@ export class Graphics
 		const col = (color || Color.white);
 
 		// push vertices
-		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col, z);
-		this.pushUnsafe(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, col, z);
-		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col, z);
-		this.pushUnsafe(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col, z);
-		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col, z);
-		this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col, z);
+		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
+		this.pushUnsafe(posX + this.topright.x, posY + this.topright.y, uvMaxX, uvMinY, col);
+		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+		this.pushUnsafe(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
+		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
+		this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col);
 	}
 
 	public quad(posX:number, posY:number, width:number, height:number, color?:Color, origin?:Vector, scale?:Vector, rotation?:number)

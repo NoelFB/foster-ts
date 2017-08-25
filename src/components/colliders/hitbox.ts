@@ -68,11 +68,8 @@ export class Hitbox extends Collider
 				this.tag(tag);
 	}
 
-	debugColor:Color = new Color(1, 0, 0, .6);
-
 	public debugRender()
 	{
-		if (this.debugColor && this.active)
-			Engine.graphics.hollowRect(this.sceneLeft, this.sceneTop, this.width, this.height, 1, this.debugColor);
+		Engine.graphics.hollowRect(this.sceneLeft, this.sceneTop, this.width, this.height, 1, Color.red);
 	}
 }

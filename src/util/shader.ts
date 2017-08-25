@@ -8,9 +8,6 @@ import {Vector} from "../util/vector";
  */
 export class Shader
 {
-	uuid:number;
-	static _last_uuid:number = 0;
-
 	/**
 	 * The WebGL Shader Program
 	 */

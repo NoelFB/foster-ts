@@ -62,7 +62,7 @@ export class Graphic extends Component
 		this.origin.set(this.width * x, this.height * y);
 	}
 
-	public render(camera:Camera, z=0):void
+	public render(camera:Camera):void
 	{
 		Engine.graphics.texture
 		(
@@ -75,10 +75,7 @@ export class Graphic extends Component
 			this.scale,
 			this.rotation,
 			this.flipX,
-			this.flipY,
-			this.texture.bounds.width,
-			this.texture.bounds.height,
-			z
+			this.flipY
 		);
 	}
 }
