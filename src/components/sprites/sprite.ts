@@ -1,5 +1,34 @@
-/// <reference path="./graphic.ts"/>
-class Sprite extends Graphic
+import {SpriteAnimationTemplate} from "../../assets/animations/spriteAnimationTemplate";
+import {SpriteBank} from "../../assets/animations/spriteBank";
+import {SpriteTemplate} from "../../assets/animations/spriteTemplate";
+import {Engine} from "../../engine";
+import {Calc} from "../../util/calc";
+import {Camera} from "../../util/camera";
+import {Graphic} from "./graphic";
+
+export const enum Origin
+{
+	center = "center",
+	topLeft = "topLeft",
+}
+
+interface SpriteOpts
+{
+	animation: string;
+	visible?: boolean;
+	origin?: Origin;
+	scale?: {x:number, y:number};
+	play?: string;
+	flipX?: boolean;
+	flipY?: boolean;
+	x?: number;
+	y?: number;
+	rate?: number;
+	alpha?: number;
+	randomStartFrame?: boolean
+}
+
+export class Sprite extends Graphic
 {
 	private _animation:SpriteTemplate = null;
 	private _playing:SpriteAnimationTemplate = null;
@@ -20,25 +49,51 @@ class Sprite extends Graphic
 	}
 	public rate:number = 1;
 
-	constructor(animation:string)
+	constructor({animation, origin, scale, play, flipX, flipY, x, y, rate, alpha, randomStartFrame, visible}:SpriteOpts)
 	{
 		super(null);
+
+		if (rate !== undefined) this.rate = rate;
+		if (x !== undefined) this.x = x;
+		if (y !== undefined) this.y = y;
+		if (alpha !== undefined) this.alpha = alpha;
+		if (visible !== undefined) this.visible = visible;
+
+		if (scale && scale.x !== undefined)
+			this.scale.set(scale.x, scale.y);
+
+		if (flipX !== undefined)
+			this.flipX = flipX;
+		if (flipY !== undefined)
+			this.flipY = flipY;
 
 		Engine.assert(SpriteBank.has(animation), "Missing animation '" + animation + "'!");
 		this._animation = SpriteBank.get(animation);
 		this.texture = this._animation.first.frames[0];
+		if (origin === Origin.center)
+			this.justify(.5, .5);
+
+		this.randomStartFrame = randomStartFrame;
+
+		if (play)
+			this.play(play, false, {randomFrame: randomStartFrame});
 	}
 
-	public play(name:string, restart?:boolean):void
+	randomStartFrame = false;
+
+	public play(name:string, restart?:boolean, opts?:{randomFrame?: boolean}):void
 	{
 		if (this.animation == null)
 			return;
 
-		let next = this.animation.get(name);
-		if (next != null && (this.playing != next || restart))
+		const next = this.animation.get(name);
+		if (next == null)
+			console.warn(`No animation track '${name}' in ${this._animation.toString()}`);
+
+		if (next != null && (this.playing !== next || restart))
 		{
 			this._playing = next;
-			this._frame = 0;
+			this._frame = opts && opts.randomFrame ? Math.floor(Calc.range(0, this._playing.frames.length)) : 0;
 			this.active = true;
 
 			if (this._playing.frames.length > 0)
@@ -69,7 +124,7 @@ class Sprite extends Graphic
 				// goto next animation
 				else if (this.playing.goto != null && this.playing.goto.length > 0)
 				{
-					let next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
+					const next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
 					this.play(next, true);
 				}
 				// stop (non-looping animation)
@@ -93,5 +148,4 @@ class Sprite extends Graphic
 		if (this.texture != null)
 			super.render(camera);
 	}
-	
 }

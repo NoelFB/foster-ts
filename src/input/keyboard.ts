@@ -1,23 +1,23 @@
-class Keyboard
+export class Keyboard
 {
 	private static _down:boolean[] = [];
 	private static _last:boolean[] = [];
 	private static _next:boolean[] = [];
 	private static _map:{[name:string]:Key[]} = {};
-	
+
 	public static init():void
 	{
 		window.addEventListener("keydown", function(e)
 		{
 			Keyboard._next[e.keyCode] = true;
 		});
-		
+
 		window.addEventListener("keyup", function(e)
 		{
 			Keyboard._next[e.keyCode] = false;
 		});
 	}
-	
+
 	public static update():void
 	{
 		for (let i = 0; i < 256; i ++)
@@ -26,28 +26,28 @@ class Keyboard
 			Keyboard._down[i] = Keyboard._next[i];
 		}
 	}
-	
+
 	public static check(key:any):boolean
 	{
 		if (isNaN(key))
 			return Keyboard.mapCheck(<string>key);
 		return (Keyboard._down[key] == true);
 	}
-	
+
 	public static pressed(key:any):boolean
 	{
 		if (isNaN(key))
 			return Keyboard.mapPressed(<string>key);
 		return (Keyboard._down[key] == true && !Keyboard._last[key]);
 	}
-	
+
 	public static released(key:any):boolean
 	{
 		if (isNaN(key))
 			return Keyboard.mapReleased(<string>key);
 		return (!Keyboard._down[key] && Keyboard._last[key] == true);
 	}
-	
+
 	public static map(name:string, keys:Key[]):void
 	{
 		if (!Keyboard._map[name])
@@ -61,7 +61,7 @@ class Keyboard
 		for (let name in list)
 			Keyboard.map(name, list[name]);
 	}
-	
+
 	public static mapCheck(key:string):boolean
 	{
 		if (Keyboard._map[key] != undefined)
@@ -70,7 +70,7 @@ class Keyboard
 					return true;
 		return false;
 	}
-	
+
 	public static mapPressed(key:string):boolean
 	{
 		if (Keyboard._map[key] != undefined)
@@ -92,7 +92,7 @@ class Keyboard
 	
 }
 
-enum Key
+export enum Key
 {
 	backspace 		= 8,
 	tab 			= 9,

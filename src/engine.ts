@@ -1,7 +1,20 @@
+import {Assets} from "./assets/assets"
+import {Sound} from "./assets/audio/Sound";
+import {Collider} from "./components/colliders/collider";
+import * as ColliderTests from "./components/colliders/collidertests";
+import {GameWindow} from "./gameWindow";
+import {Graphics} from "./graphics";
+import {GamepadManager, Keyboard, Mouse} from "./input";
+import {Scene} from "./scene";
+import {FosterIO} from "./util/io";
+import {Shaders} from "./util/shaders";
+
+/// <reference path="../lib/node.d.ts" />
+
 /**
  * Current game Client
  */
-enum Client
+export enum Client
 {
 	/**
 	 * Running on the desktop (in Electron)
@@ -10,13 +23,13 @@ enum Client
 	/**
 	 * Running on the Web
 	 */
-	Web
+	Web,
 }
 
 /**
  * Core of the Foster Engine. Initializes and Runs the game.
  */
-class Engine
+export class Engine
 {
 	/**
 	 * Foster Engine version
@@ -25,7 +38,7 @@ class Engine
 	public static version:string = "0.1.11";
 
 	/**
-	 * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
+	 * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.canvas)
 	 */
 	public static get root():HTMLElement { return Engine.instance.root; }
 
@@ -61,12 +74,20 @@ class Engine
 	/**
 	 * Delta Time (time, in seconds, since the last frame)
 	 */
-	public static get delta():number { return Engine.instance.dt; }
+	public static get delta():number { return Engine.instance.paused ? 0 : Engine.instance.dt; }
 
 	/**
 	 * Total elapsed game time (time, in seconds, since the Engine was started)
 	 */
 	public static get elapsed():number { return Engine.instance.elapsed; }
+
+	public static get paused():boolean { return this._hidden || Engine.instance.paused; }
+	public static set paused(v:boolean) { Engine.instance.paused = v; }
+
+	public static get timeScale():number { return Engine.instance.timeScale; }
+	public static set timeScale(v:number) { Engine.instance.timeScale = v; }
+
+	public static get frameCount():number { return Engine.instance.frameCount; }
 
 	/**
 	 * Gets the current Engine graphics (used for all rendering)
@@ -80,8 +101,8 @@ class Engine
 	public static set volume(n:number)
 	{
 		Engine._volume = n;
-		for (let i = 0; i < Sound.active.length; i ++)
-			Sound.active[i].volume = Sound.active[i].volume;
+		for (const sound of Sound.active)
+			sound.volume = sound.volume;
 	}
 	private static _volume:number = 1;
 
@@ -92,8 +113,8 @@ class Engine
 	public static set muted(m:boolean)
 	{
 		Engine._muted = m;
-		for (let i = 0; i < Sound.active.length; i ++)
-			Sound.active[i].muted = Sound.active[i].muted;
+		for (const sound of Sound.active)
+			sound.muted = sound.muted;
 	}
 	private static _muted:boolean = false;
 
@@ -105,6 +126,8 @@ class Engine
 	 * @param scale 	Scales the Window (on Desktop) to width * scale and height * scale
 	 * @param ready 	Callback when the Engine is ready
 	 */
+
+	private static _hidden = false;
 	public static start(title:string, width:number, height:number, scale:number, ready:() => void):void
 	{
 		// instantiate
@@ -112,20 +135,32 @@ class Engine
 		new Engine();
 		new GameWindow();
 
+		// pause when tabbing away
+		document.addEventListener("visibilitychange", function() {
+			if (document.hidden)
+				Engine._hidden = true;
+			else
+			{
+				Engine._hidden = false;
+				if (Engine.instance)
+					Engine.instance.lastTime = Date.now();
+			}
+		});
+
 		// window
 		GameWindow.title = title;
 		GameWindow.resize(width * scale, height * scale);
 		GameWindow.center();
 
 		// wait for window
-		window.onload = function()
+		const onloadFunc = () =>
 		{
-			var c = String.fromCharCode(0x25cf);
+			const c = String.fromCharCode(0x25cf);
 			console.log("%c " + c + " ENGINE START " + c + " ", "background: #222; color: #ff44aa;");
 			Engine.instance.root = document.getElementsByTagName("body")[0];
 
 			// init
-			Collider.registerDefaultOverlapTests();
+			ColliderTests.registerDefaultOverlapTests();
 			FosterIO.init();
 			Engine.instance.graphics = new Graphics(Engine.instance);
 			Engine.instance.graphics.load();
@@ -139,9 +174,14 @@ class Engine
 			Engine.instance.step();
 
 			// ready callback for game
-			if (ready != undefined)
+			if (ready !== undefined)
 				ready();
-		}
+		};
+
+		if (document.readyState === "complete" || document.readyState === "interactive") // TODO: is this correct?
+			onloadFunc();
+		else
+			document.addEventListener("DOMContentLoaded", onloadFunc);
 	}
 
 	/**
@@ -151,7 +191,7 @@ class Engine
 	 */
 	public static goto(scene:Scene, disposeLastScene:boolean):Scene
 	{
-		let lastScene = Engine.scene;
+		const lastScene = Engine.scene;
 		Engine.instance.nextScene = scene;
 		Engine.instance.disposeLastScene = disposeLastScene;
 		return scene;
@@ -178,6 +218,8 @@ class Engine
 		Engine.instance.graphics.resize();
 	}
 
+	static get isMobile() { return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); }
+
 	/**
 	 * Checks that the given value is true, otherwise throws an error
 	 */
@@ -198,10 +240,13 @@ class Engine
 	private disposeLastScene:boolean;
 	private width:number;
 	private height:number;
-	private dt:number;
-	private elapsed:number;
+	private dt:number = 0;
+	private elapsed:number = 0;
+	private paused:boolean = false;
+	private frameCount:number = 0;
 	private startTime:number;
-	private lastTime:number;
+	private lastTime:number = 0;
+	private timeScale:number = 1;
 	private root:HTMLElement;
 	private graphics:Graphics;
 	private debuggerEnabled:boolean;
@@ -209,24 +254,29 @@ class Engine
 	constructor()
 	{
 		if (Engine.instance != null)
-			throw "Engine has already been instantiated";
+			throw new Error("Engine has already been instantiated");
 		if (!Engine.started)
-			throw "Engine must be instantiated through static Engine.start";
+			throw new Error("Engine must be instantiated through static Engine.start");
 
 		Engine.instance = this;
 		this.client = Client.Web;
-		if (window && (<any>window).process && (<any>window).process.versions && (<any>window).process.versions.electron)
+		if (window &&
+			(window as any).process && (window as any).process.versions && (window as any).process.versions.electron)
 			this.client = Client.Desktop;
 		this.startTime = Date.now();
+		this.lastTime = Date.now();
 	}
+
 
 	private step():void
 	{
 		// time management!
-		var time = Date.now();
-		this.elapsed = Math.floor(time - this.startTime) / 1000;
-		this.dt = Math.floor(time - this.lastTime) / 1000;
+		const time = Date.now();
+		this.dt = this.paused ? 0 : Math.floor(time - this.lastTime) / 1000 * this.timeScale;
+		//this.elapsed = this.elapsed + this.dt;//Math.floor(time - this.startTime) / 1000;
 		this.lastTime = time;
+		this.frameCount++;
+		this.elapsed += this.dt;
 
 		// update graphics
 		this.graphics.update();
@@ -234,6 +284,7 @@ class Engine
 		// update inputs
 		Mouse.update();
 		Keyboard.update();
+		GamepadManager.update();
 
 		// swap scenes
 		if (this.nextScene != null)
@@ -250,8 +301,9 @@ class Engine
 		}
 
 		// update scene
-		if (this.scene != null)
-			this.scene.update()
+		if (this.scene != null) {
+			this.scene.update();
+		}
 
 		if (this.nextScene == null)
 		{
@@ -267,8 +319,8 @@ class Engine
 		}
 
 		// update sounds
-		for (let i = 0; i < Sound.active.length; i ++)
-			Sound.active[i].update();
+		for (const sound of Sound.active)
+			sound.update();
 
 		// do it all again!
 		if (!Engine.exiting)
@@ -281,10 +333,10 @@ class Engine
 		Assets.unload();
 		Engine.graphics.unload();
 
-		if (Engine.client == Client.Desktop)
+		if (Engine.client === Client.Desktop)
 		{
-			var remote = require("electron").remote;
-			var win = remote.getCurrentWindow();
+			const remote = require("electron").remote;
+			const win = remote.getCurrentWindow();
 			win.close();
 		}
 	}

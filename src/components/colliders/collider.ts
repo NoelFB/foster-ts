@@ -1,19 +1,31 @@
-/// <reference path="../../component.ts"/>
-abstract class Collider extends Component
+import {Component} from "../../component";
+import {Entity} from "../../entity";
+
+export interface OverlapTest {
+	[key: string]: any;
+}
+
+export abstract class Collider extends Component
 {
 	public tags:string[] = [];
 	public type:string; // should be the Class.name of the lowest parent collider, ex Hitbox.name or Hitgrid.name, etc
-	
+
 	public tag(tag:string):void
 	{
 		this.tags.push(tag);
 		if (this.entity != null && this.entity.scene != null)
 			this.entity.scene._trackCollider(this, tag);
 	}
-	
+
+	public untagAll()
+	{
+		while (this.tags.length)
+			this.untag(this.tags[0]);
+	}
+
 	public untag(tag:string):void
 	{
-		let index = this.tags.indexOf(tag);
+		const index = this.tags.indexOf(tag);
 		if (index >= 0)
 		{
 			this.tags.splice(index, 1);
@@ -21,105 +33,94 @@ abstract class Collider extends Component
 				this.entity.scene._untrackCollider(this, tag);
 		}
 	}
-	
+
 	public check(tag:string, x?:number, y?:number):boolean
 	{
 		return this.collide(tag, x, y) != null;
 	}
-	
+
 	public checks(tags:string[], x?:number, y?:number):boolean
 	{
-		for (let i = 0; i < tags.length; i ++)
-			if (this.collide(tags[i], x, y) != null)
+		for (const tag of tags)
+			if (this.collide(tag, x, y) != null)
 				return true;
 		return false;
 	}
-	
+
+	blacklistedEntities: Entity[] = [];
+
 	public collide(tag:string, x:number, y:number):Collider
 	{
-		var result:Collider = null;
-		var against = this.entity.scene.allCollidersInTag(tag);
-		
+		let result:Collider = null;
+		const against = this.entity.scene.allCollidersInTag(tag);
+
 		this.x += x || 0;
 		this.y += y || 0;
-		for (let i = 0; i < against.length; i ++)
-			if (Collider.overlap(this, against[i]))
+		for (const col of against)
+			if (col.active && col.entity !== this.entity && this.blacklistedEntities.indexOf(col.entity) === -1 && Collider.overlap(this, col))
 			{
-				result = against[i];
+				result = col;
 				break;
 			}
 		this.x -= x || 0;
 		this.y -= y || 0;
-		
-		return result;	
+
+		return result;
 	}
 
 	public collides(tags:string[], x?:number, y?:number):Collider
 	{
-		for (let i = 0; i < tags.length; i ++)
+		for (const tag of tags)
 		{
-			let hit = this.collide(tags[i], x, y);
+			const hit = this.collide(tag, x, y);
 			if (hit != null)
 				return hit;
 		}
 		return null;
 	}
-	
+
 	public collideAll(tag:string, x?:number, y?:number):Collider[]
 	{
-		var list:Collider[] = [];
-		var against = this.entity.scene.allCollidersInTag(tag);
-		
+		return this.collideAllMulti([tag], x, y);
+	}
+
+	public collideAllMulti(tags:string[], x?:number, y?:number):Collider[]
+	{
+		const against:Collider[] = [];
+		for (const tag of tags)
+			against.push(...this.entity.scene.allCollidersInTag(tag));
+
+
+		const list:Collider[] = [];
 		this.x += x || 0;
 		this.y += y || 0;
-		for (let i = 0; i < against.length; i ++)
-			if (Collider.overlap(this, against[i]))
-				list.push(against[i]);
+		for (const col of against)
+			if (col.active && col.entity !== this.entity && this.blacklistedEntities.indexOf(col.entity) === -1 && Collider.overlap(this, col))
+				list.push(col);
 		this.x -= x || 0;
 		this.y -= y || 0;
-		
+
 		return list;
 	}
-	
-	public static overlaptest = {};
+
+	public static overlaptest : OverlapTest = {};
+
 	public static registerOverlapTest(fromType:Function, toType:Function, test:(a:Collider, b:Collider)=>boolean)
 	{
-		if (Collider.overlaptest[fromType.name] == undefined)
+		console.assert(fromType);
+		console.assert(toType);
+
+		if (Collider.overlaptest[fromType.name] === undefined)
 			Collider.overlaptest[fromType.name] = {};
-		if (Collider.overlaptest[toType.name] == undefined)
+		if (Collider.overlaptest[toType.name] === undefined)
 			Collider.overlaptest[toType.name] = {};
-		Collider.overlaptest[fromType.name][toType.name] = (a, b) => { return test(a, b); };
-		Collider.overlaptest[toType.name][fromType.name] = (a, b) => { return test(b, a); };
-	}
-	public static registerDefaultOverlapTests()
-	{
-		Collider.registerOverlapTest(Hitbox, Hitbox, Collider.overlap_hitbox_hitbox);
-		Collider.registerOverlapTest(Hitbox, Hitgrid, Collider.overlap_hitbox_grid);
+		Collider.overlaptest[fromType.name][toType.name] = (a:Collider, b:Collider) => test(a, b);
+		Collider.overlaptest[toType.name][fromType.name] = (a:Collider, b:Collider) => test(b, a);
 	}
 
 	public static overlap(a:Collider, b:Collider):boolean
 	{
 		return Collider.overlaptest[a.type][b.type](a, b);
 	}
-	
-	public static overlap_hitbox_hitbox(a:Hitbox, b:Hitbox):boolean
-	{
-		return a.sceneRight > b.sceneLeft && a.sceneBottom > b.sceneTop && a.sceneLeft < b.sceneRight && a.sceneTop < b.sceneBottom;
-	}
 
-	public static overlap_hitbox_grid(a:Hitbox, b:Hitgrid):boolean
-	{
-		let gridPosition = b.scenePosition;
-
-		let left = Math.floor((a.sceneLeft - gridPosition.x) / b.tileWidth);
-		let top = Math.floor((a.sceneTop - gridPosition.y) / b.tileHeight);
-		let right = Math.ceil((a.sceneRight - gridPosition.x) / b.tileWidth);
-		let bottom = Math.ceil((a.sceneBottom - gridPosition.y) / b.tileHeight);
-
-		for (let x = left; x < right; x++)
-			for (let y = top; y < bottom; y++)
-				if (b.has(x, y))
-					return true;
-		return false;
-	}
 }

@@ -1,7 +1,9 @@
+import {Engine, Client} from "../engine";
+
 /**
  * Handles File IO stuff and the differences between Browser / Desktop mode
  */
-class FosterIO
+export class FosterIO
 {
 
 	private static fs:any = null;
@@ -9,27 +11,27 @@ class FosterIO
 
 	public static init():void
 	{
-		if (FosterIO.fs == null && Engine.client == Client.Desktop)
+		if (FosterIO.fs === null && Engine.client === Client.Desktop)
 		{
 			FosterIO.fs = require("fs");
 			FosterIO.path = require("path");
 		}
 	}
 
-	public static read(path:string, callback:(string)=>void):void
+	public static read(path:string, callback:(data:string)=>void):void
 	{
-		if (Engine.client == Client.Desktop)
+		if (Engine.client === Client.Desktop)
 		{
-			FosterIO.fs.readFile(FosterIO.path.join(__dirname, path), 'utf8', function (err, data)
+			FosterIO.fs.readFile(FosterIO.path.join(__dirname, path), "utf8", function (err: any, data: string)
 			{
-				if (err) 
+				if (err)
 					throw err;
 				callback(data);
 			});
 		}
 		else
 		{
-			let httpRequest = new XMLHttpRequest();
+			const httpRequest = new XMLHttpRequest();
 			httpRequest.onreadystatechange = (e) =>
 			{
 				if (httpRequest.readyState === XMLHttpRequest.DONE)
@@ -37,10 +39,10 @@ class FosterIO
 					if (httpRequest.status === 200)
 						callback(httpRequest.responseText);
 					else
-						throw "Unable to read file " + path;
+						throw new Error("Unable to read file " + path);
 				}
 			};
-			httpRequest.open('GET', path);
+			httpRequest.open("GET", path);
 			httpRequest.send();
 		}
 	}
@@ -50,7 +52,7 @@ class FosterIO
 		if (paths.length <= 0)
 			return ".";
 
-		if (Engine.client == Client.Desktop)
+		if (Engine.client === Client.Desktop)
 		{
 			let result = paths[0];
 			for (let i = 1; i < paths.length; i ++)
@@ -59,14 +61,14 @@ class FosterIO
 		}
 		else
 		{
-			let result:string[] = [];
-			for (let i = 0; i < paths.length; i ++)
+			const result:string[] = [];
+			for (const path of paths)
 			{
-				let sub = paths[i].split("/");
-				for (let j = 0; j < sub.length; j ++)
-					result.push(sub[j]);
+				const sub = path.split("/");
+				for (const subPath of sub)
+					result.push(subPath);
 			}
-			
+
 			return result.length > 0 ? result.join("/") : ".";
 		}
 	}
@@ -74,7 +76,7 @@ class FosterIO
 	public static extension(path:string):string
 	{
 		let ext = "";
-		let parts = (/(?:\.([^.]+))?$/).exec(path);
+		const parts = (/(?:\.([^.]+))?$/).exec(path);
 		if (parts.length > 1)
 			ext = parts[1];
 		return ext;

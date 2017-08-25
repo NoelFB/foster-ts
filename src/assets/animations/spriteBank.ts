@@ -1,13 +1,15 @@
+import {SpriteTemplate} from "./spriteTemplate";
+
 /**
  * Sprite Bank holds all the Sprite templates in the game
  */
-class SpriteBank
+export class SpriteBank
 {
 	/**
 	 * Reference to all the Animations
 	 */
 	public static bank:{[name:string]: SpriteTemplate} = {};
-	
+
 	/**
 	 * Creates a new Animation Set of the given Name
 	 */

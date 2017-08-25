@@ -1,7 +1,7 @@
 /**
  * Default Ease methods for Tweening
  */
-class Ease
+export class Ease
 {
 	public static linear(t:number)
 	{
@@ -96,7 +96,7 @@ class Ease
 		return Math.pow(2, -10 * (t -= 1)) * Math.sin((t - s) * (2 * Math.PI) / p) * 0.5 + 1;
 	}
 
-	public static arc(t:number, ease:(number)=>number):number
+	public static arc(t:number, ease:(t:number)=>number):number
 	{
 		if (t < 0.5)
 			return 1 - ease(1 - t * 2);

@@ -2,8 +2,9 @@
  * Default 2D shaders
  */
 
-/// <reference path="./shader.ts"/>
-class Shaders
+import {Shader, ShaderAttribute, ShaderAttributeType, ShaderUniform, ShaderUniformType} from "./shader";
+
+export class Shaders
 {
 	/**
 	 * A simple Texture Sahder
@@ -19,7 +20,7 @@ class Shaders
 	 * Primitive Shader only has Vertices and Colors, no Texture
 	 */
 	public static primitive:Shader;
-	
+
 	/**
 	 * Initializes Default Shaders (called automatically by the Engine)
 	 */

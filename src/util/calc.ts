@@ -1,7 +1,7 @@
 /**
  * Helper class for math related functions
  */
-class Calc
+export class Calc
 {
 	/**
 	 * Returns the Sign of the number (-1, 0, or 1)
@@ -9,6 +9,11 @@ class Calc
 	public static sign(n:number):number
 	{
 		return (n < 0 ? -1 : (n > 0 ? 1 : 0));
+	}
+
+	public static cmp(a:any, b:any):number
+	{
+		return a < b ? -1 : (a > b ? 1 : 0);
 	}
 
 	/**
@@ -32,7 +37,7 @@ class Calc
 	 */
 	public static range(min:number, max?:number):number
 	{
-		if (max == undefined)
+		if (max === undefined)
 			return -min + Math.random() * min * 2;
 		return min + Math.random() * (max - min);
 	}

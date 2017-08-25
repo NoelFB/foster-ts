@@ -1,9 +1,11 @@
+import {Engine} from "../../engine";
+import {FosterWebGLTexture} from "./fosterWebGLTexture";
+
 /**
  * The Render Target is used for rendering graphics to
  */
-class RenderTarget
+export class RenderTarget
 {
-
 	/**
 	 * its texture to draw to
 	 */
@@ -58,8 +60,8 @@ class RenderTarget
 	{
 		this.texture.dispose();
 		this.texture = null;
-		
-		let gl = Engine.graphics.gl;
+
+		const gl = Engine.graphics.gl;
 		gl.deleteFramebuffer(this.frameBuffer);
 		gl.deleteBuffer(this.vertexBuffer);
 		gl.deleteBuffer(this.texcoordBuffer);

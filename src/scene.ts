@@ -1,9 +1,17 @@
+import {Component} from "./component";
+import {Collider} from "./components/colliders/collider";
+import {Engine} from "./engine";
+import {Entity} from "./entity";
+import {Renderer} from "./renderer";
+import {SpriteRenderer} from "./renderers/spriteRenderer";
+import {Calc, Camera, ObjectList, Shaders, Vector} from "./util";
+
 /**
- * The Scene contains a list of Entities and Renderers that in turn handle Gameplay. There can only be one active Scene at a time
+ * The Scene contains a list of Entities and Renderers that in turn handle Gameplay.
+ * There can only be one active Scene at a time.
  */
-class Scene
+export class Scene
 {
-	
 	/**
 	 * The Camera in the Scene
 	 */
@@ -18,18 +26,18 @@ class Scene
 	 * A list of all the Renderers in the Scene
 	 */
 	public renderers:ObjectList<Renderer> = new ObjectList<Renderer>();
-	
+
 	/**
 	 * List of entities organized by Group
 	 */
 	public groups:{[id:string]:ObjectList<Entity>} = {};
-	
-	private colliders:{[key:string]:Collider[]} = {};
+
+	private colliders:any = {};
 	private cache:any = {};
-	
+
 	constructor()
 	{
-		this.camera = new Camera();		
+		this.camera = new Camera();
 		this.addRenderer(new SpriteRenderer());
 	}
 
@@ -64,11 +72,16 @@ class Scene
 		this.cache = {};
 	}
 
+	earlyUpdate:Array<()=>void> = [];
+
 	/**
 	 * Called every frame and updates the Scene
 	 */
 	public update():void
 	{
+		for (const cb of this.earlyUpdate)
+			cb();
+
 		// update entities
 		this.entities.each((e) =>
 		{
@@ -81,6 +94,15 @@ class Scene
 				e.update();
 		});
 
+		this.entities.each((e) =>
+		{
+			if (e.active && e.isStarted)
+				e.lateUpdate();
+		})
+
+		for (const e of this._markedForDestruction)
+			this.destroy(e);
+
 		// update renderers
 		this.renderers.each((r) =>
 		{
@@ -91,7 +113,7 @@ class Scene
 		// clean dirty lists
 		this.entities.clean();
 		this.renderers.clean();
-		for (let key in this.groups)
+		for (const key in this.groups)
 			this.groups[key].clean();
 	}
 
@@ -102,7 +124,7 @@ class Scene
 	{
 		// sort entities (only sorts if required)
 		this.entities.sort((a, b) => b.depth - a.depth);
-		for (let key in this.groups)
+		for (const key in this.groups)
 			this.groups[key].sort((a, b) => b.depth - a.depth);
 
 		// pre-render
@@ -125,14 +147,16 @@ class Scene
 			if (r.visible)
 				r.postRender();
 		});
-				
+
 		// debug render
 		if (Engine.debugMode)
 		{
 			Engine.graphics.setRenderTarget(Engine.graphics.buffer);
 			Engine.graphics.shader = Shaders.primitive;
 			Engine.graphics.shader.set("matrix", this.camera.matrix);
-			
+
+			this.debugRender(this.camera);
+
 			this.entities.each((e) =>
 			{
 				if (e.active)
@@ -140,6 +164,8 @@ class Scene
 			});
 		}
 	}
+
+	public debugRender(camera:Camera) {}
 
 	/**
 	 * Adds the given Entity to this Scene
@@ -151,7 +177,7 @@ class Scene
 		entity.scene = this;
 		this.entities.add(entity);
 
-		if (position != undefined)
+		if (position !== undefined)
 			entity.position.set(position.x, position.y);
 
 		// first time for this entity
@@ -162,11 +188,11 @@ class Scene
 		}
 
 		// group existing groups in the entity
-		for (let i = 0; i < entity.groups.length; i ++)
-			this._groupEntity(entity, entity.groups[i]);
+		for (const group of entity.groups)
+			this._groupEntity(entity, group);
 
 		// add existing components in the entity
-		entity.components.each((c) => this._trackComponent(c));
+		entity.components.each((c:Component) => this._trackComponent(c));
 
 		// add entity
 		entity.added();
@@ -174,16 +200,17 @@ class Scene
 	}
 
 	/**
-	 * Recreates and adds an Entity from the cache in the given bucket. If there are no entities cache'd in that bucket, NULL is returned
+	 * Recreates and adds an Entity from the cache in the given bucket.
+	 * If there are no entities cache'd in that bucket, NULL is returned
 	 * @param bucket	The bucket to pull from
 	 */
 	public recreate(bucket:string):Entity
 	{
 		if (Array.isArray(this.cache[bucket]) && this.cache[bucket].length > 0)
 		{
-			var entity = this.cache[bucket][0];
+			const entity = this.cache[bucket][0];
 			this.cache[bucket].splice(0, 1);
-			return this.add(<Entity>entity);
+			return this.add(entity as Entity);
 		}
 		return null;
 	}
@@ -196,7 +223,7 @@ class Scene
 	public recycle(bucket:string, entity:Entity):void
 	{
 		this.remove(entity);
-		if (this.cache[bucket] == undefined)
+		if (this.cache[bucket] === undefined)
 			this.cache[bucket] = [];
 		this.cache[bucket].push(entity);
 		entity.recycled();
@@ -214,8 +241,8 @@ class Scene
 		entity.components.each((c) => this._untrackComponent(c));
 
 		// ungroup
-		for  (let i = 0; i < entity.groups.length; i ++)
-			this._ungroupEntity(entity, entity.groups[i]);
+		for  (const group of entity.groups)
+			this._ungroupEntity(entity, group);
 
 		// remove entity
 		entity.isStarted = false;
@@ -244,6 +271,24 @@ class Scene
 		entity.isCreated = false;
 	}
 
+	destroyLater(entity:Entity)
+	{
+		if (this._markedForDestruction.indexOf(entity) === -1)
+			this._markedForDestruction.push(entity);
+	}
+
+	private _markedForDestruction:Entity[] = [];
+
+	/**
+	 * Finds all Components of the given class in the scene.
+	 */
+	public findAllComponents<T extends Component>(className:Function):T[]
+	{
+		const components:T[] = [];
+		this.entities.each((e) => { components.push(...e.findAll<T>(className)); });
+		return components;
+	}
+
 	public find<T extends Entity>(className:Function):T
 	{
 		let entity:T = null;
@@ -251,7 +296,7 @@ class Scene
 		{
 			if (e instanceof className)
 			{
-				entity = <T>e;
+				entity = e as T;
 				return false;
 			}
 		});
@@ -263,37 +308,37 @@ class Scene
 		this.entities.each((e) =>
 		{
 			if (e instanceof className)
-				return callback(<T>e);
+				return callback(e as T);
 		});
 	}
 
 	public findAll<T extends Entity>(className:Function):T[]
 	{
-		let list:T[] = [];
+		const list:T[] = [];
 		this.entities.each((e) =>
 		{
 			if (e instanceof className)
-				list.push(<T>e);
+				list.push(e as T);
 		});
 		return list;
 	}
 
 	public firstInGroup(group:string):Entity
 	{
-		if (this.groups[group] != undefined && this.groups[group].count > 0)
+		if (this.groups[group] !== undefined && this.groups[group].count > 0)
 			return this.groups[group].first();
 		return null;
 	}
 
 	public eachInGroup(group:string, callback:(e:Entity)=>any):void
 	{
-		if (this.groups[group] != undefined)
+		if (this.groups[group] !== undefined)
 			this.groups[group].each(callback);
 	}
 
 	public allInGroup(group:string):ObjectList<Entity>
 	{
-		if (this.groups[group] != undefined)
+		if (this.groups[group] !== undefined)
 			return this.groups[group];
 		return null;
 	}
@@ -305,7 +350,7 @@ class Scene
 		{
 			this.eachInGroup(groups[i], (e) =>
 			{
-				let result = callback(e);
+				const result = callback(e);
 				if (result === false)
 					stop = true;
 				return result;
@@ -315,30 +360,29 @@ class Scene
 
 	public allInGroups(groups:string[], into:ObjectList<Entity> = null):ObjectList<Entity>
 	{
-		if (into == null || into == undefined)
+		if (into == null || into === undefined)
 			into = new ObjectList<Entity>();
 
-		for (let i = 0; i < groups.length; i ++)
+		for (const group of groups)
 		{
-			let list = this.allInGroup(groups[i]);
+			const list = this.allInGroup(group);
 			if (list != null)
 				list.each((e) => into.add(e));
 		}
 
 		return into;
 	}
-	
 
 	public firstColliderInTag(tag:string):Collider
 	{
-		if (this.colliders[tag] != undefined && this.colliders[tag].length > 0)
+		if (this.colliders[tag] !== undefined && this.colliders[tag].length > 0)
 			return this.colliders[tag][0];
 		return null;
 	}
 
 	public allCollidersInTag(tag:string):Collider[]
 	{
-		if (this.colliders[tag] != undefined)
+		if (this.colliders[tag] !== undefined)
 			return this.colliders[tag];
 		return [];
 	}
@@ -347,6 +391,7 @@ class Scene
 	{
 		renderer.scene = this;
 		this.renderers.add(renderer);
+		this.renderers.sort((a, b) => Calc.cmp(a.sortOrder, b.sortOrder));
 		return renderer;
 	}
 
@@ -361,7 +406,7 @@ class Scene
 
 	public _groupEntity(entity:Entity, group:string)
 	{
-		if (this.groups[group] == undefined)
+		if (this.groups[group] === undefined)
 			this.groups[group] = new ObjectList<Entity>();
 
 		this.groups[group].add(entity);
@@ -369,19 +414,19 @@ class Scene
 
 	public _ungroupEntity(entity:Entity, group:string)
 	{
-		if (this.groups[group] != undefined)
+		if (this.groups[group] !== undefined)
 			this.groups[group].remove(entity);
 	}
 
 	public _trackComponent(component:Component)
 	{
-		if (component.entity == null || component.entity.scene != this)
-			throw "Component must be added through an existing entity";
+		if (component.entity == null || component.entity.scene !== this)
+			throw new Error("Component must be added through an existing entity");
 
 		if (component instanceof Collider)
 		{
-			for (let i = 0; i < component.tags.length; i ++)
-				this._trackCollider(component, component.tags[i]);
+			for (const tag of component.tags)
+				this._trackCollider(component, tag);
 		}
 
 		component.scene = this;
@@ -394,8 +439,8 @@ class Scene
 
 		if (component instanceof Collider)
 		{
-			for (let i = 0; i < component.tags.length; i ++)
-				this._untrackCollider(component, component.tags[i]);
+			for (const tag of component.tags)
+				this._untrackCollider(component, tag);
 		}
 
 		component.scene = null;
@@ -403,16 +448,16 @@ class Scene
 
 	public _trackCollider(collider:Collider, tag:string)
 	{
-		if (this.colliders[tag] == undefined)
+		if (this.colliders[tag] === undefined)
 			this.colliders[tag] = [];
 		this.colliders[tag].push(collider);
 	}
 
 	public _untrackCollider(collider:Collider, tag:string):void
 	{
-		if (this.colliders[tag] != undefined)
+		if (this.colliders[tag] !== undefined)
 		{
-			let index = this.colliders[tag].indexOf(collider);
+			const index = this.colliders[tag].indexOf(collider);
 			if (index >= 0)
 			{
 				this.colliders[tag].splice(index, 1);
@@ -421,5 +466,4 @@ class Scene
 			}
 		}
 	}
-    
 }

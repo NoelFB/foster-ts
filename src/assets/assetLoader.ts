@@ -1,7 +1,15 @@
 /**
  * Loads a set of assets
  */
-class AssetLoader
+import {AudioSource} from "../assets/audio/AudioSource";
+import {Engine} from "../engine";
+import {Color} from "../util/color";
+import {FosterIO} from "../util/io";
+import {Assets} from "./assets";
+import {Atlas, AtlasReader} from "./textures/atlas";
+import {Texture} from "./textures/texture";
+
+export class AssetLoader
 {
 	/**
 	 * The root directory to load from
@@ -25,14 +33,16 @@ class AssetLoader
 	 */
 	public callback:()=>void;
 
+	progressCallback:(n:number)=>void;
+
 	/**
 	 * The Percentage towards being finished loading
 	 */
 	public get percent():number { return this.assetsLoaded / this.assets; }
-	
+
 	private assets:number = 0;
 	private assetsLoaded:number = 0;
-	private textures:string[] = [];
+	private textures:Array<{path:string; colorKey:Color}> = [];
 	private jsons:string[] = [];
 	private xmls:string[] = [];
 	private sounds:any[] = [];
@@ -44,25 +54,29 @@ class AssetLoader
 		this.root = root || "";
 	}
 
+	checkLoading():void
+	{
+		if (this.loading || this.loaded)
+			throw new Error("Cannot add more assets when already loaded");
+	}
+
 	/**
 	 * Adds the Texture to the loader
 	 */
-	public addTexture(path:string):AssetLoader
+	public addTexture(path:string, colorKey:Color = null):AssetLoader
 	{
-		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
-		this.textures.push(path);
+		this.checkLoading();
+		this.textures.push({path, colorKey});
 		this.assets ++;
 		return this;
 	}
-	
+
 	/**
 	 * Adds the JSON to the loader
 	 */
 	public addJson(path:string):AssetLoader
 	{
-		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
+		this.checkLoading();
 		this.jsons.push(path);
 		this.assets ++;
 		return this;
@@ -73,20 +87,18 @@ class AssetLoader
 	 */
 	public addXml(path:string):AssetLoader
 	{
-		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
+		this.checkLoading();
 		this.xmls.push(path);
 		this.assets ++;
 		return this;
 	}
-	
+
 	/**
 	 * Adds the text to the loader
 	 */
 	public addText(path:string):AssetLoader
 	{
-		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
+		this.checkLoading();
 		this.texts.push(path);
 		this.assets ++;
 		return this;
@@ -97,9 +109,8 @@ class AssetLoader
 	 */
 	public addSound(handle:string, path:string):AssetLoader
 	{
-		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
-		this.sounds.push({handle: handle, path: path });
+		this.checkLoading();
+		this.sounds.push({handle, path});
 		this.assets ++;
 		return this;
 	}
@@ -109,13 +120,12 @@ class AssetLoader
 	 */
 	public addAtlas(name:string, image:string, data:string, loader:AtlasReader):AssetLoader
 	{
-		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
-		this.atlases.push({ name: name, image: image, data: data, loader: loader });
+		this.checkLoading();
+		this.atlases.push({name, image, data, loader});
 		this.assets += 3;
 		return this;
 	}
-	
+
 	/**
 	 * Begins loading all the assets and invokes Callback upon completion
 	 */
@@ -123,30 +133,33 @@ class AssetLoader
 	{
 		this._loading = true;
 		this.callback = callback;
-		
+
 		// textures
-		for (let i = 0; i < this.textures.length; i ++)
-			this.loadTexture(FosterIO.join(this.root, this.textures[i]));
+		for (const texture of this.textures)
+		{
+			const fullPath = FosterIO.join(this.root, texture.path);
+			this.loadTexture({path: fullPath, colorKey: texture.colorKey});
+		}
 
 		// json files
-		for (let i = 0; i < this.jsons.length; i ++)
-			this.loadJson(FosterIO.join(this.root, this.jsons[i]));
+		for (const json of this.jsons)
+			this.loadJson(FosterIO.join(this.root, json));
 
 		// xml files
-		for (let i = 0; i < this.xmls.length; i ++)
-			this.loadXml(FosterIO.join(this.root, this.xmls[i]));
+		for (const xml of this.xmls)
+			this.loadXml(FosterIO.join(this.root, xml));
 
 		// text files
-		for (let i = 0; i < this.texts.length; i ++)
-			this.loadText(FosterIO.join(this.root, this.texts[i]));
+		for (const text of this.texts)
+			this.loadText(FosterIO.join(this.root, text));
 
 		// sounds
-		for (let i = 0; i < this.sounds.length; i ++)
-			this.loadSound(this.sounds[i].handle, FosterIO.join(this.root, this.sounds[i].path));
+		for (const sound of this.sounds)
+			this.loadSound(sound.handle, FosterIO.join(this.root, sound.path));
 
 		// atlases
-		for (let i = 0; i < this.atlases.length; i ++)
-			this.loadAtlas(this.atlases[i]);
+		for (const atlas of this.atlases)
+			this.loadAtlas(atlas);
 	}
 
 	/**
@@ -155,83 +168,127 @@ class AssetLoader
 	public unload():void
 	{
 		if (this.loading)
-			throw "Cannot unload until finished loading";
+			throw new Error("Cannot unload until finished loading");
 		if (!this.loaded)
-			throw "Cannot unload before loading";
+			throw new Error("Cannot unload before loading");
 
 		// TODO: IMPLEMENT THIS
-		throw "Asset Unloading not Implemented";
+		throw new Error("Asset Unloading not Implemented");
 	}
-	
-	private loadTexture(path:string, callback?:(texture:Texture)=>void):void
-	{
-		let gl = Engine.graphics.gl;
-		let img = new Image();
 
-		img.addEventListener('load', () =>
+	pending: {[key:string]:string[]} = {};
+	markPending(type:string, path:string, pending=true)
+	{
+		(window as any).assetLoader = this;
+		const p = this.pending[type] || (this.pending[type] = []);
+		if (pending)
 		{
-			let tex = Texture.create(img);
+			p.push(path);
+		}
+		else
+		{
+			console.assert(p.indexOf(path) !== -1);
+			p.splice(p.indexOf(path), 1)
+		}
+
+		let called = false;
+
+		return () => {
+			if (called)
+				console.warn("finished() called twice for", type, path);
+			else
+			{
+				called = true;
+				this.markPending(type, path, false);
+			}
+		}
+	}
+
+	private loadTexture(info:{path:string, colorKey:Color}, callback?:(texture:Texture)=>void):void
+	{
+		const path = info.path;
+
+		const gl = Engine.graphics.gl;
+		const img = new Image();
+
+		const finished = this.markPending("texture", path);
+
+		img.addEventListener("load", () =>
+		{
+			const tex = Texture.create(img, info.colorKey);
 			tex.texture.path = path;
 			Assets.textures[this.pathify(path)] = tex;
-			
-			if (callback != undefined)
+
+			finished();
+
+			if (callback !== undefined)
 				callback(tex);
 
 			this.incrementLoader();
-		})
+		});
+
 		img.src = path;
 	}
 
-	private loadJson(path:string, callback?:(json:Object)=>void):void
+	private loadJson(path:string, callback?:(json:object)=>void):void
 	{
-		var self = this;
+		const self = this;
+		const finished = this.markPending("json", path);
 		FosterIO.read(path, (data) =>
 		{
-			let p = this.pathify(path);
+			const p = this.pathify(path);
 			Assets.json[p] = JSON.parse(data);
 
-			if (callback != undefined)
+			finished();
+
+			if (callback !== undefined)
 				callback(Assets.json[p]);
-				
+
 			self.incrementLoader();
 		});
 	}
 
-	private loadXml(path:string, callback?:(xml:Object)=>void):void
+	private loadXml(path:string, callback?:(xml:object)=>void):void
 	{
+		const finished = this.markPending("xml", path);
 		FosterIO.read(path, (data) =>
 		{
-			let p = this.pathify(path);
+			const p = this.pathify(path);
 			Assets.xml[p] = (new DOMParser()).parseFromString(data, "text/xml");
-			
-			if (callback != undefined)
+			finished();
+
+			if (callback !== undefined)
 				callback(Assets.xml[p]);
-				
+
 			this.incrementLoader();
 		});
 	}
-	
+
 	private loadText(path:string, callback?:(text:string)=>void):void
 	{
+		const finished = this.markPending("text", path);
 		FosterIO.read(path, (data) =>
 		{
-			let p = this.pathify(path);
+			const p = this.pathify(path);
 			Assets.text[p] = data;
-			
-			if (callback != undefined)
+			finished();
+
+			if (callback !== undefined)
 				callback(Assets.text[p]);
-				
+
 			this.incrementLoader();
 		});
 	}
 
 	private loadSound(handle:string, path:string, callback?:(sound:AudioSource)=>void):void
 	{
-		let audio = new Audio();
-		audio.addEventListener("loadeddata", () =>
+		const audio = new Audio();
+		const finished = this.markPending("sound", path);
+		audio.addEventListener("canplaythrough", () =>
 		{
 			Assets.sounds[handle] = new AudioSource(path, audio);
-			if (callback != undefined)
+			finished();
+			if (callback !== undefined)
 				callback(Assets.sounds[handle]);
 			this.incrementLoader();
 		});
@@ -240,9 +297,9 @@ class AssetLoader
 
 	private loadAtlas(data:any):void
 	{
-		var self = this;
-		var texture:Texture = null;
-		var atlasdata:string = null;
+		const self = this;
+		let texture:Texture = null;
+		let atlasdata:string = null;
 
 		// check to see if both the texture and data file are done
 		// if they are, then create the atlas object
@@ -250,25 +307,27 @@ class AssetLoader
 		{
 			if (texture == null || atlasdata == null)
 				return;
-			
-			let atlas = new Atlas(data.name, texture, atlasdata, data.loader);
+
+			const atlas = new Atlas(data.name, texture, atlasdata, data.loader);
 			Assets.atlases[atlas.name] = atlas;
 			self.incrementLoader();
 		}
-		
+
 		// load atlas texture file
 		this.loadText(FosterIO.join(this.root, data.data), (text) => { atlasdata = text; check(); });
-		this.loadTexture(FosterIO.join(this.root, data.image), (tex) => { texture = tex; check(); });
+		this.loadTexture({path: FosterIO.join(this.root, data.image), colorKey: null}, (tex) => { texture = tex; check(); });
 	}
 
 	private incrementLoader()
 	{
 		this.assetsLoaded ++;
-		if (this.assetsLoaded == this.assets)
+		if (this.progressCallback)
+			this.progressCallback(this.assetsLoaded / this.assets)
+		if (this.assetsLoaded === this.assets)
 		{
 			this._loaded = true;
 			this._loading = false;
-			if (this.callback != undefined)
+			if (this.callback !== undefined)
 				this.callback();
 		}
 	}

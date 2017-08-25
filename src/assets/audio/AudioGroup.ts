@@ -1,12 +1,13 @@
-class AudioGroup
-{
+import {Sound} from "./Sound";
 
+export class AudioGroup
+{
 	private static volumes:{[group:string]:number} = {};
 	private static mutes:{[group:string]:boolean} = {};
 
 	public static volume(group:string, value?:number):number
 	{
-		if (value != undefined && AudioGroup.volumes[group] != value)
+		if (value !== undefined && AudioGroup.volumes[group] !== value)
 		{
 			AudioGroup.volumes[group] = value;
 			for (let i = 0; i < Sound.active.length; i ++)
