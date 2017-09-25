@@ -1,14 +1,14 @@
 /**
  * Helper class for math related functions
  */
-class Calc
+export class Calc
 {
 	/**
 	 * Returns the Sign of the number (-1, 0, or 1)
 	 */
 	public static sign(n:number):number
 	{
-		return (n < 0 ? -1 : (n > 0 ? 1 : 0));
+		return (n < 0 ? -1 :(n > 0 ? 1 :0));
 	}
 
 	/**
@@ -24,7 +24,7 @@ class Calc
 	 */
 	public static approach(n:number, target:number, step:number):number
 	{
-		return n > target ? Math.max(n - step, target) : Math.min(n + step, target);
+		return n > target ? Math.max(n - step, target) :Math.min(n + step, target);
 	}
 
 	/**
@@ -32,7 +32,7 @@ class Calc
 	 */
 	public static range(min:number, max?:number):number
 	{
-		if (max == undefined)
+		if (max === undefined)
 			return -min + Math.random() * min * 2;
 		return min + Math.random() * (max - min);
 	}

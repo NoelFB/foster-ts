@@ -1,5 +1,6 @@
-/// <reference path="./../component.ts"/>
-class Alarm extends Component
+import {Component, Engine, Entity} from "./../core";
+
+export class Alarm extends Component
 {
 	/**
 	 * Gets the current Percent of the Alarm
@@ -16,23 +17,23 @@ class Alarm extends Component
 	/**
 	 * Called when the Alarm is finished
 	 */
-	public callback:(Alarm)=>void;
+	public callback:(alarm:Alarm) => void;
 
 	/**
 	 * If the Alarm should be removed from the Entity upon completion
 	 */
 	public removeOnComplete:boolean = false;
 
-	constructor() 
-	{ 
+	constructor()
+	{
 		super();
-		this.active = this.visible = false; 
+		this.active = this.visible = false;
 	}
 
 	/**
 	 * Starts the Alarm
 	 */
-	public start(duration:number, callback:(Alarm)=>void):Alarm
+	public start(duration:number, callback:(alarm:Alarm) => void):Alarm
 	{
 		this._percent = 0;
 		this._duration = duration;
@@ -93,7 +94,7 @@ class Alarm extends Component
 	 */
 	public static create(on:Entity):Alarm
 	{
-		let alarm = new Alarm();
+		const alarm = new Alarm();
 		on.add(alarm);
 		return alarm;
 	}

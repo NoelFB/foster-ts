@@ -1,13 +1,15 @@
+import {Shaders} from "./../util";
+import {Renderer} from "./../core";
+
 /**
  * Uses the Texture Shader when rendering
  */
-/// <reference path="./../renderer.ts"/>
-class SpriteRenderer extends Renderer
+export class SpriteRenderer extends Renderer
 {
 	constructor()
 	{
 		super();
-		
+
 		this.shader = Shaders.texture;
 		this.shaderCameraUniformName = "matrix";
 	}

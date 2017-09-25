@@ -1,4 +1,6 @@
-class Particle
+import {Color} from "./../../util";
+
+export class Particle
 {
 	public x:number;
 	public y:number;

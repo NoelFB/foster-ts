@@ -1,6 +1,9 @@
-abstract class Component
-{	
-	
+import {Engine, Entity, Scene} from "./../core";
+import {Camera, Vector} from "./../util";
+
+export abstract class Component
+{
+
 	/**
 	 * The Entity this Component is a child of
 	 */
@@ -8,16 +11,16 @@ abstract class Component
 	set entity(val:Entity)
 	{
 		if (this._entity != null && val != null)
-			throw "This Component is already attached to an Entity";
+			throw new Error("This Component is already attached to an Entity");
 		this._entity = val;
 	}
 	private _entity:Entity = null;
-	
+
 	/**
 	 * The Scene containing this Component
 	 */
 	public scene:Scene = null;
-	
+
 	/**
 	 * Whether this Component should be updated
 	 */
@@ -32,7 +35,7 @@ abstract class Component
 	 * The Local position of the Component, relative to the Entity
 	 */
 	public position:Vector = new Vector(0, 0);
-	
+
 	/**
 	 * The Local X position of the Component, relative to the Entity
 	 */
@@ -44,16 +47,16 @@ abstract class Component
 	 */
 	public get y():number { return this.position.y; }
 	public set y(val:number) { this.position.y = val; }
-	
+
 	/**
 	 * The position of the Component in the Scene (position + Entity.position)
 	 */
+	private _scenePosition:Vector = new Vector();
 	public get scenePosition():Vector
 	{
-		return new Vector((this._entity ? this._entity.x : 0) + this.position.x,
-						  (this._entity ? this._entity.y : 0) + this.position.y);
+		return this._scenePosition.set(this._entity ? this._entity.x :0, this._entity ? this._entity.y :0).add(this.position);
 	}
-	
+
 	/**
 	 * Called when the Component was Added to the Entity
 	 */
@@ -69,7 +72,7 @@ abstract class Component
 	 */
 	public removedFromEntity():void {}
 
-	/**	 
+	/**
 	 * Called when the Component was Removed from the Scene
 	 */
 	public removedFromScene():void {}

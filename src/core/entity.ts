@@ -1,4 +1,7 @@
-class Entity
+import {Component, Engine, Scene} from "./";
+import {Camera, Color, ObjectList, Vector} from "./../util";
+
+export class Entity
 {
 	/**
 	 * Position of the Entity in the Scene
@@ -16,7 +19,7 @@ class Entity
 	 */
 	public get y():number { return this.position.y; }
 	public set y(val:number) { this.position.y = val; }
-	
+
 	/**
 	 * If the Entity is visible. If false, Entity.render is not called
 	 */
@@ -31,7 +34,7 @@ class Entity
 	 * If the Entity has been created yet (has it ever been added to a scene)
 	 */
 	public isCreated:boolean = false;
-	
+
 	/**
 	 * If the Entity has been started yet (has it been updated in the current scene)
 	 */
@@ -51,7 +54,7 @@ class Entity
 	 * List of all Groups the Entity is in
 	 */
 	public groups:string[] = [];
-	
+
 	/**
 	 * The Render-Depth of the Entity (lower = rendered later)
 	 */
@@ -61,73 +64,52 @@ class Entity
 	}
 	set depth(val:number)
 	{
-		if  (this.scene != null && this._depth != val)
+		if  (this.scene != null && this._depth !== val)
 		{
 			this._depth = val;
 			this.scene.entities.unsorted = true;
-			for (let i = 0; i < this.groups.length; i ++)
-				this.scene.groups[this.groups[i]].unsorted = true;
+			for (const group of this.groups)
+				this.scene.groups[group].unsorted = true;
 		}
 	}
 	private _depth:number = 0;
 
-	constructor()
-	{
-
-	}
+	constructor() {}
 
 	/**
 	 * Called the first time the entity is added to a scene (after constructor, before added)
 	 */
-	created():void
-	{
-
-	}
+	public created():void {}
 
 	/**
 	 * Called immediately whenever the entity is added to a Scene (after created, before started)
 	 */
-	added():void
-	{
-
-	}
+	public added():void {}
 
 	/**
 	 * Called before the first update of the Entity (after added)
 	 */
-	started():void
-	{
-
-	}
+	public started():void {}
 
 	/**
 	 * Called immediately whenever the entity is removed from a Scene
 	 */
-	removed():void
-	{
-
-	}
+	public removed():void {}
 
 	/**
 	 * Called immediately whenever the entity is recycled in a Scene
 	 */
-	recycled():void
-	{
-
-	}
+	public recycled():void {}
 
 	/**
 	 * Called when an entity is permanently destroyed
 	 */
-	destroyed():void
-	{
-
-	}
+	public destroyed():void {}
 
 	/**
 	 * Called every game-step, if this entity is in a Scene and Active
 	 */
-	update():void
+	public update():void
 	{
 		this.components.each((c) =>
 		{
@@ -139,7 +121,7 @@ class Entity
 	/**
 	 * Called via a Renderer, if Visible
 	 */
-	render(camera:Camera):void
+	public render(camera:Camera):void
 	{
 		this.components.each((c) =>
 		{
@@ -151,10 +133,10 @@ class Entity
 	/**
 	 * Called via the Debug Renderer
 	 */
-	debugRender(camera:Camera):void
+	public debugRender(camera:Camera):void
 	{
 		Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, Color.white);
-		
+
 		this.components.each((c) =>
 		{
 			if (c.visible)
@@ -165,7 +147,7 @@ class Entity
 	/**
 	 * Adds a Component to this Entity
 	 */
-	add<T extends Component>(component:T):T
+	public add<T extends Component>(component:T):T
 	{
 		this.components.add(component);
 		component.entity = this;
@@ -180,7 +162,7 @@ class Entity
 	/**
 	 * Removes a Components from this Entity
 	 */
-	remove<T extends Component>(component:T):T
+	public remove<T extends Component>(component:T):T
 	{
 		this.components.remove(component);
 		component.removedFromEntity();
@@ -193,23 +175,22 @@ class Entity
 	/**
 	 * Removes all Components from this Entity
 	 */
-	removeAll()
+	public removeAll()
 	{
-		for (let i = this.components.count - 1; i >= 0; i --)
-			this.remove(this.components[i]);
+		this.components.each((c) => { this.remove(c); });
 	}
-	
+
 	/**
 	 * Finds the first component in this Entity of the given Class
 	 */
-	find<T extends Component>(className:Function):T
+	public find<T extends Component>(className:Function):T
 	{
 		let component:T = null;
 		this.components.each((c) =>
 		{
 			if (c instanceof className)
 			{
-				component = <T>c;
+				component = c as T;
 				return false;
 			}
 		});
@@ -219,21 +200,21 @@ class Entity
 	/**
 	 * Finds all components in this Entity of the given Class
 	 */
-	findAll<T extends Component>(className:Function):T[]
+	public findAll<T extends Component>(className:Function):T[]
 	{
-		let list:T[] = [];
+		const list:T[] = [];
 		this.components.each((c) =>
 		{
 			if (c instanceof className)
-				list.push(<T>c);
-		})
+				list.push(c as T);
+		});
 		return list;
 	}
 
 	/**
 	 * Groups this entity into the given Group
 	 */
-	group(groupType:string):void
+	public group(groupType:string):void
 	{
 		this.groups.push(groupType);
 		if (this.scene != null)
@@ -243,9 +224,9 @@ class Entity
 	/**
 	 * Removes this Entity from the given Group
 	 */
-	ungroup(groupType:string):void
+	public ungroup(groupType:string):void
 	{
-		let index = this.groups.indexOf(groupType);
+		const index = this.groups.indexOf(groupType);
 		if (index >= 0)
 		{
 			this.groups.splice(index, 1);
@@ -257,7 +238,7 @@ class Entity
 	/**
 	 * Checks if this Entity is in the given Group
 	 */
-	ingroup(groupType:string):boolean
+	public ingroup(groupType:string):boolean
 	{
 		return (this.groups.indexOf(groupType) >= 0);
 	}

@@ -1,23 +1,23 @@
-class Keyboard
+export class Keyboard
 {
 	private static _down:boolean[] = [];
 	private static _last:boolean[] = [];
 	private static _next:boolean[] = [];
 	private static _map:{[name:string]:Key[]} = {};
-	
+
 	public static init():void
 	{
-		window.addEventListener("keydown", function(e)
+		window.addEventListener("keydown", (e) =>
 		{
 			Keyboard._next[e.keyCode] = true;
 		});
-		
-		window.addEventListener("keyup", function(e)
+
+		window.addEventListener("keyup", (e) =>
 		{
 			Keyboard._next[e.keyCode] = false;
 		});
 	}
-	
+
 	public static update():void
 	{
 		for (let i = 0; i < 256; i ++)
@@ -26,73 +26,72 @@ class Keyboard
 			Keyboard._down[i] = Keyboard._next[i];
 		}
 	}
-	
+
 	public static check(key:any):boolean
 	{
 		if (isNaN(key))
-			return Keyboard.mapCheck(<string>key);
-		return (Keyboard._down[key] == true);
+			return Keyboard.mapCheck(key as string);
+		return (Keyboard._down[key] === true);
 	}
-	
+
 	public static pressed(key:any):boolean
 	{
 		if (isNaN(key))
-			return Keyboard.mapPressed(<string>key);
-		return (Keyboard._down[key] == true && !Keyboard._last[key]);
+			return Keyboard.mapPressed(key as string);
+		return (Keyboard._down[key] === true && !Keyboard._last[key]);
 	}
-	
+
 	public static released(key:any):boolean
 	{
 		if (isNaN(key))
-			return Keyboard.mapReleased(<string>key);
-		return (!Keyboard._down[key] && Keyboard._last[key] == true);
+			return Keyboard.mapReleased(key as string);
+		return (!Keyboard._down[key] && Keyboard._last[key] === true);
 	}
-	
+
 	public static map(name:string, keys:Key[]):void
 	{
 		if (!Keyboard._map[name])
 			Keyboard._map[name] = [];
-		for (let i = 0; i < keys.length; i ++)
-			Keyboard._map[name].push(keys[i]);
+		for (const key of keys)
+			Keyboard._map[name].push(key);
 	}
 
-	public static maps(list:{[name:string]: Key[]}):void
+	public static maps(list:{[name:string]:Key[]}):void
 	{
-		for (let name in list)
+		for (const name in list)
 			Keyboard.map(name, list[name]);
 	}
-	
+
 	public static mapCheck(key:string):boolean
 	{
-		if (Keyboard._map[key] != undefined)
-			for (let i = 0; i < Keyboard._map[key].length; i++)
-				if (Keyboard.check(Keyboard._map[key][i]))
+		if (Keyboard._map[key] !== undefined)
+			for (const mapping of Keyboard._map[key])
+				if (Keyboard.check(mapping))
 					return true;
 		return false;
 	}
-	
+
 	public static mapPressed(key:string):boolean
 	{
-		if (Keyboard._map[key] != undefined)
-			for (let i = 0; i < Keyboard._map[key].length; i++)
-				if (Keyboard.pressed(Keyboard._map[key][i]))
+		if (Keyboard._map[key] !== undefined)
+			for (const mapping of Keyboard._map[key])
+				if (Keyboard.pressed(mapping))
 					return true;
 		return false;
 	}
-	
+
 	public static mapReleased(key:string):boolean
 	{
-		if (Keyboard._map[key] != undefined)
-			for (let i = 0; i < Keyboard._map[key].length; i++)
-				if (Keyboard.released(Keyboard._map[key][i]))
+		if (Keyboard._map[key] !== undefined)
+			for (const mapping of Keyboard._map[key])
+				if (Keyboard.released(mapping))
 					return true;
 		return false;
-		
 	}
-	
+
 }
 
-enum Key
+export enum Key
 {
 	backspace 		= 8,
 	tab 			= 9,
@@ -192,5 +191,5 @@ enum Key
 	openBracket 	= 219,
 	backSlash 		= 220,
 	closeBraket 	= 221,
-	singleQuote		= 222
+	singleQuote		= 222,
 }

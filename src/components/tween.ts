@@ -1,5 +1,6 @@
-/// <reference path="./../component.ts"/>
-class Tween extends Component
+import {Component, Engine, Entity} from "./../core";
+
+export class Tween extends Component
 {
 
 	/**
@@ -33,28 +34,28 @@ class Tween extends Component
 	 * Easer function (ex. Linear would be (p) => { return p; })
 	 * Alternatively, use the static Ease methods
 	 */
-	public ease:(number)=>number = (p) => { return p; };
+	public ease:(n:number) => number = (p) => p;
 
 	/**
 	 * Callback when the Tween is updated, returning the current Value
 	 */
-	public step:(number)=>void;
+	public step:(n:number) => void;
 
 	/**
 	 * If the Tween should be removed upon completion
 	 */
 	public removeOnComplete:boolean = false;
 
-	constructor() 
-	{ 
+	constructor()
+	{
 		super();
-		this.active = this.visible = false; 
+		this.active = this.visible = false;
 	}
 
 	/**
 	 * Initializes the Tween and begins running
 	 */
-	public start(duration:number, from:number, to:number, ease:(number)=>number, step:(number)=>void, removeOnComplete?:boolean):Tween
+	public start(duration:number, from:number, to:number, ease:(n:number) => number, step:(n:number) => void, removeOnComplete?:boolean):Tween
 	{
 		this._percent = 0;
 		this._duration = duration;
@@ -121,7 +122,7 @@ class Tween extends Component
 	 */
 	public static create(on:Entity):Tween
 	{
-		let tween = new Tween();
+		const tween = new Tween();
 		on.add(tween);
 		return tween;
 	}

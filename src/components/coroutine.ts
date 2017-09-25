@@ -1,18 +1,18 @@
+import {Component, Engine} from "./../core";
+
 /**
  * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
- * More information: https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
+ * More information:https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
  */
-/// <reference path="./../component.ts"/>
-class Coroutine extends Component
+export class Coroutine extends Component
 {
-
 	private wait:number = 0;
 	private iterator:Iterator<any> = null;
 
 	/**
 	 * @param call? 	if set, immediately starts he Coroutine with the given Iterator
 	 */
-	public constructor(call?:()=>Iterator<any>)
+	public constructor(call?:() => Iterator<any>)
 	{
 		super();
 		this.active = this.visible = false;
@@ -23,7 +23,7 @@ class Coroutine extends Component
 	/**
 	 * Starts the Coroutine with the given Iterator
 	 */
-	public start(call:()=>Iterator<any>):Coroutine
+	public start(call:() => Iterator<any>):Coroutine
 	{
 		this.iterator = call();
 		this.active = true;
@@ -78,9 +78,9 @@ class Coroutine extends Component
 	{
 		if (this.iterator != null)
 		{
-			let next =  this.iterator.next();
+			const next =  this.iterator.next();
 			if (next.done)
-				this.end(next.value == "remove");
+				this.end(next.value === "remove");
 			else
 			{
 				if (next.value == null)

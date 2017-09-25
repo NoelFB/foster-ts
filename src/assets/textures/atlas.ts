@@ -1,10 +1,15 @@
+import {Texture} from "./../";
+import {Rectangle} from "./../../util";
 
-interface AtlasReader { (data:string, into: Atlas): void; }
+/**
+ * Atlas Reader type, used to parse data into an atlas
+ */
+export type AtlasReader = (data:string, into:Atlas) => void;
 
 /**
  * A single Texture which contains subtextures by name
  */
-class Atlas
+export class Atlas
 {
 	/**
 	 * Name of the Atlas
@@ -55,7 +60,7 @@ class Atlas
 	 */
 	public has(name:string):boolean
 	{
-		return this.subtextures[name] != undefined;
+		return this.subtextures[name] !== undefined;
 	}
 
 	/**
@@ -63,9 +68,9 @@ class Atlas
 	 */
 	public list(prefix:string, names:string[]):Texture[]
 	{
-		let listed:Texture[] = [];
-		for (let i = 0; i < names.length; i ++)
-			listed.push(this.get(prefix + names[i]));
+		const listed:Texture[] = [];
+		for (const name of names)
+			listed.push(this.get(prefix + name));
 		return listed;
 	}
 
@@ -75,48 +80,50 @@ class Atlas
 	public find(prefix:string):Texture[]
 	{
 		// find all textures
-		let found:any[] = [];
-		for (var key in this.subtextures)
+		const found:any[] = [];
+		for (const key in this.subtextures)
 		{
-			if (key.indexOf(prefix) == 0)
-				found.push({ name: key, tex: this.subtextures[key] });
+			if (key.indexOf(prefix) === 0)
+				found.push({ name:key, tex:this.subtextures[key] });
 		}
 
 		// sort textures by name
 		found.sort((a, b) =>
 		{
-			return (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0));
+			return (a.name < b.name ? -1 :(a.name > b.name ? 1 :0));
 		});
 
 		// get sorted list
-		let listed:Texture[] = [];
-		for (let i = 0; i < found.length; i ++)
-			listed.push(found[i].tex);
+		const listed:Texture[] = [];
+		for (const f of found)
+			listed.push(f.tex);
 		return listed;
 	}
 }
 
-
-class AtlasReaders
+/**
+ * Default Atlas Readers
+ */
+export class AtlasReaders
 {
 	/**
 	 * Parses Aseprite data from the atlas
 	 */
 	public static Aseprite(data:string, into:Atlas):void
 	{
-		let json = JSON.parse(data);
-		let frames = json["frames"];
-		for (var path in frames)
+		const json = JSON.parse(data);
+		const frames = json.frames;
+		for (const path of Object.keys(frames))
 		{
-			var name = path.replace(".ase", "").replace(".png", "");
-			var obj = frames[path];
-			var bounds = obj.frame;
-			var tex:Texture;
-			
+			const name = path.replace(".ase", "").replace(".png", "");
+			const obj = frames[path];
+			const bounds = obj.frame;
+			let tex:Texture;
+
 			if (obj.trimmed)
 			{
-				var source = obj["spriteSourceSize"];
-				var size = obj["sourceSize"];
+				const source = obj.spriteSourceSize;
+				const size = obj.sourceSize;
 				tex = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new Rectangle(-source.x, -source.y, size.w, size.h));
 			}
 			else
@@ -124,8 +131,8 @@ class AtlasReaders
 				tex = new Texture(into.texture.texture, new Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
 			}
 
-			if (obj.duration != undefined)
-				tex.metadata["duration"] = parseInt(obj.duration);
+			if (obj.duration !== undefined)
+				tex.metadata.duration = parseInt(obj.duration, 10);
 			into.subtextures[name] = tex;
 		}
 	}

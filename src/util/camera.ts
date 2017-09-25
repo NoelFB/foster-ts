@@ -1,16 +1,22 @@
+import {Matrix} from "./matrix";
+import {Vector} from "./vector";
+import {Rectangle} from "./rectangle";
+import {Engine} from "./../core";
+import {Mouse} from "./../input";
+
 /**
  * Camera used to create a Matrix during rendering. Scenes and Renderers may have Cameras
  */
-class Camera
+export class Camera
 {
 	public position:Vector = new Vector(0, 0);
 	public origin:Vector = new Vector(0, 0);
 	public scale:Vector = new Vector(1, 1);
 	public rotation:number = 0;
-	
+
 	public get x():number { return this.position.x; }
 	public set x(n:number) { this.position.x = n; }
-	
+
 	public get y():number { return this.position.y; }
 	public set y(n:number) { this.position.y = n; }
 
@@ -33,12 +39,12 @@ class Camera
 			.copy(Engine.graphics.orthographic)
 			.multiply(this.internal);
 	}
-	
+
 	public get mouse():Vector
 	{
 		return this._mouse.set(
-			Mouse.x + this.position.x - this.origin.x, 
-			Mouse.y + this.position.y - this.origin.y
+			Mouse.x + this.position.x - this.origin.x,
+			Mouse.y + this.position.y - this.origin.y,
 		).transform(this.internal.invert());
 	}
 
@@ -50,7 +56,7 @@ class Camera
 
 	private getExtents()
 	{
-		let inverse = this.internal.invert();
+		const inverse = this.internal.invert();
 		this.extentsA.set(0, 0).transform(inverse);
 		this.extentsB.set(Engine.width, 0).transform(inverse);
 		this.extentsC.set(0, Engine.height).transform(inverse);
@@ -60,7 +66,7 @@ class Camera
 	public get extents():Rectangle
 	{
 		this.getExtents();
-		let r = this.extentsRect;
+		const r = this.extentsRect;
 		r.x = Math.min(this.extentsA.x, this.extentsB.x, this.extentsC.x, this.extentsD.x);
 		r.y = Math.min(this.extentsA.y, this.extentsB.y, this.extentsC.y, this.extentsD.y);
 		r.width = Math.max(this.extentsA.x, this.extentsB.x, this.extentsC.x, this.extentsD.x) - r.x;

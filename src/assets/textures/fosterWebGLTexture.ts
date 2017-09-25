@@ -1,7 +1,9 @@
+import {Engine} from "./../../core";
+
 /**
  * Internal Texture used for Foster during Rendering
  */
-class FosterWebGLTexture
+export class FosterWebGLTexture
 {
 	public path:string;
 	public webGLTexture:WebGLTexture;
@@ -20,7 +22,7 @@ class FosterWebGLTexture
 	{
 		if (!this.disposed)
 		{
-			let gl = Engine.graphics.gl;
+			const gl = Engine.graphics.gl;
 			gl.deleteTexture(this.webGLTexture);
 			this.path = "";
 			this.webGLTexture = null;

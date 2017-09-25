@@ -1,5 +1,9 @@
-/// <reference path="./graphic.ts"/>
-class Sprite extends Graphic
+import {Graphic} from "./graphic";
+import {SpriteAnimationTemplate, SpriteBank, SpriteTemplate} from "./../../assets";
+import {Engine} from "./../../core";
+import {Calc, Camera, Color, Rectangle, Vector} from "./../../util";
+
+export class Sprite extends Graphic
 {
 	private _animation:SpriteTemplate = null;
 	private _playing:SpriteAnimationTemplate = null;
@@ -34,8 +38,8 @@ class Sprite extends Graphic
 		if (this.animation == null)
 			return;
 
-		let next = this.animation.get(name);
-		if (next != null && (this.playing != next || restart))
+		const next = this.animation.get(name);
+		if (next !== null && (this.playing !== next || restart))
 		{
 			this._playing = next;
 			this._frame = 0;
@@ -69,7 +73,7 @@ class Sprite extends Graphic
 				// goto next animation
 				else if (this.playing.goto != null && this.playing.goto.length > 0)
 				{
-					let next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
+					const next = this.playing.goto[Math.floor(Math.random() * this.playing.goto.length)];
 					this.play(next, true);
 				}
 				// stop (non-looping animation)
@@ -93,5 +97,5 @@ class Sprite extends Graphic
 		if (this.texture != null)
 			super.render(camera);
 	}
-	
+
 }

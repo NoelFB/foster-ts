@@ -1,4 +1,6 @@
-class AudioGroup
+import {Sound} from "./../";
+
+export class AudioGroup
 {
 
 	private static volumes:{[group:string]:number} = {};
@@ -6,28 +8,28 @@ class AudioGroup
 
 	public static volume(group:string, value?:number):number
 	{
-		if (value != undefined && AudioGroup.volumes[group] != value)
+		if (value !== undefined && AudioGroup.volumes[group] !== value)
 		{
 			AudioGroup.volumes[group] = value;
-			for (let i = 0; i < Sound.active.length; i ++)
-				if  (Sound.active[i].ingroup(group))
-					Sound.active[i].volume = Sound.active[i].volume;
+			for (const sound of Sound.active)
+				if (sound.ingroup(group))
+					sound.volume = sound.volume;
 		}
-		if (AudioGroup.volumes[group] != undefined)
+		if (AudioGroup.volumes[group] !== undefined)
 			return AudioGroup.volumes[group];
 		return 1;
 	}
 
 	public static muted(group:string, value?:boolean):boolean
 	{
-		if (value != undefined && AudioGroup.mutes[group] != value)
+		if (value !== undefined && AudioGroup.mutes[group] !== value)
 		{
 			AudioGroup.mutes[group] = value;
-			for (let i = 0; i < Sound.active.length; i ++)
-				if  (Sound.active[i].ingroup(group))
-					Sound.active[i].muted = Sound.active[i].muted;
+			for (const sound of Sound.active)
+				if (sound.ingroup(group))
+					sound.muted = sound.muted;
 		}
-		if (AudioGroup.mutes[group] != undefined)
+		if (AudioGroup.mutes[group] !== undefined)
 			return AudioGroup.mutes[group];
 		return false;
 	}

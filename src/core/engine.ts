@@ -1,22 +1,28 @@
+import {GameWindow, Graphics, IO, Scene} from "./";
+import {Assets, Sound} from "./../assets";
+import {DefaultOverlapTests} from "./../components/colliders/collider";
+import {Keyboard, Mouse} from "./../input";
+import {Shaders} from "./../util";
+
 /**
  * Current game Client
  */
-enum Client
+export enum Client
 {
 	/**
-	 * Running on the desktop (in Electron)
+	 * Running in Electron
 	 */
-	Desktop,
+	Electron,
 	/**
-	 * Running on the Web
+	 * Running in the Browser
 	 */
-	Web
+	Browser,
 }
 
 /**
  * Core of the Foster Engine. Initializes and Runs the game.
  */
-class Engine
+export class Engine
 {
 	/**
 	 * Foster Engine version
@@ -39,7 +45,7 @@ class Engine
 	 */
 	public static get scene():Scene
 	{
-		return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene);
+		return (Engine.instance.nextScene != null ? Engine.instance.nextScene :Engine.instance.scene);
 	}
 
 	/**
@@ -80,8 +86,8 @@ class Engine
 	public static set volume(n:number)
 	{
 		Engine._volume = n;
-		for (let i = 0; i < Sound.active.length; i ++)
-			Sound.active[i].volume = Sound.active[i].volume;
+		for (const sound of Sound.active)
+			sound.volume = sound.volume;
 	}
 	private static _volume:number = 1;
 
@@ -92,8 +98,8 @@ class Engine
 	public static set muted(m:boolean)
 	{
 		Engine._muted = m;
-		for (let i = 0; i < Sound.active.length; i ++)
-			Sound.active[i].muted = Sound.active[i].muted;
+		for (const sound of Sound.active)
+			sound.muted = sound.muted;
 	}
 	private static _muted:boolean = false;
 
@@ -118,30 +124,29 @@ class Engine
 		GameWindow.center();
 
 		// wait for window
-		window.onload = function()
+		window.onload = () =>
 		{
-			var c = String.fromCharCode(0x25cf);
-			console.log("%c " + c + " ENGINE START " + c + " ", "background: #222; color: #ff44aa;");
+			const c = String.fromCharCode(0x25cf);
+			console.log("%c " + c + " ENGINE START " + c + " ", "background:#222; color:#ff44aa;");
 			Engine.instance.root = document.getElementsByTagName("body")[0];
 
 			// init
-			Collider.registerDefaultOverlapTests();
-			FosterIO.init();
+			DefaultOverlapTests();
+			IO.init();
 			Engine.instance.graphics = new Graphics(Engine.instance);
 			Engine.instance.graphics.load();
 			Engine.resize(width, height);
 			Shaders.init();
 			Mouse.init();
 			Keyboard.init();
-			GamepadManager.init();
 
 			// start update loop
 			Engine.instance.step();
 
 			// ready callback for game
-			if (ready != undefined)
+			if (ready !== undefined)
 				ready();
-		}
+		};
 	}
 
 	/**
@@ -151,7 +156,7 @@ class Engine
 	 */
 	public static goto(scene:Scene, disposeLastScene:boolean):Scene
 	{
-		let lastScene = Engine.scene;
+		const lastScene = Engine.scene;
 		Engine.instance.nextScene = scene;
 		Engine.instance.disposeLastScene = disposeLastScene;
 		return scene;
@@ -214,16 +219,22 @@ class Engine
 			throw "Engine must be instantiated through static Engine.start";
 
 		Engine.instance = this;
-		this.client = Client.Web;
-		if (window && (<any>window).process && (<any>window).process.versions && (<any>window).process.versions.electron)
-			this.client = Client.Desktop;
+		this.client = Client.Browser;
+
+		if (typeof(window) !== "undefined")
+		{
+			const w = (window as any);
+			if (w.process !== undefined && w.process.versions !== undefined && w.process.versions.electron !== undefined)
+				this.client = Client.Electron;
+		}
+
 		this.startTime = Date.now();
 	}
 
 	private step():void
 	{
 		// time management!
-		var time = Date.now();
+		const time = Date.now();
 		this.elapsed = Math.floor(time - this.startTime) / 1000;
 		this.dt = Math.floor(time - this.lastTime) / 1000;
 		this.lastTime = time;
@@ -251,7 +262,7 @@ class Engine
 
 		// update scene
 		if (this.scene != null)
-			this.scene.update()
+			this.scene.update();
 
 		if (this.nextScene == null)
 		{
@@ -267,8 +278,8 @@ class Engine
 		}
 
 		// update sounds
-		for (let i = 0; i < Sound.active.length; i ++)
-			Sound.active[i].update();
+		for (const sound of Sound.active)
+			sound.update();
 
 		// do it all again!
 		if (!Engine.exiting)
@@ -281,10 +292,10 @@ class Engine
 		Assets.unload();
 		Engine.graphics.unload();
 
-		if (Engine.client == Client.Desktop)
+		if (Engine.client === Client.Electron)
 		{
-			var remote = require("electron").remote;
-			var win = remote.getCurrentWindow();
+			const remote = require("electron").remote;
+			const win = remote.getCurrentWindow();
 			win.close();
 		}
 	}

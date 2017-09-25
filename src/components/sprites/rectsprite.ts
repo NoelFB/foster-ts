@@ -1,5 +1,7 @@
-/// <reference path="./../../component.ts"/>
-class Rectsprite extends Component
+import {Component, Engine} from "./../../core";
+import {Camera, Color, Rectangle, Vector} from "./../../util";
+
+export class Rectsprite extends Component
 {
 
 	public size:Vector = new Vector(0, 0);
@@ -8,12 +10,12 @@ class Rectsprite extends Component
 	public rotation:number = 0;
 	public color:Color = Color.white.clone();
 	public alpha:number = 1;
-	
-	public get width():number { return this.size.x }
+
+	public get width():number { return this.size.x; }
 	public set width(val:number) { this.size.x = val; }
 	public get height():number { return this.size.y; }
 	public set height(val:number) { this.size.y = val; }
-		
+
 	constructor(width:number, height:number, color?:Color)
 	{
 		super();
@@ -22,7 +24,7 @@ class Rectsprite extends Component
 		this.size.y = height;
 		this.color = color || Color.white;
 	}
-	
+
 	public render()
 	{
 		// draw with a pixel texture (shader is using textures)
@@ -30,17 +32,17 @@ class Rectsprite extends Component
 		{
 			Engine.graphics.texture
 			(
-				Engine.graphics.pixel, 
+				Engine.graphics.pixel,
 				this.scenePosition.x,
-				this.scenePosition.y, 
-				null, 
-				Color.temp.copy(this.color).mult(this.alpha), 
+				this.scenePosition.y,
+				null,
+				Color.temp.copy(this.color).mult(this.alpha),
 				Vector.temp0.copy(this.origin).div(this.size),
 				Vector.temp1.copy(this.size).mult(this.scale),
-				this.rotation
+				this.rotation,
 			);
 		}
-		// draw primitive (no texture, just a quad with colors) 
+		// draw primitive (no texture, just a quad with colors)
 		else
 		{
 			Engine.graphics.quad
@@ -52,7 +54,7 @@ class Rectsprite extends Component
 				Color.temp.copy(this.color).mult(this.alpha),
 				this.origin,
 				this.scale,
-				this.rotation
+				this.rotation,
 			);
 		}
 	}

@@ -1,0 +1,9 @@
+node_modules/
+src/
+dist/
+.vscode/
+tsconfig.json
+tslint.json
+README.md
+.gitattributes
+.gitignore

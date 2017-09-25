@@ -1,13 +1,16 @@
-class ParticleTemplate
+import {Texture} from "./../../assets";
+import {Color, Ease} from "./../../util";
+
+export class ParticleTemplate
 {
 
-	public static templates:{[name:string]:ParticleTemplate;} = {};
+	public static templates:{[name:string]:ParticleTemplate; } = {};
 
 	public name:string;
 	public texture:Texture = null;
 	public speedBase:number = 0;
 	public speedRange:number = 0;
-	
+
 	public accelBaseX:number = 0;
 	public accelRangeX:number = 0;
 	public accelBaseY:number = 0;
@@ -20,31 +23,31 @@ class ParticleTemplate
 
 	public colorsFrom:Color[] = [Color.white];
 	public colorsTo:Color[] = [Color.white];
-	public colorEaser:(number)=>number = Ease.linear;
+	public colorEaser:(n:number) => number = Ease.linear;
 
 	public alphaFromBase:number = 1;
 	public alphaFromRange:number = 0;
 	public alphaToBase:number = 1;
 	public alphaToRange:number = 0;
-	public alphaEaser:(number)=>number = Ease.linear;
+	public alphaEaser:(n:number) => number = Ease.linear;
 
 	public rotationFromBase:number = 0;
 	public rotationFromRange:number = 0;
 	public rotationToBase:number = 0;
 	public rotationToRange:number = 0;
-	public rotationEaser:(number)=>number = Ease.linear;
+	public rotationEaser:(n:number) => number = Ease.linear;
 
 	public scaleFromBaseX:number = 1;
 	public scaleFromRangeX:number = 0;
 	public scaleToBaseX:number = 1;
 	public scaleToRangeX:number = 0;
-	public scaleXEaser:(number)=>number = Ease.linear;
+	public scaleXEaser:(n:number) => number = Ease.linear;
 
 	public scaleFromBaseY:number = 1;
 	public scaleFromRangeY:number = 0;
 	public scaleToBaseY:number = 1;
 	public scaleToRangeY:number = 0;
-	public scaleYEaser:(number)=>number = Ease.linear;
+	public scaleYEaser:(n:number) => number = Ease.linear;
 
 	public durationBase:number = 1;
 	public durationRange:number = 1;
@@ -103,7 +106,7 @@ class ParticleTemplate
 		return this;
 	}
 
-	public colorEase(easer:(number)=>number):ParticleTemplate
+	public colorEase(easer:(n:number) => number):ParticleTemplate
 	{
 		this.colorEaser = easer;
 		return this;
@@ -130,7 +133,7 @@ class ParticleTemplate
 		return this;
 	}
 
-	public alphaEase(easer:(number)=>number):ParticleTemplate
+	public alphaEase(easer:(n:number) => number):ParticleTemplate
 	{
 		this.alphaEaser = easer;
 		return this;
@@ -157,7 +160,7 @@ class ParticleTemplate
 		return this;
 	}
 
-	public rotationEase(easer:(number)=>number):ParticleTemplate
+	public rotationEase(easer:(n:number) => number):ParticleTemplate
 	{
 		this.rotationEaser = easer;
 		return this;
@@ -184,7 +187,7 @@ class ParticleTemplate
 		return this;
 	}
 
-	public scaleEase(easer:(number)=>number):ParticleTemplate
+	public scaleEase(easer:(n:number) => number):ParticleTemplate
 	{
 		this.scaleXEaser = easer;
 		this.scaleYEaser = easer;
@@ -219,7 +222,7 @@ class ParticleTemplate
 		return this;
 	}
 
-	public scaleXEase(easer:(number)=>number):ParticleTemplate
+	public scaleXEase(easer:(n:number) => number):ParticleTemplate
 	{
 		this.scaleXEaser = easer;
 		return this;
@@ -239,7 +242,7 @@ class ParticleTemplate
 		return this;
 	}
 
-	public scaleYEase(easer:(number)=>number):ParticleTemplate
+	public scaleYEase(easer:(n:number) => number):ParticleTemplate
 	{
 		this.scaleYEaser = easer;
 		return this;

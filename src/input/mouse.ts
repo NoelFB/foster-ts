@@ -1,6 +1,9 @@
-class Mouse
+import {Engine} from "./../core";
+import {Vector} from "./../util";
+
+export class Mouse
 {
-	
+
 	private static _left:boolean;
 	private static _leftWas:boolean;
 	private static _leftNext:boolean;
@@ -9,62 +12,63 @@ class Mouse
 	private static _rightNext:boolean;
 	private static _position:Vector;
 	private static _positionNext:Vector;
-	
+
 	public static get x():number { return this._position.x; }
 	public static get y():number  { return this._position.y; }
 	public static get position():Vector { return new Vector(this._position.x, this._position.y); }
-	public static absolute:Vector = new Vector(0, 0);
-	
+	public static absolute:Vector;
+
 	public static get left():boolean { return this._left; }
 	public static get leftPressed():boolean { return this._left && !this._leftWas; }
 	public static get leftReleased():boolean { return !this._left && this._leftWas; }
 	public static get right():boolean { return this._right; }
 	public static get rightPressed():boolean { return this._right && !this._rightWas; }
 	public static get rightReleased():boolean { return !this._right && this._rightWas; }
-	
+
 	public static init():void
 	{
-		Mouse._position = new Vector(0,0);
-		Mouse._positionNext = new Vector(0,0);
+		Mouse.absolute = new Vector(0, 0);
+		Mouse._position = new Vector(0, 0);
+		Mouse._positionNext = new Vector(0, 0);
 
-		Engine.root.addEventListener("mousemove", function(e)
+		Engine.root.addEventListener("mousemove", (e) =>
 		{
 			Mouse.absolute = new Vector(e.pageX, e.pageY);
 			Mouse.setNextMouseTo(e.pageX, e.pageY);
 		});
-		
-		Engine.root.addEventListener("mousedown", function(e)
+
+		Engine.root.addEventListener("mousedown", (e) =>
 		{
-			if (e.button == 0)
+			if (e.button === 0)
 				Mouse._leftNext = true;
 			else
 				Mouse._rightNext = true;
 		});
-		
-		Engine.root.addEventListener("mouseup", function(e)
+
+		Engine.root.addEventListener("mouseup", (e) =>
 		{
-			if (e.button == 0)
+			if (e.button === 0)
 				Mouse._leftNext = false;
 			else
 				Mouse._rightNext = false;
 		});
 	}
-	
+
 	public static update():void
 	{
 		this._leftWas = this._left;
 		this._left = this._leftNext;
 		this._rightWas = this._right;
 		this._right = this._rightNext;
-		
+
 		/*
-		// TODO: SOLVE THIS?
+		// TODO:SOLVE THIS?
 		// this doesn't work because the GameWindow.screenLeft/Top include the Window border
 		// if there's a way to get the inner Left/Top then this would be super good as the mouse would
 		// update even when out of the window bounds
-		
+
 		// alternatively could measure the difference when the mouse moves, and then use that ... but ugh that's gross
-		
+
 		if (Engine.client == Client.Desktop)
 		{
 			var screenMouse = GameWindow.screenMouse;
@@ -73,21 +77,21 @@ class Mouse
 			Mouse.setNextMouseTo(screenMouse.x, screenMouse.y);
 		}
 		*/
-		
+
 		this._position = this._positionNext;
 	}
-	
+
 	private static setNextMouseTo(pageX:number, pageY:number)
 	{
-		let screen = Engine.graphics.canvas.getBoundingClientRect();
-		let scaled = Engine.graphics.getOutputBounds();
-		let scale = new Vector(scaled.width / Engine.width, scaled.height / Engine.height);
-		
+		const screen = Engine.graphics.canvas.getBoundingClientRect();
+		const scaled = Engine.graphics.getOutputBounds();
+		const scale = new Vector(scaled.width / Engine.width, scaled.height / Engine.height);
+
 		// mouse position in the gameplay view
-		var was = Mouse._positionNext;
+		const was = Mouse._positionNext;
 		Mouse._positionNext = new Vector(
-			(pageX - screen.left - scaled.left) / scale.x, 
-			(pageY - screen.top - scaled.top) / scale.y
+			(pageX - screen.left - scaled.left) / scale.x,
+			(pageY - screen.top - scaled.top) / scale.y,
 		);
 	}
 }

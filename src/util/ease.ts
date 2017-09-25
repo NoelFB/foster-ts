@@ -1,7 +1,7 @@
 /**
  * Default Ease methods for Tweening
  */
-class Ease
+export class Ease
 {
 	public static linear(t:number)
 	{
@@ -20,7 +20,7 @@ class Ease
 
 	public static quadInOut(t:number)
 	{
-		return (t <= 0.5) ? Ease.quadIn(t * 2) / 2 : Ease.quadOut(t * 2 - 1) / 2 + 0.5;
+		return (t <= 0.5) ? Ease.quadIn(t * 2) / 2 :Ease.quadOut(t * 2 - 1) / 2 + 0.5;
 	}
 
 	public static cubeIn(t:number)
@@ -35,7 +35,7 @@ class Ease
 
 	public static cubeInOut(t:number)
 	{
-		return (t <= 0.5) ? Ease.cubeIn(t * 2) / 2 : Ease.cubeOut(t * 2 - 1) / 2 + 0.5;
+		return (t <= 0.5) ? Ease.cubeIn(t * 2) / 2 :Ease.cubeOut(t * 2 - 1) / 2 + 0.5;
 	}
 
 	public static backIn(t:number)
@@ -50,7 +50,7 @@ class Ease
 
 	public static backInOut(t:number)
 	{
-		return (t <= 0.5) ? Ease.backIn(t * 2) / 2 : Ease.backOut(t * 2 - 1) / 2 + 0.5;
+		return (t <= 0.5) ? Ease.backIn(t * 2) / 2 :Ease.backOut(t * 2 - 1) / 2 + 0.5;
 	}
 
 	public static expoIn(t:number)
@@ -65,7 +65,7 @@ class Ease
 
 	public static expoInOut(t:number)
 	{
-		return t < .5 ? Ease.expoIn(t * 2) / 2 : Ease.expoOut(t * 2) / 2;
+		return t < .5 ? Ease.expoIn(t * 2) / 2 :Ease.expoOut(t * 2) / 2;
 	}
 
 	public static sineIn(t:number)
@@ -82,21 +82,22 @@ class Ease
 	{
 		return -Math.cos(Math.PI * t) / 2 + .5;
 	}
-	
+
 	public static elasticInOut(t:number)
 	{
-		if ((t /= 0.5) == 2)
+		t /= 0.5;
+		if (t === 2)
 			return 1;
 
-		let p = (0.3 * 1.5);
-		let s = p / 4;
+		const p = (0.3 * 1.5);
+		const s = p / 4;
 
 		if (t < 1)
 			return -0.5 * (Math.pow(2, 10 * (t -= 1)) * Math.sin((t - s) * (2 * Math.PI) / p));
 		return Math.pow(2, -10 * (t -= 1)) * Math.sin((t - s) * (2 * Math.PI) / p) * 0.5 + 1;
 	}
 
-	public static arc(t:number, ease:(number)=>number):number
+	public static arc(t:number, ease:(n:number) => number):number
 	{
 		if (t < 0.5)
 			return 1 - ease(1 - t * 2);

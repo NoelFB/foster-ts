@@ -1,7 +1,10 @@
+import {Assets, Atlas, AtlasReader, AudioSource, Texture} from "./";
+import {Engine, IO} from "./../core";
+
 /**
  * Loads a set of assets
  */
-class AssetLoader
+export class AssetLoader
 {
 	/**
 	 * The root directory to load from
@@ -23,13 +26,13 @@ class AssetLoader
 	/**
 	 * Called when the Asset Loader has finished loading
 	 */
-	public callback:()=>void;
+	public callback:() => void;
 
 	/**
 	 * The Percentage towards being finished loading
 	 */
 	public get percent():number { return this.assetsLoaded / this.assets; }
-	
+
 	private assets:number = 0;
 	private assetsLoaded:number = 0;
 	private textures:string[] = [];
@@ -50,19 +53,19 @@ class AssetLoader
 	public addTexture(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
+			throw new Error("Cannot add more assets when already loaded");
 		this.textures.push(path);
 		this.assets ++;
 		return this;
 	}
-	
+
 	/**
 	 * Adds the JSON to the loader
 	 */
 	public addJson(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
+			throw new Error("Cannot add more assets when already loaded");
 		this.jsons.push(path);
 		this.assets ++;
 		return this;
@@ -74,19 +77,19 @@ class AssetLoader
 	public addXml(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
+			throw new Error("Cannot add more assets when already loaded");
 		this.xmls.push(path);
 		this.assets ++;
 		return this;
 	}
-	
+
 	/**
 	 * Adds the text to the loader
 	 */
 	public addText(path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
+			throw new Error("Cannot add more assets when already loaded");
 		this.texts.push(path);
 		this.assets ++;
 		return this;
@@ -98,8 +101,8 @@ class AssetLoader
 	public addSound(handle:string, path:string):AssetLoader
 	{
 		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
-		this.sounds.push({handle: handle, path: path });
+			throw new Error("Cannot add more assets when already loaded");
+		this.sounds.push({handle, path });
 		this.assets ++;
 		return this;
 	}
@@ -110,43 +113,43 @@ class AssetLoader
 	public addAtlas(name:string, image:string, data:string, loader:AtlasReader):AssetLoader
 	{
 		if (this.loading || this.loaded)
-			throw "Cannot add more assets when already loaded";
-		this.atlases.push({ name: name, image: image, data: data, loader: loader });
+			throw new Error("Cannot add more assets when already loaded");
+		this.atlases.push({ name, image, data, loader });
 		this.assets += 3;
 		return this;
 	}
-	
+
 	/**
 	 * Begins loading all the assets and invokes Callback upon completion
 	 */
-	public load(callback?:()=>void):void
+	public load(callback?:() => void):void
 	{
 		this._loading = true;
 		this.callback = callback;
-		
+
 		// textures
-		for (let i = 0; i < this.textures.length; i ++)
-			this.loadTexture(FosterIO.join(this.root, this.textures[i]));
+		for (const texture of this.textures)
+			this.loadTexture(IO.join(this.root, texture));
 
 		// json files
-		for (let i = 0; i < this.jsons.length; i ++)
-			this.loadJson(FosterIO.join(this.root, this.jsons[i]));
+		for (const json of this.jsons)
+			this.loadJson(IO.join(this.root, json));
 
 		// xml files
-		for (let i = 0; i < this.xmls.length; i ++)
-			this.loadXml(FosterIO.join(this.root, this.xmls[i]));
+		for (const xml of this.xmls)
+			this.loadXml(IO.join(this.root, xml));
 
 		// text files
-		for (let i = 0; i < this.texts.length; i ++)
-			this.loadText(FosterIO.join(this.root, this.texts[i]));
+		for (const text of this.texts)
+			this.loadText(IO.join(this.root, text));
 
 		// sounds
-		for (let i = 0; i < this.sounds.length; i ++)
-			this.loadSound(this.sounds[i].handle, FosterIO.join(this.root, this.sounds[i].path));
+		for (const sound of this.sounds)
+			this.loadSound(sound.handle, IO.join(this.root, sound.path));
 
 		// atlases
-		for (let i = 0; i < this.atlases.length; i ++)
-			this.loadAtlas(this.atlases[i]);
+		for (const atlas of this.atlases)
+			this.loadAtlas(atlas);
 	}
 
 	/**
@@ -155,83 +158,83 @@ class AssetLoader
 	public unload():void
 	{
 		if (this.loading)
-			throw "Cannot unload until finished loading";
+			throw new Error("Cannot unload until finished loading");
 		if (!this.loaded)
-			throw "Cannot unload before loading";
+			throw new Error("Cannot unload before loading");
 
-		// TODO: IMPLEMENT THIS
-		throw "Asset Unloading not Implemented";
+		// TODO:IMPLEMENT THIS
+		throw new Error("Asset Unloading not Implemented");
 	}
-	
-	private loadTexture(path:string, callback?:(texture:Texture)=>void):void
-	{
-		let gl = Engine.graphics.gl;
-		let img = new Image();
 
-		img.addEventListener('load', () =>
+	private loadTexture(path:string, callback?:(texture:Texture) => void):void
+	{
+		const gl = Engine.graphics.gl;
+		const img = new Image();
+
+		img.addEventListener("load", () =>
 		{
-			let tex = Texture.create(img);
+			const tex = Texture.create(img);
 			tex.texture.path = path;
 			Assets.textures[this.pathify(path)] = tex;
-			
-			if (callback != undefined)
+
+			if (callback !== undefined)
 				callback(tex);
 
 			this.incrementLoader();
-		})
+		});
 		img.src = path;
 	}
 
-	private loadJson(path:string, callback?:(json:Object)=>void):void
+	private loadJson(path:string, callback?:(json:object) => void):void
 	{
-		var self = this;
-		FosterIO.read(path, (data) =>
+		const self = this;
+		IO.read(path, (data) =>
 		{
-			let p = this.pathify(path);
+			const p = this.pathify(path);
 			Assets.json[p] = JSON.parse(data);
 
-			if (callback != undefined)
+			if (callback !== undefined)
 				callback(Assets.json[p]);
-				
+
 			self.incrementLoader();
 		});
 	}
 
-	private loadXml(path:string, callback?:(xml:Object)=>void):void
+	private loadXml(path:string, callback?:(xml:object) => void):void
 	{
-		FosterIO.read(path, (data) =>
+		IO.read(path, (data) =>
 		{
-			let p = this.pathify(path);
+			const p = this.pathify(path);
 			Assets.xml[p] = (new DOMParser()).parseFromString(data, "text/xml");
-			
-			if (callback != undefined)
+
+			if (callback !== undefined)
 				callback(Assets.xml[p]);
-				
-			this.incrementLoader();
-		});
-	}
-	
-	private loadText(path:string, callback?:(text:string)=>void):void
-	{
-		FosterIO.read(path, (data) =>
-		{
-			let p = this.pathify(path);
-			Assets.text[p] = data;
-			
-			if (callback != undefined)
-				callback(Assets.text[p]);
-				
+
 			this.incrementLoader();
 		});
 	}
 
-	private loadSound(handle:string, path:string, callback?:(sound:AudioSource)=>void):void
+	private loadText(path:string, callback?:(text:string) => void):void
 	{
-		let audio = new Audio();
+		IO.read(path, (data) =>
+		{
+			const p = this.pathify(path);
+			Assets.text[p] = data;
+
+			if (callback !== undefined)
+				callback(Assets.text[p]);
+
+			this.incrementLoader();
+		});
+	}
+
+	private loadSound(handle:string, path:string, callback?:(sound:AudioSource) => void):void
+	{
+		const audio = new Audio();
 		audio.addEventListener("loadeddata", () =>
 		{
 			Assets.sounds[handle] = new AudioSource(path, audio);
-			if (callback != undefined)
+			if (callback !== undefined)
 				callback(Assets.sounds[handle]);
 			this.incrementLoader();
 		});
@@ -240,9 +243,9 @@ class AssetLoader
 
 	private loadAtlas(data:any):void
 	{
-		var self = this;
-		var texture:Texture = null;
-		var atlasdata:string = null;
+		const self = this;
+		let texture:Texture = null;
+		let atlasdata:string = null;
 
 		// check to see if both the texture and data file are done
 		// if they are, then create the atlas object
@@ -250,25 +253,25 @@ class AssetLoader
 		{
 			if (texture == null || atlasdata == null)
 				return;
-			
-			let atlas = new Atlas(data.name, texture, atlasdata, data.loader);
+
+			const atlas = new Atlas(data.name, texture, atlasdata, data.loader);
 			Assets.atlases[atlas.name] = atlas;
 			self.incrementLoader();
 		}
-		
+
 		// load atlas texture file
-		this.loadText(FosterIO.join(this.root, data.data), (text) => { atlasdata = text; check(); });
-		this.loadTexture(FosterIO.join(this.root, data.image), (tex) => { texture = tex; check(); });
+		this.loadText(IO.join(this.root, data.data), (text) => { atlasdata = text; check(); });
+		this.loadTexture(IO.join(this.root, data.image), (tex) => { texture = tex; check(); });
 	}
 
 	private incrementLoader()
 	{
 		this.assetsLoaded ++;
-		if (this.assetsLoaded == this.assets)
+		if (this.assetsLoaded === this.assets)
 		{
 			this._loaded = true;
 			this._loading = false;
-			if (this.callback != undefined)
+			if (this.callback !== undefined)
 				this.callback();
 		}
 	}

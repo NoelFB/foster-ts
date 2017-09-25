@@ -1,13 +1,21 @@
 {
 	"compilerOptions": 
 	{
-		"target": "es6",
+		"target": "es2015",
 		"sourceMap": false,
-		"outFile": "bin/foster.js",
-		"declaration": true
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"outDir": "lib",
+		"declaration": true,
+		"experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+		"noImplicitAny": true,
+		"types":[
+			"node",
+			"electron"
+		]
 	},
-	"exclude": [
-		"node_modules",
-		"bin"
+	"include": [
+		"src/**/*"
 	]
 }

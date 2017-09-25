@@ -14,18 +14,13 @@
 #### Todo
  - BlendModes (additive, multiply, subtract, etc)
  - Comment everything (and generate Docs somehow?)
- - Use ES6 `import/export` and put it into a `Foster` namespace
- - Make NPM package?
  - Add lots of helper / usability methods (ex. Audio fade in/out, built in screen transitions, more atlas loaders, etc)
  
-#### Builds
- - [foster.js](bin/foster.js) : compiled JS file
- - [foster.d.ts](bin/foster.d.ts) : typescript definition file to reference from your game (ex. `/// <reference path="foster.d.ts"/>`)
+#### Use it yourself
+ - `npm install foster-engine`
+ - or clone the repo and use the source typescript yourself
 
-#### Build it yourself
- - Clone the repo
- - Run `npm install`
- - Compile the typescript to the `bin` directory with `tsc`
+#### Web Build
+ - [foster.js](dist/foster.js) : compiled JS file
 
-#### [Foster Examples](https://github.com/NoelFB/foster.examples)
 #### [MIT License](license.md)

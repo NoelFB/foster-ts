@@ -1,9 +1,13 @@
-enum ResolutionStyle
+import {Engine} from "./";
+import {RenderTarget, Texture } from "./../assets";
+import {Camera, Color, Matrix, Rectangle, Shader, Shaders, Vector} from "./../util";
+
+export enum ResolutionStyle
 {
 	/** Renders the buffer at the Center of the Screen with no scaling */
 	None,
 	/** Renders the buffer to an exact fit of the Screen (stretching) */
-	Exact, 
+	Exact,
 	/** Renders the buffer so that it is contained within the Screen */
 	Contain,
 	/** Renders the buffer so that it is contained within the Screen, rounded to an Integer scale */
@@ -11,10 +15,10 @@ enum ResolutionStyle
 	/** Renders the buffer so that it fills the Screen (cropping the buffer) */
 	Fill,
 	/** Renders the buffer so that it fills the Screen (cropping the buffer), rounded to an Integer scale */
-	FillInteger
+	FillInteger,
 }
 
-class BlendMode
+export class BlendMode
 {
 	public source:number;
 	public dest:number;
@@ -22,7 +26,7 @@ class BlendMode
 	constructor(source:number, dest:number) { this.source = source; this.dest = dest; }
 }
 
-class BlendModes
+export class BlendModes
 {
 	public static normal:BlendMode;
 	public static add:BlendMode;
@@ -30,7 +34,7 @@ class BlendModes
 	public static screen:BlendMode;
 }
 
-class Graphics
+export class Graphics
 {
 	// core
 	private engine:Engine;
@@ -41,12 +45,12 @@ class Graphics
 	public resolutionStyle:ResolutionStyle = ResolutionStyle.Contain;
 	public borderColor:Color = Color.black.clone();
 	public clearColor:Color = new Color(0.1, 0.1, 0.3, 1);
-	
+
 	// vertices
 	private vertices:number[] = [];
 	private texcoords:number[] = [];
 	private colors:number[] = [];
-	
+
 	// current render target
 	private currentTarget:RenderTarget = null;
 
@@ -56,18 +60,18 @@ class Graphics
 	private colorBuffer:WebGLBuffer;
 
 	// shader
-	private currentShader:Shader = null;
-	private nextShader:Shader = null;
+	private currentShader:Shader.Program = null;
+	private nextShader:Shader.Program = null;
 
-	public get shader():Shader 
+	public get shader():Shader.Program
 	{
 		if (this.nextShader != null)
-			return this.nextShader; 
-		return this.currentShader; 
+			return this.nextShader;
+		return this.currentShader;
 	}
-	public set shader(s:Shader)
+	public set shader(s:Shader.Program)
 	{
-		if (this.shader != s && s != null)
+		if (this.shader !== s && s != null)
 			this.nextShader = s;
 	}
 
@@ -78,12 +82,12 @@ class Graphics
 	public get blendmode():BlendMode
 	{
 		if (this.nextBlendmode != null)
-			return this.nextBlendmode; 
-		return this.currentBlendmode; 
+			return this.nextBlendmode;
+		return this.currentBlendmode;
 	}
 	public set blendmode(bm:BlendMode)
 	{
-		if (this.currentBlendmode != bm && bm != null)
+		if (this.currentBlendmode !== bm && bm != null)
 			this.nextBlendmode = bm;
 	}
 
@@ -95,31 +99,31 @@ class Graphics
 	private _pixel:Texture = null;
 	private _pixelUVs:Vector[] = [new Vector(0, 0), new Vector(1, 0), new Vector(1, 1), new Vector(0, 1)];
 	private _defaultPixel:Texture = null;
-	
-	public set pixel(p:Texture) 
-	{ 
+
+	public set pixel(p:Texture)
+	{
 		if (p == null)
 			p = this._defaultPixel;
 
-		let minX = p.bounds.left / p.texture.width;
-		let minY = p.bounds.top / p.texture.height;
-		let maxX = p.bounds.right / p.texture.width;
-		let maxY = p.bounds.bottom / p.texture.height;
-		
+		const minX = p.bounds.left / p.texture.width;
+		const minY = p.bounds.top / p.texture.height;
+		const maxX = p.bounds.right / p.texture.width;
+		const maxY = p.bounds.bottom / p.texture.height;
+
 		this._pixel = p;
-		this._pixelUVs = 
+		this._pixelUVs =
 		[
 			new Vector(minX, minY),
 			new Vector(maxX, minY),
 			new Vector(maxX, maxY),
-			new Vector(minX, maxY)
+			new Vector(minX, maxY),
 		];
 	}
 	public get pixel():Texture { return this._pixel; }
-	
+
 	// utils
 	public drawCalls:number = 0;
-   
+
 	/**
 	 * Creates the Engine.Graphics
 	 */
@@ -129,10 +133,10 @@ class Graphics
 
 		// create the screen
 		this.canvas = document.createElement("canvas");
-		this.gl = this.canvas.getContext('experimental-webgl',
+		this.gl = this.canvas.getContext("experimental-webgl",
 		{
-			alpha: false, 
-			antialias: false
+			alpha:false,
+			antialias:false,
 		}) as WebGLRenderingContext;
 		Engine.root.appendChild(this.canvas);
 
@@ -174,10 +178,10 @@ class Graphics
 		this.buffer = null;
 		this.canvas.remove();
 		this.canvas = null;
-		
-		// TODO: Implement this properly
+
+		// TODO:Implement this properly
 	}
-    
+
 	/**
 	 * Called when the Game resolution changes
 	 */
@@ -194,14 +198,14 @@ class Graphics
 			.translate(-1, 1)
 			.scale(1 / this.buffer.width * 2, -1 / this.buffer.height * 2);
 	}
-	
+
 	/**
 	 * Updates the Graphics
 	 */
 	public update():void
 	{
 		// resizing
-		if (this.canvas.width != Engine.root.clientWidth || this.canvas.height != Engine.root.clientHeight)
+		if (this.canvas.width !== Engine.root.clientWidth || this.canvas.height !== Engine.root.clientHeight)
 		{
 			this.canvas.width = Engine.root.clientWidth;
 			this.canvas.height = Engine.root.clientHeight;
@@ -212,38 +216,38 @@ class Graphics
 	 * Gets the rectangle that the game buffer should be drawn to the screen with
 	 */
 	public getOutputBounds():Rectangle
-	{	
+	{
 		let scaleX = 1;
 		let scaleY = 1;
 
-		if (this.resolutionStyle == ResolutionStyle.Exact)
+		if (this.resolutionStyle === ResolutionStyle.Exact)
 		{
 			scaleX = this.canvas.width / this.buffer.width;
 			scaleY = this.canvas.height / this.buffer.height;
 		}
-		else if (this.resolutionStyle == ResolutionStyle.Contain)
+		else if (this.resolutionStyle === ResolutionStyle.Contain)
 		{
-			scaleX = scaleY = (Math.min(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height)); 
+			scaleX = scaleY = (Math.min(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
 		}
-		else if (this.resolutionStyle == ResolutionStyle.ContainInteger)
+		else if (this.resolutionStyle === ResolutionStyle.ContainInteger)
 		{
 			scaleX = scaleY = Math.floor(Math.min(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
 		}
-		else if (this.resolutionStyle == ResolutionStyle.Fill)
+		else if (this.resolutionStyle === ResolutionStyle.Fill)
 		{
 			scaleX = scaleY = (Math.max(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
 		}
-		else if (this.resolutionStyle == ResolutionStyle.FillInteger)
+		else if (this.resolutionStyle === ResolutionStyle.FillInteger)
 		{
 			scaleX = scaleY = Math.ceil(Math.max(this.canvas.width / this.buffer.width, this.canvas.height / this.buffer.height));
 		}
 
-		let width = this.buffer.width * scaleX;
-		let height = this.buffer.height * scaleY;
-		
+		const width = this.buffer.width * scaleX;
+		const height = this.buffer.height * scaleY;
+
 		return new Rectangle((this.canvas.width - width) / 2, (this.canvas.height - height) / 2, width, height);
 	}
-	
+
 	/**
 	 * Clears the screen
 	 */
@@ -252,7 +256,7 @@ class Graphics
 		this.gl.clearColor(color.r, color.g, color.b, color.a);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 	}
-	
+
 	/**
 	 * Resets the Graphics rendering
 	 */
@@ -273,7 +277,7 @@ class Graphics
 	 */
 	public setRenderTarget(target:RenderTarget):void
 	{
-		if (this.currentTarget != target)
+		if (this.currentTarget !== target)
 		{
 			this.flush();
 			if (target == null)
@@ -309,24 +313,24 @@ class Graphics
 			// flush existing
 			if (this.currentShader != null)
 				this.flush();
-			
+
 			// swap
-			let swapped = (this.nextShader != null);
+			const swapped = (this.nextShader != null);
 			if (swapped)
 			{
 				// disable prev. attributes
 				if (this.currentShader != null)
-					for (let i = 0; i < this.currentShader.attributes.length; i ++)
-						this.gl.disableVertexAttribArray(this.currentShader.attributes[i].attribute);
-					
+					for (const attribute of this.currentShader.attributes)
+						this.gl.disableVertexAttribArray(attribute.location);
+
 				// swap
 				this.currentShader = this.nextShader;
 				this.nextShader = null;
 				this.gl.useProgram(this.currentShader.program);
-				
+
 				// enable attributes
-				for (let i = 0; i < this.currentShader.attributes.length; i ++)
-					this.gl.enableVertexAttribArray(this.currentShader.attributes[i].attribute);
+				for (const attribute of this.currentShader.attributes)
+					this.gl.enableVertexAttribArray(attribute.location);
 			}
 
 			// blendmode
@@ -336,35 +340,32 @@ class Graphics
 				this.nextBlendmode = null;
 				this.gl.blendFunc(this.currentBlendmode.source, this.currentBlendmode.dest);
 			}
-			
+
 			// set shader uniforms
 			let textureCounter = 0;
-			for (let i = 0; i < this.currentShader.uniforms.length; i ++)
+			for (const uniform of this.currentShader.uniforms)
 			{
-				let uniform = this.currentShader.uniforms[i];
-				let location = uniform.uniform;
-				
 				if (swapped || uniform.dirty)
 				{
 					// special case for Sampler2D
-					if (uniform.type == ShaderUniformType.sampler2D)
+					if (uniform.type === Shader.UniformType.sampler2D)
 					{
-						this.gl.activeTexture((<any>this.gl)["TEXTURE" + textureCounter]);
+						this.gl.activeTexture((this.gl as any)["TEXTURE" + textureCounter]);
 						if (uniform.value instanceof Texture)
-							this.gl.bindTexture(this.gl.TEXTURE_2D, (<Texture>uniform.value).texture.webGLTexture);
+							this.gl.bindTexture(this.gl.TEXTURE_2D, (uniform.value as Texture).texture.webGLTexture);
 						else if (uniform.value instanceof RenderTarget)
-							this.gl.bindTexture(this.gl.TEXTURE_2D, (<RenderTarget>uniform.value).texture.webGLTexture);
+							this.gl.bindTexture(this.gl.TEXTURE_2D, (uniform.value as RenderTarget).texture.webGLTexture);
 						else
 							this.gl.bindTexture(this.gl.TEXTURE_2D, uniform.value);
-						this.gl.uniform1i(location, textureCounter);
+						this.gl.uniform1i(uniform.location, textureCounter);
 						textureCounter += 1;
 					}
 					// otherwise use normal Uniform Set Method
 					else
 					{
-						setGLUniformValue[uniform.type](this.gl, uniform.uniform, uniform.value);
+						Shader.setGLUniformValue[uniform.type](this.gl, uniform.location, uniform.value);
 					}
-					
+
 					uniform.dirty = false;
 				}
 			}
@@ -372,7 +373,7 @@ class Graphics
 			this.currentShader.dirty = false;
 		}
 	}
-	
+
 	/**
 	 * Flushes the current vertices to the screen
 	 */
@@ -381,34 +382,33 @@ class Graphics
 		if (this.vertices.length > 0)
 		{
 			// set buffer data via shader attributes
-			for (let i = 0; i < this.currentShader.attributes.length; i ++)
+			for (const attribute of this.currentShader.attributes)
 			{
-				let attr = this.currentShader.attributes[i];
-				if (attr.type == ShaderAttributeType.Position)
+				if (attribute.type === Shader.AttributeType.Position)
 				{
-					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.vertexBuffer : this.currentTarget.vertexBuffer));
+					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.vertexBuffer :this.currentTarget.vertexBuffer));
 					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.vertices), this.gl.STATIC_DRAW);
-					this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
+					this.gl.vertexAttribPointer(attribute.location, 2, this.gl.FLOAT, false, 0, 0);
 				}
-				else if (attr.type == ShaderAttributeType.Texcoord)
+				else if (attribute.type === Shader.AttributeType.Texcoord)
 				{
-					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.texcoordBuffer : this.currentTarget.texcoordBuffer));
+					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.texcoordBuffer :this.currentTarget.texcoordBuffer));
 					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.texcoords), this.gl.STATIC_DRAW);
-					this.gl.vertexAttribPointer(attr.attribute, 2, this.gl.FLOAT, false, 0, 0);
+					this.gl.vertexAttribPointer(attribute.location, 2, this.gl.FLOAT, false, 0, 0);
 				}
-				else if (attr.type == ShaderAttributeType.Color)
+				else if (attribute.type === Shader.AttributeType.Color)
 				{
-					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.colorBuffer : this.currentTarget.colorBuffer));
+					this.gl.bindBuffer(this.gl.ARRAY_BUFFER, (this.currentTarget == null ? this.colorBuffer :this.currentTarget.colorBuffer));
 					this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.colors), this.gl.STATIC_DRAW);
-					this.gl.vertexAttribPointer(attr.attribute, 4, this.gl.FLOAT, false, 0, 0);
+					this.gl.vertexAttribPointer(attribute.location, 4, this.gl.FLOAT, false, 0, 0);
 				}
 			}
-			
+
 			// draw vertices
 			this.gl.drawArrays(this.gl.TRIANGLES, 0, this.vertices.length / 2);
 			this.drawCalls ++;
-			
-			// clear	
+
+			// clear
 			this.vertices = [];
 			this.texcoords = [];
 			this.colors = [];
@@ -434,9 +434,9 @@ class Graphics
 		this.shader = Shaders.texture;
 		this.shader.sampler2d.value = this.buffer.texture.webGLTexture;
 		this.shader.set("matrix", this.toscreen);
-		
+
 		// draw our buffer centered!
-		let bounds = this.getOutputBounds();
+		const bounds = this.getOutputBounds();
 		this.push(bounds.left, bounds.top, 0, 0, Color.white);
 		this.push(bounds.right, bounds.top, 1, 0, Color.white);
 		this.push(bounds.right, bounds.bottom, 1, 1, Color.white);
@@ -445,7 +445,7 @@ class Graphics
 		this.push(bounds.left, bounds.bottom, 0, 1, Color.white);
 		this.flush();
 	}
-	
+
 	/**
 	 * Pushes vertices to the screen. If the shader has been modified, this will end and start a new draw call
 	 * @param x 	X position of the vertex
@@ -458,11 +458,11 @@ class Graphics
 	{
 		// shader was changed
 		this.checkState();
-		
+
 		// append
 		this.vertices.push(x, y);
 		this.texcoords.push(u, v);
-		if (color != undefined && color != null)
+		if (color !== undefined && color != null)
 			this.colors.push(color.r, color.g, color.b, color.a);
 	}
 
@@ -478,37 +478,37 @@ class Graphics
 	{
 		this.vertices.push(x, y);
 		this.texcoords.push(u, v);
-		if (color != undefined && color != null)
+		if (color !== undefined && color != null)
 			this.colors.push(color.r, color.g, color.b, color.a);
 	}
-	
+
 	/**
 	 * Pushes a list of vertices to the screen. If the shader has been modified, this will end and start a new draw call
 	 */
 	public pushList(pos:Vector[], uv:Vector[], color:Color[])
 	{
 		this.checkState();
-		
+
 		for (let i = 0; i < pos.length; i ++)
 		{
 			this.vertices.push(pos[i].x, pos[i].y);
-			if (uv != undefined && uv != null)
+			if (uv !== undefined && uv != null)
 				this.texcoords.push(uv[i].x, uv[i].y);
-			if (color != undefined && color != null)
+			if (color !== undefined && color != null)
 			{
-				let c = color[i];
+				const c = color[i];
 				this.colors.push(c.r, c.g, c.b, c.a);
 			}
 		}
 	}
-	
+
 	// temp. vars used for drawing
 	private topleft:Vector = new Vector();
 	private topright:Vector = new Vector();
 	private botleft:Vector = new Vector();
 	private botright:Vector = new Vector();
 	private texToDraw:Texture = new Texture(null, new Rectangle(), new Rectangle());
-	
+
 	/**
 	 * Draws a texture at the given position. If the current Shader does not take a texture, this will throw an error.
 	 */
@@ -518,76 +518,76 @@ class Graphics
 
 		// get the texture (or subtexture if crop is passed)
 		let t:Texture = null;
-		if (crop == undefined || crop == null)
+		if (crop === undefined || crop == null)
 			t = tex;
 		else
 			t = tex.getSubtexture(crop, this.texToDraw);
-		
+
 		// size
-		let left = -t.frame.x;
-		let top = -t.frame.y;
-		let width = t.bounds.width;
-		let height = t.bounds.height;
+		const left = -t.frame.x;
+		const top = -t.frame.y;
+		const width = t.bounds.width;
+		const height = t.bounds.height;
 
 		// relative positions
 		this.topleft.set(left, top);
 		this.topright.set(left + width, top);
 		this.botleft.set(left, top + height);
 		this.botright.set(left + width, top + height);
-		
+
 		// offset by origin
-		if (origin && (origin.x != 0 || origin.y != 0))
+		if (origin && (origin.x !== 0 || origin.y !== 0))
 		{
 			this.topleft.sub(origin);
 			this.topright.sub(origin);
 			this.botleft.sub(origin);
 			this.botright.sub(origin);
 		}
-		
+
 		// scale
-		if (scale && (scale.x != 1 || scale.y != 1))
+		if (scale && (scale.x !== 1 || scale.y !== 1))
 		{
 			this.topleft.mult(scale);
 			this.topright.mult(scale);
 			this.botleft.mult(scale);
 			this.botright.mult(scale);
 		}
-		
+
 		// rotate
-		if (rotation && rotation != 0)
+		if (rotation && rotation !== 0)
 		{
-			let s = Math.sin(rotation);
-			let c = Math.cos(rotation);
+			const s = Math.sin(rotation);
+			const c = Math.cos(rotation);
 			this.topleft.rotate(s, c);
 			this.topright.rotate(s, c);
 			this.botleft.rotate(s, c);
 			this.botright.rotate(s, c);
 		}
-	
+
 		// uv positions
 		let uvMinX = t.bounds.x / t.texture.width;
 		let uvMinY = t.bounds.y / t.texture.height;
 		let uvMaxX = uvMinX + (width / t.texture.width);
 		let uvMaxY = uvMinY + (height / t.texture.height);
-		
+
 		// flip UVs on X
 		if (flipX)
 		{
-			let a = uvMinX;
+			const a = uvMinX;
 			uvMinX = uvMaxX;
 			uvMaxX = a;
 		}
-		
+
 		// flip UVs on Y
 		if (flipY)
 		{
-			let a = uvMinY;
+			const a = uvMinY;
 			uvMinY = uvMaxY;
 			uvMaxY = a;
 		}
-		
+
 		// color
-		let col = (color || Color.white);
+		const col = (color || Color.white);
 
 		// push vertices
 		this.push(posX + this.topleft.x, posY + this.topleft.y, uvMinX, uvMinY, col);
@@ -597,41 +597,41 @@ class Graphics
 		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, uvMaxX, uvMaxY, col);
 		this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, uvMinX, uvMaxY, col);
 	}
-	
+
 	public quad(posX:number, posY:number, width:number, height:number, color?:Color, origin?:Vector, scale?:Vector, rotation?:number)
-	{	
-		let left = 0;
-		let top = 0;
+	{
+		const left = 0;
+		const top = 0;
 
 		// relative positions
 		this.topleft.set(left, top);
 		this.topright.set(left + width, top);
 		this.botleft.set(left, top + height);
 		this.botright.set(left + width, top + height);
-		
+
 		// offset by origin
-		if (origin && (origin.x != 0 || origin.y != 0))
+		if (origin && (origin.x !== 0 || origin.y !== 0))
 		{
 			this.topleft.sub(origin);
 			this.topright.sub(origin);
 			this.botleft.sub(origin);
 			this.botright.sub(origin);
 		}
-		
+
 		// scale
-		if (scale && (scale.x != 1 || scale.y != 1))
+		if (scale && (scale.x !== 1 || scale.y !== 1))
 		{
 			this.topleft.mult(scale);
 			this.topright.mult(scale);
 			this.botleft.mult(scale);
 			this.botright.mult(scale);
 		}
-		
+
 		// rotate
-		if (rotation && rotation != 0)
+		if (rotation && rotation !== 0)
 		{
-			let s = Math.sin(rotation);
-			let c = Math.cos(rotation);
+			const s = Math.sin(rotation);
+			const c = Math.cos(rotation);
 			this.topleft.rotate(s, c);
 			this.topright.rotate(s, c);
 			this.botleft.rotate(s, c);
@@ -639,8 +639,8 @@ class Graphics
 		}
 
 		// color
-		let col = (color || Color.white);
-		
+		const col = (color || Color.white);
+
 		// push vertices
 		this.push(posX + this.topleft.x, posY + this.topleft.y, 0, 0, color);
 		this.pushUnsafe(posX + this.topright.x, posY + this.topright.y, 0, 0, color);
@@ -649,7 +649,7 @@ class Graphics
 		this.pushUnsafe(posX + this.botright.x, posY + this.botright.y, 0, 0, color);
 		this.pushUnsafe(posX + this.botleft.x, posY + this.botleft.y, 0, 0, color);
 	}
-	
+
 	/**
 	 * Draws a rectangle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
 	 */
@@ -657,16 +657,16 @@ class Graphics
 	{
 		if (this.shader.sampler2d != null)
 			this.setShaderTexture(this._pixel);
-			
-		let uv = this._pixelUVs;
+
+		const uv = this._pixelUVs;
 		this.push(x, y, uv[0].x, uv[0].y, color);
 		this.pushUnsafe(x + width, y, uv[1].x, uv[1].y, color);
-		this.pushUnsafe(x + width, y + height,uv[2].x, uv[2].y, color);
+		this.pushUnsafe(x + width, y + height, uv[2].x, uv[2].y, color);
 		this.pushUnsafe(x, y, uv[0].x, uv[0].y, color);
 		this.pushUnsafe(x, y + height, uv[3].x, uv[3].y, color);
 		this.pushUnsafe(x + width, y + height, uv[2].x, uv[2].y, color);
 	}
-	
+
 	/**
 	 * Draws a triangle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
 	 */
@@ -674,16 +674,16 @@ class Graphics
 	{
 		if (this.shader.sampler2d != null)
 			this.setShaderTexture(this._pixel);
-		
-		if (colB == undefined) colB = colA;
-		if (colC == undefined) colC = colA;
-		
-		let uv = this._pixelUVs;
+
+		if (colB === undefined) colB = colA;
+		if (colC === undefined) colC = colA;
+
+		const uv = this._pixelUVs;
 		this.push(a.x, a.y, uv[0].x, uv[0].y, colA);
 		this.pushUnsafe(b.x, b.y, uv[1].x, uv[1].y, colB);
 		this.pushUnsafe(c.x, c.y, uv[2].x, uv[2].y, colC);
 	}
-	
+
 	/**
 	 * Draws a circle. If the current shader has a Sampler2D it uses the Graphics.Pixel texture
 	 */
@@ -691,26 +691,26 @@ class Graphics
 	{
 		if (this.shader.sampler2d != null)
 			this.setShaderTexture(this._pixel);
-			
-		if (colorB == undefined)
+
+		if (colorB === undefined)
 			colorB = colorA;
 
 		this.checkState();
-			
-		let uv = this._pixelUVs;
+
+		const uv = this._pixelUVs;
 		let last = new Vector(pos.x + rad, pos.y);
 		for (let i = 1; i <= steps; i ++)
 		{
-			let angle = (i / steps) * Math.PI * 2;
-			let next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
-			
+			const angle = (i / steps) * Math.PI * 2;
+			const next = new Vector(pos.x + Math.cos(angle), pos.y + Math.sin(angle));
+
 			this.pushUnsafe(pos.x, pos.y, uv[0].x, uv[0].y, colorA);
 			this.pushUnsafe(last.x, last.y, uv[1].x, uv[1].y, colorB);
 			this.pushUnsafe(next.x, next.y, uv[2].x, uv[2].y, colorB);
 			last  = next;
 		}
 	}
-	
+
 	public hollowRect(x:number, y:number, width:number, height:number, stroke:number, color:Color)
 	{
 		this.rect(x, y, width, stroke, color);
@@ -718,5 +718,5 @@ class Graphics
 		this.rect(x + width - stroke, y + stroke, stroke, height - stroke * 2, color);
 		this.rect(x, y + height - stroke, width, stroke, color);
 	}
-	
+
 }

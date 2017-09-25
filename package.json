@@ -1,9 +1,10 @@
 {
-  "name": "foster",
+  "name": "foster-engine",
   "version": "0.0.1",
   "description": "A simple WebGL + TypeScript Game framework with an Scene/Entity/Component model",
   "homepage": "https://github.com/NoelFB/foster",
   "license": "MIT",
+  "main": "lib/index.js",
   "author": {
     "name": "Noel Berry",
     "email": "thenberry@gmail.com",
@@ -14,6 +15,8 @@
     "url": "https://github.com/NoelFB/foster.git"
   },
   "devDependencies": {
+    "@types/electron": "^1.6.10",
+    "@types/node": "^8.0.24",
     "typescript": "^2.5.0-dev.20170628"
   }
 }

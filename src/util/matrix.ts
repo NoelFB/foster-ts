@@ -1,4 +1,4 @@
-class Matrix
+export class Matrix
 {
 
 	public mat:Float32Array = new Float32Array(9);
@@ -94,13 +94,13 @@ class Matrix
 
 	public invert():Matrix
 	{
-		var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2],
+		const a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2],
 			a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5],
 			a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8],
 			b01 = a22 * a11 - a12 * a21,
 			b11 = -a22 * a10 + a12 * a20,
-			b21 = a21 * a10 - a11 * a20,
-			det = a00 * b01 + a01 * b11 + a02 * b21;
+			b21 = a21 * a10 - a11 * a20;
+		let det = a00 * b01 + a01 * b11 + a02 * b21;
 
 		if (!det)
 			return this;
@@ -120,7 +120,7 @@ class Matrix
 
 	public multiply(o:Matrix):Matrix
 	{
-		var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2],
+		const a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2],
 			a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5],
 			a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8],
 
@@ -145,7 +145,7 @@ class Matrix
 
 	public rotate(rad:number):Matrix
 	{
-		var a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2],
+		const a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2],
 			a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5],
 			s = Math.sin(rad),
 			c = Math.cos(rad);
@@ -157,7 +157,7 @@ class Matrix
 		this.mat[3] = c * a10 - s * a00;
 		this.mat[4] = c * a11 - s * a01;
 		this.mat[5] = c * a12 - s * a02;
-		
+
 		return this;
 	}
 
@@ -176,20 +176,20 @@ class Matrix
 
 	public translate(x:number, y:number):Matrix
 	{
-		let a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2],
-			a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5], 
+		const a00 = this.mat[0], a01 = this.mat[1], a02 = this.mat[2],
+			a10 = this.mat[3], a11 = this.mat[4], a12 = this.mat[5],
 			a20 = this.mat[6], a21 = this.mat[7], a22 = this.mat[8];
 
 		this.mat[6] = x * a00 + y * a10 + a20;
 		this.mat[7] = x * a01 + y * a11 + a21;
-    	this.mat[8] = x * a02 + y * a12 + a22;
+	 this.mat[8] = x * a02 + y * a12 + a22;
 
 		return this;
 	}
 
 	public fromRotation(rad:number):Matrix
 	{
-		var s = Math.sin(rad), c = Math.cos(rad);
+		const s = Math.sin(rad), c = Math.cos(rad);
 		this.identity();
 		this.mat[0] = c;
 		this.mat[1] = -s;
