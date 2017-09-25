@@ -29,7 +29,7 @@ export class Graphic extends Component
 		}
 
 		if (position)
-			this.position = position;
+			this.position.copy(position);
 	}
 
 	public center():void
