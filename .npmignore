@@ -4,6 +4,6 @@ dist/
 .vscode/
 tsconfig.json
 tslint.json
-README.md
+webpack.config.js
 .gitattributes
 .gitignore
