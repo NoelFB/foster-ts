@@ -1,4 +1,4 @@
-import {Client, Engine} from "./";
+import {Client, Engine} from "./engine";
 import * as Fs from "fs";
 import * as Path from "path";
 

@@ -1,4 +1,6 @@
-import {Assets, AudioGroup, AudioSource} from "./../";
+import {Assets} from "./../assets";
+import {AudioGroup} from "./audioGroup";
+import {AudioSource} from "./audioSource";
 import {Engine} from "./../../core";
 import {Calc} from "./../../util";
 

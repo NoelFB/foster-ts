@@ -1,4 +1,4 @@
-import {Engine} from "./../../core";
+import {Engine} from "./../../core/engine";
 import {Camera, Color, Rectangle} from "./../../util";
 import {Collider} from "./collider";
 

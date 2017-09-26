@@ -1,5 +1,5 @@
-import {FosterWebGLTexture} from "./../";
-import {Engine} from "./../../core";
+import {FosterWebGLTexture} from "./fosterWebGLTexture";
+import {Engine} from "./../../core/engine";
 
 /**
  * The Render Target is used for rendering graphics to

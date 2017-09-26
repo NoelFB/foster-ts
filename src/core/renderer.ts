@@ -1,5 +1,6 @@
 import {RenderTarget} from "./../assets";
-import {Engine, Scene} from "./../core";
+import {Engine} from "./engine";
+import {Scene} from "./scene";
 import {Camera, Color, Shader} from "./../util";
 
 /**

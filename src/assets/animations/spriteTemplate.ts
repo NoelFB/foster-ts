@@ -1,4 +1,5 @@
-import {SpriteAnimationTemplate, Texture} from "./../";
+import {SpriteAnimationTemplate} from "./spriteAnimationTemplate";
+import {Texture} from "./../textures/texture";
 import {Rectangle, Vector} from "./../../util";
 
 /**

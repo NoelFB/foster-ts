@@ -1,4 +1,5 @@
-import {Component, Engine} from "./../../core";
+import {Engine} from "./../../core/engine";
+import {Component} from "./../../core/component";
 import {Calc, Camera, Color, Vector} from "./../../util";
 import {Particle} from "./particle";
 import {ParticleTemplate} from "./particleTemplate";

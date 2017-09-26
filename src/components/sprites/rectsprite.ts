@@ -1,4 +1,5 @@
-import {Component, Engine} from "./../../core";
+import {Engine} from "./../../core/engine";
+import {Component} from "./../../core/component";
 import {Camera, Color, Rectangle, Vector} from "./../../util";
 
 export class Rectsprite extends Component

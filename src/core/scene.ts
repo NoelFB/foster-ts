@@ -1,6 +1,10 @@
-import {Component, Engine, Entity, Graphics, Renderer} from "./";
-import {Collider} from "./../components";
-import {SpriteRenderer} from "./../renderers";
+import {Component} from "./component";
+import {Engine} from "./engine";
+import {Entity} from "./entity";
+import {Graphics} from "./graphics";
+import {Renderer} from "./renderer";
+import {Collider} from "./../components/colliders/collider";
+import {SpriteRenderer} from "./../renderers/spriteRenderer";
 import {Camera, ObjectList, Shaders, Vector} from "./../util";
 
 /**

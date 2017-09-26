@@ -1,6 +1,6 @@
 import {Graphic} from "./graphic";
 import {SpriteAnimationTemplate, SpriteBank, SpriteTemplate} from "./../../assets";
-import {Engine} from "./../../core";
+import {Engine} from "./../../core/engine";
 import {Calc, Camera, Color, Rectangle, Vector} from "./../../util";
 
 export class Sprite extends Graphic

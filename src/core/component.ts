@@ -1,4 +1,5 @@
-import {Engine, Entity, Scene} from "./../core";
+import {Entity} from "./entity";
+import {Scene} from "./scene";
 import {Camera, Vector} from "./../util";
 
 export abstract class Component

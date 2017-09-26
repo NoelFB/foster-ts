@@ -1,4 +1,4 @@
-import {Sound} from "./../";
+import {Sound} from "./sound";
 
 export class AudioGroup
 {

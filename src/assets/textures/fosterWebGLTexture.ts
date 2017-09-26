@@ -1,4 +1,4 @@
-import {Engine} from "./../../core";
+import {Engine} from "./../../core/engine";
 
 /**
  * Internal Texture used for Foster during Rendering

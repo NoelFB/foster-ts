@@ -1,4 +1,4 @@
-import {Client, Engine} from "./";
+import {Client, Engine} from "./engine";
 import {Mouse} from "./../input";
 import {Vector} from "./../util";
 

@@ -1,4 +1,6 @@
-import {Component, Engine} from "./../core";
+import {Engine} from "./../core/engine";
+import {Component} from "./../core/component";
+
 
 /**
  * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.

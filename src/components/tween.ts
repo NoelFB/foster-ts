@@ -1,4 +1,6 @@
-import {Component, Engine, Entity} from "./../core";
+import {Engine} from "./../core/engine";
+import {Component} from "./../core/component";
+import {Entity} from "./../core/Entity";
 
 export class Tween extends Component
 {

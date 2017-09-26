@@ -1,5 +1,5 @@
 import {Shaders} from "./../util";
-import {Renderer} from "./../core";
+import {Renderer} from "./../core/renderer";
 
 /**
  * Uses the Primitive Shader when rendering

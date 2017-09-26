@@ -1,4 +1,6 @@
-import {Component, Engine, Scene} from "./";
+import {Engine} from "./engine";
+import {Scene} from "./scene";
+import {Component} from "./component";
 import {Camera, Color, ObjectList, Vector} from "./../util";
 
 export class Entity

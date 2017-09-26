@@ -1,4 +1,6 @@
-import {Atlas, AudioSource, Texture} from "./";
+import {Atlas} from "./textures/atlas";
+import {Texture} from "./textures/texture";
+import {AudioSource} from "./audio/audioSource";
 
 /**
  * A static reference to all the Assets currently loaded in the game

@@ -1,4 +1,4 @@
-import {Texture} from "./../";
+import {Texture} from "./../textures/texture";
 import {Vector} from "./../../util";
 
 /**

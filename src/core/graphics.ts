@@ -1,4 +1,4 @@
-import {Engine} from "./";
+import {Engine} from "./engine";
 import {RenderTarget, Texture } from "./../assets";
 import {Camera, Color, Matrix, Rectangle, Shader, Shaders, Vector} from "./../util";
 

@@ -1,4 +1,4 @@
-import {Component} from "./../../core";
+import {Component} from "./../../core/component";
 import {Hitbox} from "./hitbox";
 import {Hitgrid} from "./hitgrid";
 

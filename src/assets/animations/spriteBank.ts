@@ -1,4 +1,4 @@
-import {SpriteTemplate} from "./../";
+import {SpriteTemplate} from "./spriteTemplate";
 
 /**
  * Sprite Bank holds all the Sprite templates in the game
