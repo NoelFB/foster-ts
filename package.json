@@ -6,6 +6,9 @@
   "license": "MIT",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
+  "scripts":{
+    "prepublish": "tsc"
+  },
   "author": {
     "name": "Noel Berry",
     "email": "thenberry@gmail.com",

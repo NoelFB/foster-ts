@@ -16,5 +16,11 @@ module.exports =
         [
             { test: /\.ts?$/, loader: 'awesome-typescript-loader' },
         ]
+    },
+    externals:
+    {
+        fs: "Fs",
+        path: "Path",
+        electron: "Electron"
     }
 }

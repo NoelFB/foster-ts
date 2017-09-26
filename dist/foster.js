@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 26);
+/******/ 	return __webpack_require__(__webpack_require__.s = 25);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -72,19 +72,19 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var calc_1 = __webpack_require__(12);
 exports.Calc = calc_1.Calc;
-var camera_1 = __webpack_require__(28);
+var camera_1 = __webpack_require__(27);
 exports.Camera = camera_1.Camera;
-var color_1 = __webpack_require__(31);
+var color_1 = __webpack_require__(30);
 exports.Color = color_1.Color;
-var ease_1 = __webpack_require__(32);
+var ease_1 = __webpack_require__(31);
 exports.Ease = ease_1.Ease;
 var matrix_1 = __webpack_require__(7);
 exports.Matrix = matrix_1.Matrix;
-var objectList_1 = __webpack_require__(33);
+var objectList_1 = __webpack_require__(32);
 exports.ObjectList = objectList_1.ObjectList;
 var rectangle_1 = __webpack_require__(13);
 exports.Rectangle = rectangle_1.Rectangle;
-var shaders_1 = __webpack_require__(34);
+var shaders_1 = __webpack_require__(33);
 exports.Shaders = shaders_1.Shaders;
 var vector_1 = __webpack_require__(8);
 exports.Vector = vector_1.Vector;
@@ -430,22 +430,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var engine_1 = __webpack_require__(1);
 exports.Engine = engine_1.Engine;
 exports.Client = engine_1.Client;
-var entity_1 = __webpack_require__(43);
+var entity_1 = __webpack_require__(41);
 exports.Entity = entity_1.Entity;
-var gameWindow_1 = __webpack_require__(44);
+var gameWindow_1 = __webpack_require__(42);
 exports.GameWindow = gameWindow_1.GameWindow;
-var graphics_1 = __webpack_require__(45);
+var graphics_1 = __webpack_require__(43);
 exports.Graphics = graphics_1.Graphics;
 exports.BlendMode = graphics_1.BlendMode;
 exports.BlendModes = graphics_1.BlendModes;
 exports.ResolutionStyle = graphics_1.ResolutionStyle;
-var scene_1 = __webpack_require__(46);
+var scene_1 = __webpack_require__(44);
 exports.Scene = scene_1.Scene;
 var component_1 = __webpack_require__(2);
 exports.Component = component_1.Component;
 var renderer_1 = __webpack_require__(10);
 exports.Renderer = renderer_1.Renderer;
-var io_1 = __webpack_require__(47);
+var io_1 = __webpack_require__(45);
 exports.IO = io_1.IO;
 
 
@@ -459,10 +459,10 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(27));
-__export(__webpack_require__(36));
-__export(__webpack_require__(38));
-var assetLoader_1 = __webpack_require__(41);
+__export(__webpack_require__(26));
+__export(__webpack_require__(35));
+__export(__webpack_require__(37));
+var assetLoader_1 = __webpack_require__(40);
 exports.AssetLoader = assetLoader_1.AssetLoader;
 var assets_1 = __webpack_require__(18);
 exports.Assets = assets_1.Assets;
@@ -578,10 +578,10 @@ exports.DefaultOverlapTests = DefaultOverlapTests;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var keyboard_1 = __webpack_require__(29);
+var keyboard_1 = __webpack_require__(28);
 exports.Keyboard = keyboard_1.Keyboard;
 exports.Key = keyboard_1.Key;
-var mouse_1 = __webpack_require__(30);
+var mouse_1 = __webpack_require__(29);
 exports.Mouse = mouse_1.Mouse;
 
 
@@ -1882,254 +1882,12 @@ exports.Texture = Texture;
 
 /***/ }),
 /* 20 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, exports) {
 
-/* WEBPACK VAR INJECTION */(function(__dirname) {var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-var path = __webpack_require__(21)
-
-var pathFile = path.join(__dirname, 'path.txt')
-
-if (fs.existsSync(pathFile)) {
-  module.exports = path.join(__dirname, fs.readFileSync(pathFile, 'utf-8'))
-} else {
-  throw new Error('Electron failed to install correctly, please delete node_modules/electron and try installing again')
-}
-
-/* WEBPACK VAR INJECTION */}.call(exports, "/"))
+module.exports = Electron;
 
 /***/ }),
 /* 21 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// resolves . and .. elements in a path array with directory names there
-// must be no slashes, empty elements, or device names (c:\) in the array
-// (so also no leading and trailing slashes - it does not distinguish
-// relative and absolute paths)
-function normalizeArray(parts, allowAboveRoot) {
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = parts.length - 1; i >= 0; i--) {
-    var last = parts[i];
-    if (last === '.') {
-      parts.splice(i, 1);
-    } else if (last === '..') {
-      parts.splice(i, 1);
-      up++;
-    } else if (up) {
-      parts.splice(i, 1);
-      up--;
-    }
-  }
-
-  // if the path is allowed to go above the root, restore leading ..s
-  if (allowAboveRoot) {
-    for (; up--; up) {
-      parts.unshift('..');
-    }
-  }
-
-  return parts;
-}
-
-// Split a filename into [root, dir, basename, ext], unix version
-// 'root' is just a slash, or nothing.
-var splitPathRe =
-    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-var splitPath = function(filename) {
-  return splitPathRe.exec(filename).slice(1);
-};
-
-// path.resolve([from ...], to)
-// posix version
-exports.resolve = function() {
-  var resolvedPath = '',
-      resolvedAbsolute = false;
-
-  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-    var path = (i >= 0) ? arguments[i] : process.cwd();
-
-    // Skip empty and invalid entries
-    if (typeof path !== 'string') {
-      throw new TypeError('Arguments to path.resolve must be strings');
-    } else if (!path) {
-      continue;
-    }
-
-    resolvedPath = path + '/' + resolvedPath;
-    resolvedAbsolute = path.charAt(0) === '/';
-  }
-
-  // At this point the path should be resolved to a full absolute path, but
-  // handle relative paths to be safe (might happen when process.cwd() fails)
-
-  // Normalize the path
-  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-    return !!p;
-  }), !resolvedAbsolute).join('/');
-
-  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-};
-
-// path.normalize(path)
-// posix version
-exports.normalize = function(path) {
-  var isAbsolute = exports.isAbsolute(path),
-      trailingSlash = substr(path, -1) === '/';
-
-  // Normalize the path
-  path = normalizeArray(filter(path.split('/'), function(p) {
-    return !!p;
-  }), !isAbsolute).join('/');
-
-  if (!path && !isAbsolute) {
-    path = '.';
-  }
-  if (path && trailingSlash) {
-    path += '/';
-  }
-
-  return (isAbsolute ? '/' : '') + path;
-};
-
-// posix version
-exports.isAbsolute = function(path) {
-  return path.charAt(0) === '/';
-};
-
-// posix version
-exports.join = function() {
-  var paths = Array.prototype.slice.call(arguments, 0);
-  return exports.normalize(filter(paths, function(p, index) {
-    if (typeof p !== 'string') {
-      throw new TypeError('Arguments to path.join must be strings');
-    }
-    return p;
-  }).join('/'));
-};
-
-
-// path.relative(from, to)
-// posix version
-exports.relative = function(from, to) {
-  from = exports.resolve(from).substr(1);
-  to = exports.resolve(to).substr(1);
-
-  function trim(arr) {
-    var start = 0;
-    for (; start < arr.length; start++) {
-      if (arr[start] !== '') break;
-    }
-
-    var end = arr.length - 1;
-    for (; end >= 0; end--) {
-      if (arr[end] !== '') break;
-    }
-
-    if (start > end) return [];
-    return arr.slice(start, end - start + 1);
-  }
-
-  var fromParts = trim(from.split('/'));
-  var toParts = trim(to.split('/'));
-
-  var length = Math.min(fromParts.length, toParts.length);
-  var samePartsLength = length;
-  for (var i = 0; i < length; i++) {
-    if (fromParts[i] !== toParts[i]) {
-      samePartsLength = i;
-      break;
-    }
-  }
-
-  var outputParts = [];
-  for (var i = samePartsLength; i < fromParts.length; i++) {
-    outputParts.push('..');
-  }
-
-  outputParts = outputParts.concat(toParts.slice(samePartsLength));
-
-  return outputParts.join('/');
-};
-
-exports.sep = '/';
-exports.delimiter = ':';
-
-exports.dirname = function(path) {
-  var result = splitPath(path),
-      root = result[0],
-      dir = result[1];
-
-  if (!root && !dir) {
-    // No dirname whatsoever
-    return '.';
-  }
-
-  if (dir) {
-    // It has a dirname, strip trailing slash
-    dir = dir.substr(0, dir.length - 1);
-  }
-
-  return root + dir;
-};
-
-
-exports.basename = function(path, ext) {
-  var f = splitPath(path)[2];
-  // TODO: make this comparison case-insensitive on windows?
-  if (ext && f.substr(-1 * ext.length) === ext) {
-    f = f.substr(0, f.length - ext.length);
-  }
-  return f;
-};
-
-
-exports.extname = function(path) {
-  return splitPath(path)[3];
-};
-
-function filter (xs, f) {
-    if (xs.filter) return xs.filter(f);
-    var res = [];
-    for (var i = 0; i < xs.length; i++) {
-        if (f(xs[i], i, xs)) res.push(xs[i]);
-    }
-    return res;
-}
-
-// String.prototype.substr - negative index don't work in IE8
-var substr = 'ab'.substr(-1) === 'b'
-    ? function (str, start, len) { return str.substr(start, len) }
-    : function (str, start, len) {
-        if (start < 0) start = str.length + start;
-        return str.substr(start, len);
-    }
-;
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(42)))
-
-/***/ }),
-/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2151,7 +1909,7 @@ exports.SpriteRenderer = SpriteRenderer;
 
 
 /***/ }),
-/* 23 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2166,7 +1924,7 @@ exports.Hitgrid = hitgrid_1.Hitgrid;
 
 
 /***/ }),
-/* 24 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2208,7 +1966,7 @@ exports.Graphic = Graphic;
 
 
 /***/ }),
-/* 25 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2401,7 +2159,7 @@ exports.ParticleTemplate = ParticleTemplate;
 
 
 /***/ }),
-/* 26 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2421,7 +2179,7 @@ __export(__webpack_require__(4));
 
 
 /***/ }),
-/* 27 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2431,12 +2189,12 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(__webpack_require__(11));
-__export(__webpack_require__(35));
+__export(__webpack_require__(34));
 __export(__webpack_require__(15));
 
 
 /***/ }),
-/* 28 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2505,7 +2263,7 @@ exports.Camera = Camera;
 
 
 /***/ }),
-/* 29 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2683,7 +2441,7 @@ var Key;
 
 
 /***/ }),
-/* 30 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2758,7 +2516,7 @@ exports.Mouse = Mouse;
 
 
 /***/ }),
-/* 31 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2834,7 +2592,7 @@ exports.Color = Color;
 
 
 /***/ }),
-/* 32 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2912,7 +2670,7 @@ exports.Ease = Ease;
 
 
 /***/ }),
-/* 33 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3027,7 +2785,7 @@ exports.ObjectList = ObjectList;
 
 
 /***/ }),
-/* 34 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3135,7 +2893,7 @@ exports.Shaders = Shaders;
 
 
 /***/ }),
-/* 35 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3175,7 +2933,7 @@ exports.SpriteBank = SpriteBank;
 
 
 /***/ }),
-/* 36 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3185,12 +2943,12 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(__webpack_require__(16));
-__export(__webpack_require__(37));
+__export(__webpack_require__(36));
 __export(__webpack_require__(17));
 
 
 /***/ }),
-/* 37 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3238,7 +2996,7 @@ exports.AudioSource = AudioSource;
 
 
 /***/ }),
-/* 38 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3247,14 +3005,14 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(39));
+__export(__webpack_require__(38));
 __export(__webpack_require__(9));
-__export(__webpack_require__(40));
+__export(__webpack_require__(39));
 __export(__webpack_require__(19));
 
 
 /***/ }),
-/* 39 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3355,7 +3113,7 @@ exports.AtlasReaders = AtlasReaders;
 
 
 /***/ }),
-/* 40 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3429,7 +3187,7 @@ exports.RenderTarget = RenderTarget;
 
 
 /***/ }),
-/* 41 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3653,197 +3411,7 @@ exports.AssetLoader = AssetLoader;
 
 
 /***/ }),
-/* 42 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-
-/***/ }),
-/* 43 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4041,7 +3609,7 @@ exports.Entity = Entity;
 
 
 /***/ }),
-/* 44 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4158,7 +3726,7 @@ exports.GameWindow = GameWindow;
 
 
 /***/ }),
-/* 45 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4725,7 +4293,7 @@ exports.Graphics = Graphics;
 
 
 /***/ }),
-/* 46 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4733,7 +4301,7 @@ exports.Graphics = Graphics;
 Object.defineProperty(exports, "__esModule", { value: true });
 const engine_1 = __webpack_require__(1);
 const collider_1 = __webpack_require__(5);
-const spriteRenderer_1 = __webpack_require__(22);
+const spriteRenderer_1 = __webpack_require__(21);
 const util_1 = __webpack_require__(0);
 /**
  * The Scene contains a list of Entities and Renderers that in turn handle Gameplay. There can only be one active Scene at a time
@@ -5049,7 +4617,7 @@ exports.Scene = Scene;
 
 
 /***/ }),
-/* 47 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5065,8 +4633,8 @@ class IO {
      */
     static init() {
         if (IO.fs == null && engine_1.Engine.client === engine_1.Client.Electron) {
-            IO.fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
-            IO.path = __webpack_require__(21);
+            IO.fs = __webpack_require__(46);
+            IO.path = __webpack_require__(47);
         }
     }
     /**
@@ -5138,6 +4706,18 @@ exports.IO = IO;
 /* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ }),
+/* 46 */
+/***/ (function(module, exports) {
+
+module.exports = Fs;
+
+/***/ }),
+/* 47 */
+/***/ (function(module, exports) {
+
+module.exports = Path;
+
+/***/ }),
 /* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -5147,11 +4727,11 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(23));
+__export(__webpack_require__(22));
 __export(__webpack_require__(51));
 var particleSystem_1 = __webpack_require__(55);
 exports.ParticleSystem = particleSystem_1.ParticleSystem;
-var particleTemplate_1 = __webpack_require__(25);
+var particleTemplate_1 = __webpack_require__(24);
 exports.ParticleTemplate = particleTemplate_1.ParticleTemplate;
 var alarm_1 = __webpack_require__(57);
 exports.Alarm = alarm_1.Alarm;
@@ -5276,7 +4856,7 @@ exports.Hitgrid = Hitgrid;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var graphic_1 = __webpack_require__(24);
+var graphic_1 = __webpack_require__(23);
 exports.Graphic = graphic_1.Graphic;
 var rectsprite_1 = __webpack_require__(52);
 exports.Rectsprite = rectsprite_1.Rectsprite;
@@ -5333,7 +4913,7 @@ exports.Rectsprite = Rectsprite;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const graphic_1 = __webpack_require__(24);
+const graphic_1 = __webpack_require__(23);
 const assets_1 = __webpack_require__(4);
 const engine_1 = __webpack_require__(1);
 const util_1 = __webpack_require__(0);
@@ -5497,7 +5077,7 @@ const engine_1 = __webpack_require__(1);
 const component_1 = __webpack_require__(2);
 const util_1 = __webpack_require__(0);
 const particle_1 = __webpack_require__(56);
-const particleTemplate_1 = __webpack_require__(25);
+const particleTemplate_1 = __webpack_require__(24);
 class ParticleSystem extends component_1.Component {
     constructor(template) {
         super();
@@ -5797,7 +5377,7 @@ exports.Coroutine = Coroutine;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const colliders_1 = __webpack_require__(23);
+const colliders_1 = __webpack_require__(22);
 const core_1 = __webpack_require__(3);
 const util_1 = __webpack_require__(0);
 class Physics extends colliders_1.Hitbox {
@@ -6032,7 +5612,7 @@ exports.Tween = Tween;
 Object.defineProperty(exports, "__esModule", { value: true });
 var primitiveRenderer_1 = __webpack_require__(62);
 exports.PrimitiveRenderer = primitiveRenderer_1.PrimitiveRenderer;
-var spriteRenderer_1 = __webpack_require__(22);
+var spriteRenderer_1 = __webpack_require__(21);
 exports.SpriteRenderer = spriteRenderer_1.SpriteRenderer;
 
 
