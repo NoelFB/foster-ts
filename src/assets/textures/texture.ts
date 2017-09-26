@@ -187,12 +187,13 @@ export class Texture
 		const gl = Engine.graphics.gl;
 		const tex = gl.createTexture();
 
+		// convert data into bytes (0-1 to 0-255)
 		const input = [];
 		for (let i = 0; i < data.length;  i ++)
 			input[i] = Math.floor(data[i] * 255);
 
 		gl.bindTexture(gl.TEXTURE_2D, tex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(data));
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(input));
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 

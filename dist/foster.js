@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 17);
+/******/ 	return __webpack_require__(__webpack_require__.s = 26);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -70,26 +70,26 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var engine_1 = __webpack_require__(18);
-exports.Engine = engine_1.Engine;
-exports.Client = engine_1.Client;
-var entity_1 = __webpack_require__(42);
-exports.Entity = entity_1.Entity;
-var gameWindow_1 = __webpack_require__(43);
-exports.GameWindow = gameWindow_1.GameWindow;
-var graphics_1 = __webpack_require__(44);
-exports.Graphics = graphics_1.Graphics;
-exports.BlendMode = graphics_1.BlendMode;
-exports.BlendModes = graphics_1.BlendModes;
-exports.ResolutionStyle = graphics_1.ResolutionStyle;
-var scene_1 = __webpack_require__(45);
-exports.Scene = scene_1.Scene;
-var component_1 = __webpack_require__(60);
-exports.Component = component_1.Component;
-var renderer_1 = __webpack_require__(61);
-exports.Renderer = renderer_1.Renderer;
-var io_1 = __webpack_require__(62);
-exports.IO = io_1.IO;
+var calc_1 = __webpack_require__(12);
+exports.Calc = calc_1.Calc;
+var camera_1 = __webpack_require__(28);
+exports.Camera = camera_1.Camera;
+var color_1 = __webpack_require__(31);
+exports.Color = color_1.Color;
+var ease_1 = __webpack_require__(32);
+exports.Ease = ease_1.Ease;
+var matrix_1 = __webpack_require__(7);
+exports.Matrix = matrix_1.Matrix;
+var objectList_1 = __webpack_require__(33);
+exports.ObjectList = objectList_1.ObjectList;
+var rectangle_1 = __webpack_require__(13);
+exports.Rectangle = rectangle_1.Rectangle;
+var shaders_1 = __webpack_require__(34);
+exports.Shaders = shaders_1.Shaders;
+var vector_1 = __webpack_require__(8);
+exports.Vector = vector_1.Vector;
+const Shader = __webpack_require__(14);
+exports.Shader = Shader;
 
 
 /***/ }),
@@ -99,26 +99,239 @@ exports.IO = io_1.IO;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var calc_1 = __webpack_require__(7);
-exports.Calc = calc_1.Calc;
-var camera_1 = __webpack_require__(21);
-exports.Camera = camera_1.Camera;
-var color_1 = __webpack_require__(24);
-exports.Color = color_1.Color;
-var ease_1 = __webpack_require__(25);
-exports.Ease = ease_1.Ease;
-var matrix_1 = __webpack_require__(5);
-exports.Matrix = matrix_1.Matrix;
-var objectList_1 = __webpack_require__(26);
-exports.ObjectList = objectList_1.ObjectList;
-var rectangle_1 = __webpack_require__(8);
-exports.Rectangle = rectangle_1.Rectangle;
-var shaders_1 = __webpack_require__(27);
-exports.Shaders = shaders_1.Shaders;
-var vector_1 = __webpack_require__(6);
-exports.Vector = vector_1.Vector;
-const Shader = __webpack_require__(9);
-exports.Shader = Shader;
+const _1 = __webpack_require__(3);
+const assets_1 = __webpack_require__(4);
+const collider_1 = __webpack_require__(5);
+const input_1 = __webpack_require__(6);
+const util_1 = __webpack_require__(0);
+/**
+ * Current game Client
+ */
+var Client;
+(function (Client) {
+    /**
+     * Running in Electron
+     */
+    Client[Client["Electron"] = 0] = "Electron";
+    /**
+     * Running in the Browser
+     */
+    Client[Client["Browser"] = 1] = "Browser";
+})(Client = exports.Client || (exports.Client = {}));
+/**
+ * Core of the Foster Engine. Initializes and Runs the game.
+ */
+class Engine {
+    constructor() {
+        this.scene = null;
+        this.nextScene = null;
+        if (Engine.instance != null)
+            throw "Engine has already been instantiated";
+        if (!Engine.started)
+            throw "Engine must be instantiated through static Engine.start";
+        Engine.instance = this;
+        this.client = Client.Browser;
+        if (typeof (window) !== "undefined") {
+            const w = window;
+            if (w.process !== undefined && w.process.versions !== undefined && w.process.versions.electron !== undefined)
+                this.client = Client.Electron;
+        }
+        this.startTime = Date.now();
+    }
+    /**
+     * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
+     */
+    static get root() { return Engine.instance.root; }
+    /**
+     * Current Client (Client.Desktop if in Electron and Client.Web if in the browser)
+     */
+    static get client() { return Engine.instance.client; }
+    /**
+     * Gets the current game Scene
+     */
+    static get scene() {
+        return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene);
+    }
+    /**
+     * Gets the Game Width, before being scaled up / down to fit in the screen
+     */
+    static get width() { return Engine.instance.width; }
+    /**
+     * Gets the Game Height, before being scaled up / down to fit in the screen
+     */
+    static get height() { return Engine.instance.height; }
+    /**
+     * Toggles Debug Mode, which shows hitboxes and allows entities to be dragged around
+     */
+    static get debugMode() { return Engine.instance.debuggerEnabled; }
+    static set debugMode(v) { Engine.instance.debuggerEnabled = v; }
+    /**
+     * Delta Time (time, in seconds, since the last frame)
+     */
+    static get delta() { return Engine.instance.dt; }
+    /**
+     * Total elapsed game time (time, in seconds, since the Engine was started)
+     */
+    static get elapsed() { return Engine.instance.elapsed; }
+    /**
+     * Gets the current Engine graphics (used for all rendering)
+     */
+    static get graphics() { return Engine.instance.graphics; }
+    /**
+     * Gets or sets the global sound volume multiplier
+     */
+    static get volume() { return Engine._volume; }
+    static set volume(n) {
+        Engine._volume = n;
+        for (const sound of assets_1.Sound.active)
+            sound.volume = sound.volume;
+    }
+    /**
+     * Mutes or Unmutes the entire game
+     */
+    static get muted() { return Engine._muted; }
+    static set muted(m) {
+        Engine._muted = m;
+        for (const sound of assets_1.Sound.active)
+            sound.muted = sound.muted;
+    }
+    /**
+     * Starts up the Game Engine
+     * @param title 	Window Title
+     * @param width 	Game Width
+     * @param height 	Game Height
+     * @param scale 	Scales the Window (on Desktop) to width * scale and height * scale
+     * @param ready 	Callback when the Engine is ready
+     */
+    static start(title, width, height, scale, ready) {
+        // instantiate
+        Engine.started = true;
+        new Engine();
+        new _1.GameWindow();
+        // window
+        _1.GameWindow.title = title;
+        _1.GameWindow.resize(width * scale, height * scale);
+        _1.GameWindow.center();
+        // wait for window
+        window.onload = () => {
+            const c = String.fromCharCode(0x25cf);
+            console.log("%c " + c + " ENGINE START " + c + " ", "background:#222; color:#ff44aa;");
+            Engine.instance.root = document.getElementsByTagName("body")[0];
+            // init
+            collider_1.DefaultOverlapTests();
+            _1.IO.init();
+            Engine.instance.graphics = new _1.Graphics(Engine.instance);
+            Engine.instance.graphics.load();
+            Engine.resize(width, height);
+            util_1.Shaders.init();
+            input_1.Mouse.init();
+            input_1.Keyboard.init();
+            // start update loop
+            Engine.instance.step();
+            // ready callback for game
+            if (ready !== undefined)
+                ready();
+        };
+    }
+    /**
+     * Goes to a new Scene
+     * @param scene 	The Scene to go to
+     * @param disposeLastScene 	If the last scene should be disposed
+     */
+    static goto(scene, disposeLastScene) {
+        const lastScene = Engine.scene;
+        Engine.instance.nextScene = scene;
+        Engine.instance.disposeLastScene = disposeLastScene;
+        return scene;
+    }
+    /**
+     * Ends the Game
+     */
+    static exit() {
+        if (Engine.started && !Engine.exiting)
+            Engine.instance.exit();
+    }
+    /**
+     * Resizes the game to the given size
+     * @param width 	new Game Width
+     * @param height 	new Game Height
+     */
+    static resize(width, height) {
+        Engine.instance.width = width;
+        Engine.instance.height = height;
+        Engine.instance.graphics.resize();
+    }
+    /**
+     * Checks that the given value is true, otherwise throws an error
+     */
+    static assert(value, message) {
+        if (!value)
+            throw message;
+        return value;
+    }
+    step() {
+        // time management!
+        const time = Date.now();
+        this.elapsed = Math.floor(time - this.startTime) / 1000;
+        this.dt = Math.floor(time - this.lastTime) / 1000;
+        this.lastTime = time;
+        // update graphics
+        this.graphics.update();
+        // update inputs
+        input_1.Mouse.update();
+        input_1.Keyboard.update();
+        // swap scenes
+        if (this.nextScene != null) {
+            if (this.scene != null) {
+                this.scene.ended();
+                if (this.disposeLastScene)
+                    this.scene.dispose();
+            }
+            this.scene = this.nextScene;
+            this.nextScene = null;
+            this.scene.begin();
+        }
+        // update scene
+        if (this.scene != null)
+            this.scene.update();
+        if (this.nextScene == null) {
+            // begin drawing
+            this.graphics.reset();
+            // render current scene
+            if (this.scene != null)
+                this.scene.render();
+            // final flush on graphics
+            this.graphics.finalize();
+        }
+        // update sounds
+        for (const sound of assets_1.Sound.active)
+            sound.update();
+        // do it all again!
+        if (!Engine.exiting)
+            requestAnimationFrame(this.step.bind(this));
+    }
+    exit() {
+        Engine.exiting = true;
+        assets_1.Assets.unload();
+        Engine.graphics.unload();
+        if (Engine.client === Client.Electron) {
+            const remote = __webpack_require__(20).remote;
+            const win = remote.getCurrentWindow();
+            win.close();
+        }
+    }
+}
+/**
+ * Foster Engine version
+ * major.minor.build
+ */
+Engine.version = "0.1.11";
+Engine._volume = 1;
+Engine._muted = false;
+Engine.instance = null;
+Engine.started = false;
+Engine.exiting = false;
+exports.Engine = Engine;
 
 
 /***/ }),
@@ -127,17 +340,84 @@ exports.Shader = Shader;
 
 "use strict";
 
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(19));
-__export(__webpack_require__(30));
-__export(__webpack_require__(34));
-var assetLoader_1 = __webpack_require__(39);
-exports.AssetLoader = assetLoader_1.AssetLoader;
-var assets_1 = __webpack_require__(40);
-exports.Assets = assets_1.Assets;
+const util_1 = __webpack_require__(0);
+class Component {
+    constructor() {
+        this._entity = null;
+        /**
+         * The Scene containing this Component
+         */
+        this.scene = null;
+        /**
+         * Whether this Component should be updated
+         */
+        this.active = true;
+        /**
+         * Whether this Component should be rendered
+         */
+        this.visible = true;
+        /**
+         * The Local position of the Component, relative to the Entity
+         */
+        this.position = new util_1.Vector(0, 0);
+        /**
+         * The position of the Component in the Scene (position + Entity.position)
+         */
+        this._scenePosition = new util_1.Vector();
+    }
+    /**
+     * The Entity this Component is a child of
+     */
+    get entity() { return this._entity; }
+    set entity(val) {
+        if (this._entity != null && val != null)
+            throw new Error("This Component is already attached to an Entity");
+        this._entity = val;
+    }
+    /**
+     * The Local X position of the Component, relative to the Entity
+     */
+    get x() { return this.position.x; }
+    set x(val) { this.position.x = val; }
+    /**
+     * The Local Y position of the Component, relative to the Entity
+     */
+    get y() { return this.position.y; }
+    set y(val) { this.position.y = val; }
+    get scenePosition() {
+        return this._scenePosition.set(this._entity ? this._entity.x : 0, this._entity ? this._entity.y : 0).add(this.position);
+    }
+    /**
+     * Called when the Component was Added to the Entity
+     */
+    addedToEntity() { }
+    /**
+     * Called when the Component was Added to the Scene
+     */
+    addedToScene() { }
+    /**
+     * Called when the Component was Removed from the Entity
+     */
+    removedFromEntity() { }
+    /**
+     * Called when the Component was Removed from the Scene
+     */
+    removedFromScene() { }
+    /**
+     * Called when the Component is Updated from its Entity
+     */
+    update() { }
+    /**
+     * Called when the component is Rendered from its Entity
+     */
+    render(camera) { }
+    /**
+     * Called when the Engine is in Debug mode, at the end of the Scene Render from its Entity
+     */
+    debugRender(camera) { }
+}
+exports.Component = Component;
 
 
 /***/ }),
@@ -147,11 +427,26 @@ exports.Assets = assets_1.Assets;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var keyboard_1 = __webpack_require__(22);
-exports.Keyboard = keyboard_1.Keyboard;
-exports.Key = keyboard_1.Key;
-var mouse_1 = __webpack_require__(23);
-exports.Mouse = mouse_1.Mouse;
+var engine_1 = __webpack_require__(1);
+exports.Engine = engine_1.Engine;
+exports.Client = engine_1.Client;
+var entity_1 = __webpack_require__(43);
+exports.Entity = entity_1.Entity;
+var gameWindow_1 = __webpack_require__(44);
+exports.GameWindow = gameWindow_1.GameWindow;
+var graphics_1 = __webpack_require__(45);
+exports.Graphics = graphics_1.Graphics;
+exports.BlendMode = graphics_1.BlendMode;
+exports.BlendModes = graphics_1.BlendModes;
+exports.ResolutionStyle = graphics_1.ResolutionStyle;
+var scene_1 = __webpack_require__(46);
+exports.Scene = scene_1.Scene;
+var component_1 = __webpack_require__(2);
+exports.Component = component_1.Component;
+var renderer_1 = __webpack_require__(10);
+exports.Renderer = renderer_1.Renderer;
+var io_1 = __webpack_require__(47);
+exports.IO = io_1.IO;
 
 
 /***/ }),
@@ -160,9 +455,28 @@ exports.Mouse = mouse_1.Mouse;
 
 "use strict";
 
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-class Collider extends core_1.Component {
+__export(__webpack_require__(27));
+__export(__webpack_require__(36));
+__export(__webpack_require__(38));
+var assetLoader_1 = __webpack_require__(41);
+exports.AssetLoader = assetLoader_1.AssetLoader;
+var assets_1 = __webpack_require__(18);
+exports.Assets = assets_1.Assets;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const component_1 = __webpack_require__(2);
+class Collider extends component_1.Component {
     constructor() {
         super(...arguments);
         this.tags = [];
@@ -258,7 +572,21 @@ exports.DefaultOverlapTests = DefaultOverlapTests;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var keyboard_1 = __webpack_require__(29);
+exports.Keyboard = keyboard_1.Keyboard;
+exports.Key = keyboard_1.Key;
+var mouse_1 = __webpack_require__(30);
+exports.Mouse = mouse_1.Mouse;
+
+
+/***/ }),
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -423,13 +751,13 @@ exports.Matrix = Matrix;
 
 
 /***/ }),
-/* 6 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const calc_1 = __webpack_require__(7);
+const calc_1 = __webpack_require__(12);
 class Vector {
     constructor(x, y) {
         this.x = 0;
@@ -532,7 +860,168 @@ exports.Vector = Vector;
 
 
 /***/ }),
-/* 7 */
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const engine_1 = __webpack_require__(1);
+/**
+ * Internal Texture used for Foster during Rendering
+ */
+class FosterWebGLTexture {
+    constructor(texture, width, height) {
+        this.disposed = false;
+        this.webGLTexture = texture;
+        this.width = width;
+        this.height = height;
+    }
+    dispose() {
+        if (!this.disposed) {
+            const gl = engine_1.Engine.graphics.gl;
+            gl.deleteTexture(this.webGLTexture);
+            this.path = "";
+            this.webGLTexture = null;
+            this.width = 1;
+            this.height = 1;
+            this.disposed = true;
+        }
+    }
+}
+exports.FosterWebGLTexture = FosterWebGLTexture;
+
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const engine_1 = __webpack_require__(1);
+const util_1 = __webpack_require__(0);
+/**
+ * Used by the Scene to render. A Scene can have multiple renderers that essentially act as separate layers / draw calls
+ */
+class Renderer {
+    constructor() {
+        /**
+         * If this renderer is visible
+         */
+        this.visible = true;
+        /**
+         * Current Render Target. null means it will draw to the screen
+         */
+        this.target = null;
+        /**
+         * Clear color when drawing (defaults to transparent)
+         */
+        this.clearTargetColor = new util_1.Color(0, 0, 0, 0);
+        /**
+         * The scene we're in
+         */
+        this.scene = null;
+        /**
+         * Only draws entities of the given mask, if set (otherwise draws all entities)
+         */
+        this.groupsMask = [];
+    }
+    /**
+     * Called during Scene.update
+     */
+    update() { }
+    /**
+     * Called before Render
+     */
+    preRender() { }
+    /**
+     * Renders the Renderer. Calls drawBegin and then drawEntities
+     */
+    render() {
+        this.drawBegin();
+        this.drawEntities();
+    }
+    /**
+     * Sets up the current render target and shader
+     */
+    drawBegin() {
+        // set target
+        if (this.target != null) {
+            engine_1.Engine.graphics.setRenderTarget(this.target);
+            engine_1.Engine.graphics.clear(this.clearTargetColor);
+        }
+        else
+            engine_1.Engine.graphics.setRenderTarget(engine_1.Engine.graphics.buffer);
+        // set to our shader, and set main Matrix to the camera with fallback to Scene camera
+        engine_1.Engine.graphics.shader = this.shader;
+        engine_1.Engine.graphics.shader.set(this.shaderCameraUniformName, this.getActiveCamera().matrix);
+    }
+    /**
+     * Draws all the entities
+     */
+    drawEntities() {
+        const camera = this.getActiveCamera();
+        // draw each entity
+        const list = (this.groupsMask.length > 0 ? this.scene.allInGroups(this.groupsMask) : this.scene.entities);
+        list.each((e) => {
+            if (e.visible)
+                e.render(camera);
+        });
+    }
+    getActiveCamera() {
+        return (this.camera || this.scene.camera);
+    }
+    /**
+     * Called after Render
+     */
+    postRender() { }
+    /**
+     * Called when the Scene is disposed (cleans up our Target, if we have one)
+     */
+    dispose() {
+        if (this.target != null)
+            this.target.dispose();
+        this.target = null;
+    }
+}
+exports.Renderer = Renderer;
+
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const util_1 = __webpack_require__(0);
+/**
+ * An animation template handles a single Animation in an Sprite Template (ex. Player.Run)
+ */
+class SpriteAnimationTemplate {
+    constructor(name, speed, frames, loops, position, origin) {
+        /**
+         * If this animation should loop
+         */
+        this.loops = false;
+        /**
+         * What animation(s) the Sprite should go to next upon completion
+         */
+        this.goto = null;
+        this.name = name;
+        this.speed = speed;
+        this.frames = frames;
+        this.loops = loops || false;
+        this.position = (position || new util_1.Vector(0, 0));
+        this.origin = (origin || new util_1.Vector(0, 0));
+    }
+}
+exports.SpriteAnimationTemplate = SpriteAnimationTemplate;
+
+
+/***/ }),
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -579,7 +1068,7 @@ exports.Calc = Calc;
 
 
 /***/ }),
-/* 8 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -648,15 +1137,15 @@ exports.Rectangle = Rectangle;
 
 
 /***/ }),
-/* 9 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const matrix_1 = __webpack_require__(5);
-const vector_1 = __webpack_require__(6);
+const core_1 = __webpack_require__(3);
+const matrix_1 = __webpack_require__(7);
+const vector_1 = __webpack_require__(8);
 /**
  * A Foster Shader used for Rendering
  * For Pre-existing shaders, see Shaders.ts
@@ -882,11 +1371,521 @@ exports.setGLUniformValue[UniformType.matrix4d] = (gl, location, value) => {
 
 
 /***/ }),
-/* 10 */
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const spriteAnimationTemplate_1 = __webpack_require__(11);
+const util_1 = __webpack_require__(0);
+/**
+ * Sprite Template holds a list of Animation Templates, referenced by name
+ */
+class SpriteTemplate {
+    constructor(name) {
+        /**
+         * A list of all the animation template, by their name
+         */
+        this.animations = {};
+        this.name = name;
+    }
+    /**
+     * Adds a new Animation Template to this set
+     */
+    add(name, speed, frames, loops, position, origin) {
+        const anim = new spriteAnimationTemplate_1.SpriteAnimationTemplate(name, speed, frames, loops, position, origin);
+        this.animations[name] = anim;
+        if (this.first == null)
+            this.first = anim;
+        return this;
+    }
+    /**
+     * Adds a new frame-based Animation Template to this set
+     */
+    addFrameAnimation(name, speed, tex, frameWidth, frameHeight, frames, loops, position, origin) {
+        const columns = Math.floor(tex.width / frameWidth);
+        const texFrames = [];
+        for (const index of frames) {
+            const tx = (index % columns) * frameWidth;
+            const ty = Math.floor(index / columns) * frameWidth;
+            texFrames.push(tex.getSubtexture(new util_1.Rectangle(tx, ty, frameWidth, frameHeight)));
+        }
+        const anim = new spriteAnimationTemplate_1.SpriteAnimationTemplate(name, speed, texFrames, loops, position, origin);
+        this.animations[name] = anim;
+        if (this.first == null)
+            this.first = anim;
+        return this;
+    }
+    /**
+     * Gets an animation template by its name
+     */
+    get(name) {
+        return this.animations[name];
+    }
+    /**
+     * Checks if an animation template exists by the given name
+     */
+    has(name) {
+        return this.animations[name] !== undefined;
+    }
+}
+exports.SpriteTemplate = SpriteTemplate;
+
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const sound_1 = __webpack_require__(17);
+class AudioGroup {
+    static volume(group, value) {
+        if (value !== undefined && AudioGroup.volumes[group] !== value) {
+            AudioGroup.volumes[group] = value;
+            for (const sound of sound_1.Sound.active)
+                if (sound.ingroup(group))
+                    sound.volume = sound.volume;
+        }
+        if (AudioGroup.volumes[group] !== undefined)
+            return AudioGroup.volumes[group];
+        return 1;
+    }
+    static muted(group, value) {
+        if (value !== undefined && AudioGroup.mutes[group] !== value) {
+            AudioGroup.mutes[group] = value;
+            for (const sound of sound_1.Sound.active)
+                if (sound.ingroup(group))
+                    sound.muted = sound.muted;
+        }
+        if (AudioGroup.mutes[group] !== undefined)
+            return AudioGroup.mutes[group];
+        return false;
+    }
+}
+AudioGroup.volumes = {};
+AudioGroup.mutes = {};
+exports.AudioGroup = AudioGroup;
+
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const assets_1 = __webpack_require__(18);
+const audioGroup_1 = __webpack_require__(16);
+const core_1 = __webpack_require__(3);
+const util_1 = __webpack_require__(0);
+class Sound {
+    /**
+     * Creates a new sound of the given handle
+     */
+    constructor(handle, groups) {
+        this.sound = null;
+        this.started = false;
+        this.groups = [];
+        this.fadePercent = 1;
+        this.fadeDuration = 1;
+        this._loop = false;
+        this._paused = false;
+        this._muted = false;
+        this._volume = 1;
+        this.source = assets_1.Assets.sounds[handle];
+        if (groups && groups.length > 0)
+            for (const group in groups)
+                this.group(group);
+    }
+    /**
+     * Gets if the sound is currently playing
+     */
+    get playing() { return this.started && !this._paused; }
+    /**
+     * Gets or sets whether the sound is looping
+     */
+    get loop() { return this._loop; }
+    set loop(v) {
+        this._loop = v;
+        if (this.started)
+            this.sound.loop = this._loop;
+    }
+    /**
+     * Gets if the sound is paused
+     */
+    get paused() { return this._paused; }
+    /**
+     * Gets or sets whether the current sound is muted
+     */
+    get muted() { return this._muted; }
+    set muted(m) {
+        this._muted = m;
+        this.internalUpdateMuted();
+    }
+    /**
+     * Gets or sets the volume of this sound
+     */
+    get volume() { return this._volume; }
+    set volume(n) {
+        this._volume = n;
+        this.internalUpdateVolume();
+    }
+    /**
+     * Plays the sound
+     */
+    play(loop) {
+        // should this sound loop?
+        this.loop = loop;
+        // reset current sound if we're playing something already
+        if (this.sound != null && this.started) {
+            this.sound.currentTime = 0;
+            if (this._paused)
+                this.resume();
+        }
+        else {
+            this.sound = this.source.requestSound();
+            if (this.sound != null) {
+                if (this.sound.readyState < 3) {
+                    const self = this;
+                    self.loadedEvent = () => {
+                        if (self.sound != null)
+                            self.internalPlay();
+                        self.sound.removeEventListener("loadeddata", self.loadedEvent);
+                        self.loadedEvent = null;
+                    };
+                    this.sound.addEventListener("loadeddata", self.loadedEvent);
+                }
+                else
+                    this.internalPlay();
+            }
+        }
+        return this;
+    }
+    /**
+     * Resumes if the sound was paused
+     */
+    resume() {
+        if (this.started && this._paused)
+            this.sound.play();
+        this._paused = false;
+        return this;
+    }
+    /**
+     * Pauses a sound
+     */
+    pause() {
+        if (this.started && !this._paused)
+            this.sound.pause();
+        this._paused = true;
+        return this;
+    }
+    /**
+     * Completely stops a sound
+     */
+    stop() {
+        if (this.sound != null) {
+            this.source.returnSound(this.sound);
+            if (this.started) {
+                this.sound.pause();
+                this.sound.currentTime = 0;
+                this.sound.volume = 1;
+                this.sound.muted = false;
+                this.sound.removeEventListener("ended", this.endEvent);
+                if (this.loadedEvent != null)
+                    this.sound.removeEventListener("loadeddata", this.loadedEvent);
+            }
+            this.sound = null;
+            this.started = false;
+            this._paused = false;
+            this.fadePercent = 1;
+            const i = Sound.active.indexOf(this);
+            if (i >= 0)
+                Sound.active.splice(i, 1);
+        }
+        return this;
+    }
+    group(group) {
+        this.groups.push(group);
+        this.internalUpdateVolume();
+        this.internalUpdateMuted();
+        return this;
+    }
+    ungroup(group) {
+        const index = this.groups.indexOf(group);
+        if (index >= 0) {
+            this.groups.splice(index, 1);
+            this.internalUpdateVolume();
+            this.internalUpdateMuted();
+        }
+        return this;
+    }
+    ungroupAll() {
+        this.groups = [];
+        this.internalUpdateVolume();
+        this.internalUpdateMuted();
+        return this;
+    }
+    ingroup(group) {
+        return this.groups.indexOf(group) >= 0;
+    }
+    internalPlay() {
+        this.started = true;
+        Sound.active.push(this);
+        const self = this;
+        this.endEvent = () => { self.stop(); };
+        this.sound.addEventListener("ended", this.endEvent);
+        this.sound.loop = this.loop;
+        this.internalUpdateVolume();
+        this.internalUpdateMuted();
+        if (!this._paused)
+            this.sound.play();
+    }
+    internalUpdateVolume() {
+        if (this.started) {
+            let groupVolume = 1;
+            for (const group of this.groups)
+                groupVolume *= audioGroup_1.AudioGroup.volume(group);
+            this.sound.volume = this._volume * groupVolume * core_1.Engine.volume;
+        }
+    }
+    internalUpdateMuted() {
+        if (this.started) {
+            let groupMuted = false;
+            for (let i = 0; i < this.groups.length && !groupMuted; i++)
+                groupMuted = groupMuted || audioGroup_1.AudioGroup.muted(this.groups[i]);
+            this.sound.muted = core_1.Engine.muted || this._muted || groupMuted;
+        }
+    }
+    update() {
+        if (this.fadePercent < 1) {
+            this.fadePercent = util_1.Calc.approach(this.fadePercent, 1, core_1.Engine.delta / this.fadeDuration);
+            this.volume = this.fadeFrom + (this.fadeTo - this.fadeFrom) * this.fadeEase(this.fadePercent);
+        }
+    }
+    fade(volume, duration, ease) {
+        this.fadeFrom = this.volume;
+        this.fadeTo = volume;
+        this.fadeDuration = Math.max(0.001, duration);
+        this.fadeEase = (ease !== undefined ? ease : (n) => n);
+        this.fadePercent = 0;
+        return this;
+    }
+}
+Sound.active = [];
+exports.Sound = Sound;
+
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * A static reference to all the Assets currently loaded in the game
+ */
+class Assets {
+    /**
+     * Unloads all the assets in the entire game
+     */
+    static unload() {
+        // most of these can just lose reference
+        Assets.json = {};
+        Assets.xml = {};
+        Assets.text = {};
+        Assets.atlases = {};
+        // textures actually need to be unloaded
+        for (const path in Assets.textures)
+            Assets.textures[path].dispose();
+        Assets.textures = {};
+        for (const path in Assets.sounds)
+            Assets.sounds[path].dispose();
+        Assets.sounds = {};
+    }
+}
+Assets.textures = {};
+Assets.json = {};
+Assets.xml = {};
+Assets.text = {};
+Assets.sounds = {};
+Assets.atlases = {};
+exports.Assets = Assets;
+
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const fosterWebGLTexture_1 = __webpack_require__(9);
+const engine_1 = __webpack_require__(1);
+const util_1 = __webpack_require__(0);
+/**
+ * A Texture used for Rendering
+ */
+class Texture {
+    /**
+     * Creates a new Texture from the WebGL Texture
+     */
+    constructor(texture, bounds, frame) {
+        /**
+         * The cropped Bounds of the Texture within its WebGL Texture
+         */
+        this.bounds = null;
+        /**
+         * The Frame adds padding around the existing Bounds when rendered
+         */
+        this.frame = null;
+        /**
+         * A reference to the full WebGL Texture
+         */
+        this.texture = null;
+        /**
+         * Metadata attached to this texture
+         */
+        this.metadata = {};
+        this.texture = texture;
+        this.bounds = bounds || new util_1.Rectangle(0, 0, texture.width, texture.height);
+        this.frame = frame || new util_1.Rectangle(0, 0, this.bounds.width, this.bounds.height);
+        this.center = new util_1.Vector(this.frame.width / 2, this.frame.height / 2);
+    }
+    /**
+     * The width of the Texture when rendered (frame.width)
+     */
+    get width() { return this.frame.width; }
+    /**
+     * The height of the Texture when rendered (frame.height)
+     */
+    get height() { return this.frame.height; }
+    /**
+     * The clipped width of the Texture (bounds.width)
+     */
+    get clippedWidth() { return this.bounds.width; }
+    /**
+     * The clipped height of the Texture (bounds.height)
+     */
+    get clippedHeight() { return this.bounds.height; }
+    /**
+     * Creates a Subtexture from this texture
+     */
+    getSubtexture(clip, sub) {
+        if (sub === undefined)
+            sub = new Texture(this.texture);
+        else
+            sub.texture = this.texture;
+        sub.bounds.x = this.bounds.x + Math.max(0, Math.min(this.bounds.width, clip.x + this.frame.x));
+        sub.bounds.y = this.bounds.y + Math.max(0, Math.min(this.bounds.height, clip.y + this.frame.y));
+        sub.bounds.width = Math.max(0, this.bounds.x + Math.min(this.bounds.width, clip.x + this.frame.x + clip.width) - sub.bounds.x);
+        sub.bounds.height = Math.max(0, this.bounds.y + Math.min(this.bounds.height, clip.y + this.frame.y + clip.height) - sub.bounds.y);
+        sub.frame.x = Math.min(0, this.frame.x + clip.x);
+        sub.frame.y = Math.min(0, this.frame.y + clip.y);
+        sub.frame.width = clip.width;
+        sub.frame.height = clip.height;
+        sub.center = new util_1.Vector(sub.frame.width / 2, sub.frame.height / 2);
+        return sub;
+    }
+    /**
+     * Creates a clone of this texture
+     */
+    clone() {
+        return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
+    }
+    toString() {
+        return (this.texture.path +
+            ":[" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
+            "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
+    }
+    /**
+     * Draws this texture
+     */
+    draw(position, origin, scale, rotation, color, flipX, flipY) {
+        engine_1.Engine.graphics.texture(this, position.x, position.y, null, color, origin, scale, rotation, flipX, flipY);
+    }
+    /**
+     * Draws a cropped version of this texture
+     */
+    drawCropped(position, crop, origin, scale, rotation, color, flipX, flipY) {
+        engine_1.Engine.graphics.texture(this, position.x, position.y, crop, color, origin, scale, rotation, flipX, flipY);
+    }
+    /**
+     * Draws this texture, center aligned
+     */
+    drawCenter(position, scale, rotation, color, flipX, flipY) {
+        engine_1.Engine.graphics.texture(this, position.x, position.y, null, color, this.center, scale, rotation, flipX, flipY);
+    }
+    /**
+     * Draws a cropped version of this texture, center aligned
+     */
+    drawCenterCropped(position, crop, scale, rotation, color, flipX, flipY) {
+        engine_1.Engine.graphics.texture(this, position.x, position.y, crop, color, new util_1.Vector(crop.width / 2, crop.height / 2), scale, rotation, flipX, flipY);
+    }
+    /**
+     * Draws this texture, justified
+     */
+    drawJustify(position, justify, scale, rotation, color, flipX, flipY) {
+        engine_1.Engine.graphics.texture(this, position.x, position.y, null, color, new util_1.Vector(this.width * justify.x, this.height * justify.y), scale, rotation, flipX, flipY);
+    }
+    /**
+     * Draws a cropped version of this texture, justified
+     */
+    drawJustifyCropped(position, crop, justify, scale, rotation, color, flipX, flipY) {
+        engine_1.Engine.graphics.texture(this, position.x, position.y, crop, color, new util_1.Vector(crop.width * justify.x, crop.height * justify.y), scale, rotation, flipX, flipY);
+    }
+    /**
+     * Disposes this texture and its WebGL Texture
+     */
+    dispose() {
+        this.texture.dispose();
+        this.texture = null;
+    }
+    /**
+     * Creats a new Texture from an HTML Image Element
+     */
+    static create(image) {
+        const gl = engine_1.Engine.graphics.gl;
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        return new Texture(new fosterWebGLTexture_1.FosterWebGLTexture(tex, image.width, image.height));
+    }
+    /**
+     * Creates a new Texture from the given RGBA array
+     */
+    static createFromData(data, width, height) {
+        const gl = engine_1.Engine.graphics.gl;
+        const tex = gl.createTexture();
+        // convert data into bytes (0-1 to 0-255)
+        const input = [];
+        for (let i = 0; i < data.length; i++)
+            input[i] = Math.floor(data[i] * 255);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(input));
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        return new Texture(new fosterWebGLTexture_1.FosterWebGLTexture(tex, width, height));
+    }
+}
+exports.Texture = Texture;
+
+
+/***/ }),
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(__dirname) {var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-var path = __webpack_require__(11)
+var path = __webpack_require__(21)
 
 var pathFile = path.join(__dirname, 'path.txt')
 
@@ -899,7 +1898,7 @@ if (fs.existsSync(pathFile)) {
 /* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ }),
-/* 11 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -1127,59 +2126,56 @@ var substr = 'ab'.substr(-1) === 'b'
     }
 ;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(41)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(42)))
 
 /***/ }),
-/* 12 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+Object.defineProperty(exports, "__esModule", { value: true });
+const util_1 = __webpack_require__(0);
+const renderer_1 = __webpack_require__(10);
+/**
+ * Uses the Texture Shader when rendering
+ */
+class SpriteRenderer extends renderer_1.Renderer {
+    constructor() {
+        super();
+        this.shader = util_1.Shaders.texture;
+        this.shaderCameraUniformName = "matrix";
+    }
 }
-Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(13));
-__export(__webpack_require__(48));
-var particleSystem_1 = __webpack_require__(52);
-exports.ParticleSystem = particleSystem_1.ParticleSystem;
-var particleTemplate_1 = __webpack_require__(15);
-exports.ParticleTemplate = particleTemplate_1.ParticleTemplate;
-var alarm_1 = __webpack_require__(54);
-exports.Alarm = alarm_1.Alarm;
-var coroutine_1 = __webpack_require__(55);
-exports.Coroutine = coroutine_1.Coroutine;
-var physics_1 = __webpack_require__(56);
-exports.Physics = physics_1.Physics;
-var tween_1 = __webpack_require__(57);
-exports.Tween = tween_1.Tween;
+exports.SpriteRenderer = SpriteRenderer;
 
 
 /***/ }),
-/* 13 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var collider_1 = __webpack_require__(4);
+var collider_1 = __webpack_require__(5);
 exports.Collider = collider_1.Collider;
-var hitbox_1 = __webpack_require__(46);
+var hitbox_1 = __webpack_require__(49);
 exports.Hitbox = hitbox_1.Hitbox;
-var hitgrid_1 = __webpack_require__(47);
+var hitgrid_1 = __webpack_require__(50);
 exports.Hitgrid = hitgrid_1.Hitgrid;
 
 
 /***/ }),
-/* 14 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-class Graphic extends core_1.Component {
+const engine_1 = __webpack_require__(1);
+const component_1 = __webpack_require__(2);
+const util_1 = __webpack_require__(0);
+class Graphic extends component_1.Component {
     constructor(texture, position) {
         super();
         this.scale = new util_1.Vector(1, 1);
@@ -1194,7 +2190,7 @@ class Graphic extends core_1.Component {
             this.crop = new util_1.Rectangle(0, 0, texture.width, texture.height);
         }
         if (position)
-            this.position = position;
+            this.position.copy(position);
     }
     get width() { return this.crop ? this.crop.width : (this.texture ? this.texture.width : 0); }
     get height() { return this.crop ? this.crop.height : (this.texture ? this.texture.height : 0); }
@@ -1205,20 +2201,20 @@ class Graphic extends core_1.Component {
         this.origin.set(this.width * x, this.height * y);
     }
     render(camera) {
-        core_1.Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, util_1.Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
+        engine_1.Engine.graphics.texture(this.texture, this.scenePosition.x, this.scenePosition.y, this.crop, util_1.Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation, this.flipX, this.flipY);
     }
 }
 exports.Graphic = Graphic;
 
 
 /***/ }),
-/* 15 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const util_1 = __webpack_require__(1);
+const util_1 = __webpack_require__(0);
 class ParticleTemplate {
     constructor(name) {
         this.texture = null;
@@ -1405,20 +2401,7 @@ exports.ParticleTemplate = ParticleTemplate;
 
 
 /***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var primitiveRenderer_1 = __webpack_require__(58);
-exports.PrimitiveRenderer = primitiveRenderer_1.PrimitiveRenderer;
-var spriteRenderer_1 = __webpack_require__(59);
-exports.SpriteRenderer = spriteRenderer_1.SpriteRenderer;
-
-
-/***/ }),
-/* 17 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1429,258 +2412,16 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(0));
-__export(__webpack_require__(1));
-__export(__webpack_require__(12));
-__export(__webpack_require__(16));
 __export(__webpack_require__(3));
-__export(__webpack_require__(2));
+__export(__webpack_require__(0));
+__export(__webpack_require__(48));
+__export(__webpack_require__(61));
+__export(__webpack_require__(6));
+__export(__webpack_require__(4));
 
 
 /***/ }),
-/* 18 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(0);
-const assets_1 = __webpack_require__(2);
-const collider_1 = __webpack_require__(4);
-const input_1 = __webpack_require__(3);
-const util_1 = __webpack_require__(1);
-/**
- * Current game Client
- */
-var Client;
-(function (Client) {
-    /**
-     * Running in Electron
-     */
-    Client[Client["Electron"] = 0] = "Electron";
-    /**
-     * Running in the Browser
-     */
-    Client[Client["Browser"] = 1] = "Browser";
-})(Client = exports.Client || (exports.Client = {}));
-/**
- * Core of the Foster Engine. Initializes and Runs the game.
- */
-class Engine {
-    constructor() {
-        this.scene = null;
-        this.nextScene = null;
-        if (Engine.instance != null)
-            throw "Engine has already been instantiated";
-        if (!Engine.started)
-            throw "Engine must be instantiated through static Engine.start";
-        Engine.instance = this;
-        this.client = Client.Browser;
-        if (typeof (window) !== "undefined") {
-            const w = window;
-            if (w.process !== undefined && w.process.versions !== undefined && w.process.versions.electron !== undefined)
-                this.client = Client.Electron;
-        }
-        this.startTime = Date.now();
-    }
-    /**
-     * The root HTML event that the game Canvas is created in (for the actual Canvas element, see Engine.graphics.screen)
-     */
-    static get root() { return Engine.instance.root; }
-    /**
-     * Current Client (Client.Desktop if in Electron and Client.Web if in the browser)
-     */
-    static get client() { return Engine.instance.client; }
-    /**
-     * Gets the current game Scene
-     */
-    static get scene() {
-        return (Engine.instance.nextScene != null ? Engine.instance.nextScene : Engine.instance.scene);
-    }
-    /**
-     * Gets the Game Width, before being scaled up / down to fit in the screen
-     */
-    static get width() { return Engine.instance.width; }
-    /**
-     * Gets the Game Height, before being scaled up / down to fit in the screen
-     */
-    static get height() { return Engine.instance.height; }
-    /**
-     * Toggles Debug Mode, which shows hitboxes and allows entities to be dragged around
-     */
-    static get debugMode() { return Engine.instance.debuggerEnabled; }
-    static set debugMode(v) { Engine.instance.debuggerEnabled = v; }
-    /**
-     * Delta Time (time, in seconds, since the last frame)
-     */
-    static get delta() { return Engine.instance.dt; }
-    /**
-     * Total elapsed game time (time, in seconds, since the Engine was started)
-     */
-    static get elapsed() { return Engine.instance.elapsed; }
-    /**
-     * Gets the current Engine graphics (used for all rendering)
-     */
-    static get graphics() { return Engine.instance.graphics; }
-    /**
-     * Gets or sets the global sound volume multiplier
-     */
-    static get volume() { return Engine._volume; }
-    static set volume(n) {
-        Engine._volume = n;
-        for (const sound of assets_1.Sound.active)
-            sound.volume = sound.volume;
-    }
-    /**
-     * Mutes or Unmutes the entire game
-     */
-    static get muted() { return Engine._muted; }
-    static set muted(m) {
-        Engine._muted = m;
-        for (const sound of assets_1.Sound.active)
-            sound.muted = sound.muted;
-    }
-    /**
-     * Starts up the Game Engine
-     * @param title 	Window Title
-     * @param width 	Game Width
-     * @param height 	Game Height
-     * @param scale 	Scales the Window (on Desktop) to width * scale and height * scale
-     * @param ready 	Callback when the Engine is ready
-     */
-    static start(title, width, height, scale, ready) {
-        // instantiate
-        Engine.started = true;
-        new Engine();
-        new _1.GameWindow();
-        // window
-        _1.GameWindow.title = title;
-        _1.GameWindow.resize(width * scale, height * scale);
-        _1.GameWindow.center();
-        // wait for window
-        window.onload = () => {
-            const c = String.fromCharCode(0x25cf);
-            console.log("%c " + c + " ENGINE START " + c + " ", "background:#222; color:#ff44aa;");
-            Engine.instance.root = document.getElementsByTagName("body")[0];
-            // init
-            collider_1.DefaultOverlapTests();
-            _1.IO.init();
-            Engine.instance.graphics = new _1.Graphics(Engine.instance);
-            Engine.instance.graphics.load();
-            Engine.resize(width, height);
-            util_1.Shaders.init();
-            input_1.Mouse.init();
-            input_1.Keyboard.init();
-            // start update loop
-            Engine.instance.step();
-            // ready callback for game
-            if (ready !== undefined)
-                ready();
-        };
-    }
-    /**
-     * Goes to a new Scene
-     * @param scene 	The Scene to go to
-     * @param disposeLastScene 	If the last scene should be disposed
-     */
-    static goto(scene, disposeLastScene) {
-        const lastScene = Engine.scene;
-        Engine.instance.nextScene = scene;
-        Engine.instance.disposeLastScene = disposeLastScene;
-        return scene;
-    }
-    /**
-     * Ends the Game
-     */
-    static exit() {
-        if (Engine.started && !Engine.exiting)
-            Engine.instance.exit();
-    }
-    /**
-     * Resizes the game to the given size
-     * @param width 	new Game Width
-     * @param height 	new Game Height
-     */
-    static resize(width, height) {
-        Engine.instance.width = width;
-        Engine.instance.height = height;
-        Engine.instance.graphics.resize();
-    }
-    /**
-     * Checks that the given value is true, otherwise throws an error
-     */
-    static assert(value, message) {
-        if (!value)
-            throw message;
-        return value;
-    }
-    step() {
-        // time management!
-        const time = Date.now();
-        this.elapsed = Math.floor(time - this.startTime) / 1000;
-        this.dt = Math.floor(time - this.lastTime) / 1000;
-        this.lastTime = time;
-        // update graphics
-        this.graphics.update();
-        // update inputs
-        input_1.Mouse.update();
-        input_1.Keyboard.update();
-        // swap scenes
-        if (this.nextScene != null) {
-            if (this.scene != null) {
-                this.scene.ended();
-                if (this.disposeLastScene)
-                    this.scene.dispose();
-            }
-            this.scene = this.nextScene;
-            this.nextScene = null;
-            this.scene.begin();
-        }
-        // update scene
-        if (this.scene != null)
-            this.scene.update();
-        if (this.nextScene == null) {
-            // begin drawing
-            this.graphics.reset();
-            // render current scene
-            if (this.scene != null)
-                this.scene.render();
-            // final flush on graphics
-            this.graphics.finalize();
-        }
-        // update sounds
-        for (const sound of assets_1.Sound.active)
-            sound.update();
-        // do it all again!
-        if (!Engine.exiting)
-            requestAnimationFrame(this.step.bind(this));
-    }
-    exit() {
-        Engine.exiting = true;
-        assets_1.Assets.unload();
-        Engine.graphics.unload();
-        if (Engine.client === Client.Electron) {
-            const remote = __webpack_require__(10).remote;
-            const win = remote.getCurrentWindow();
-            win.close();
-        }
-    }
-}
-/**
- * Foster Engine version
- * major.minor.build
- */
-Engine.version = "0.1.11";
-Engine._volume = 1;
-Engine._muted = false;
-Engine.instance = null;
-Engine.started = false;
-Engine.exiting = false;
-exports.Engine = Engine;
-
-
-/***/ }),
-/* 19 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1689,55 +2430,23 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(20));
-__export(__webpack_require__(28));
-__export(__webpack_require__(29));
+__export(__webpack_require__(11));
+__export(__webpack_require__(35));
+__export(__webpack_require__(15));
 
 
 /***/ }),
-/* 20 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const util_1 = __webpack_require__(1);
-/**
- * An animation template handles a single Animation in an Sprite Template (ex. Player.Run)
- */
-class SpriteAnimationTemplate {
-    constructor(name, speed, frames, loops, position, origin) {
-        /**
-         * If this animation should loop
-         */
-        this.loops = false;
-        /**
-         * What animation(s) the Sprite should go to next upon completion
-         */
-        this.goto = null;
-        this.name = name;
-        this.speed = speed;
-        this.frames = frames;
-        this.loops = loops || false;
-        this.position = (position || new util_1.Vector(0, 0));
-        this.origin = (origin || new util_1.Vector(0, 0));
-    }
-}
-exports.SpriteAnimationTemplate = SpriteAnimationTemplate;
-
-
-/***/ }),
-/* 21 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const matrix_1 = __webpack_require__(5);
-const vector_1 = __webpack_require__(6);
-const rectangle_1 = __webpack_require__(8);
-const core_1 = __webpack_require__(0);
-const input_1 = __webpack_require__(3);
+const matrix_1 = __webpack_require__(7);
+const vector_1 = __webpack_require__(8);
+const rectangle_1 = __webpack_require__(13);
+const core_1 = __webpack_require__(3);
+const input_1 = __webpack_require__(6);
 /**
  * Camera used to create a Matrix during rendering. Scenes and Renderers may have Cameras
  */
@@ -1796,7 +2505,7 @@ exports.Camera = Camera;
 
 
 /***/ }),
-/* 22 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1974,14 +2683,14 @@ var Key;
 
 
 /***/ }),
-/* 23 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
+const core_1 = __webpack_require__(3);
+const util_1 = __webpack_require__(0);
 class Mouse {
     static get x() { return this._position.x; }
     static get y() { return this._position.y; }
@@ -2049,7 +2758,7 @@ exports.Mouse = Mouse;
 
 
 /***/ }),
-/* 24 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2125,7 +2834,7 @@ exports.Color = Color;
 
 
 /***/ }),
-/* 25 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2203,7 +2912,7 @@ exports.Ease = Ease;
 
 
 /***/ }),
-/* 26 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2318,13 +3027,13 @@ exports.ObjectList = ObjectList;
 
 
 /***/ }),
-/* 27 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Shader = __webpack_require__(9);
+const Shader = __webpack_require__(14);
 /**
  * Default 2D shaders
  */
@@ -2426,13 +3135,13 @@ exports.Shaders = Shaders;
 
 
 /***/ }),
-/* 28 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(2);
+const spriteTemplate_1 = __webpack_require__(15);
 /**
  * Sprite Bank holds all the Sprite templates in the game
  */
@@ -2441,7 +3150,7 @@ class SpriteBank {
      * Creates a new Animation Set of the given Name
      */
     static create(name) {
-        const animSet = new _1.SpriteTemplate(name);
+        const animSet = new spriteTemplate_1.SpriteTemplate(name);
         SpriteBank.bank[name] = animSet;
         return animSet;
     }
@@ -2466,70 +3175,7 @@ exports.SpriteBank = SpriteBank;
 
 
 /***/ }),
-/* 29 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(2);
-const util_1 = __webpack_require__(1);
-/**
- * Sprite Template holds a list of Animation Templates, referenced by name
- */
-class SpriteTemplate {
-    constructor(name) {
-        /**
-         * A list of all the animation template, by their name
-         */
-        this.animations = {};
-        this.name = name;
-    }
-    /**
-     * Adds a new Animation Template to this set
-     */
-    add(name, speed, frames, loops, position, origin) {
-        const anim = new _1.SpriteAnimationTemplate(name, speed, frames, loops, position, origin);
-        this.animations[name] = anim;
-        if (this.first == null)
-            this.first = anim;
-        return this;
-    }
-    /**
-     * Adds a new frame-based Animation Template to this set
-     */
-    addFrameAnimation(name, speed, tex, frameWidth, frameHeight, frames, loops, position, origin) {
-        const columns = Math.floor(tex.width / frameWidth);
-        const texFrames = [];
-        for (const index of frames) {
-            const tx = (index % columns) * frameWidth;
-            const ty = Math.floor(index / columns) * frameWidth;
-            texFrames.push(tex.getSubtexture(new util_1.Rectangle(tx, ty, frameWidth, frameHeight)));
-        }
-        const anim = new _1.SpriteAnimationTemplate(name, speed, texFrames, loops, position, origin);
-        this.animations[name] = anim;
-        if (this.first == null)
-            this.first = anim;
-        return this;
-    }
-    /**
-     * Gets an animation template by its name
-     */
-    get(name) {
-        return this.animations[name];
-    }
-    /**
-     * Checks if an animation template exists by the given name
-     */
-    has(name) {
-        return this.animations[name] !== undefined;
-    }
-}
-exports.SpriteTemplate = SpriteTemplate;
-
-
-/***/ }),
-/* 30 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2538,50 +3184,13 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(31));
-__export(__webpack_require__(32));
-__export(__webpack_require__(33));
+__export(__webpack_require__(16));
+__export(__webpack_require__(37));
+__export(__webpack_require__(17));
 
 
 /***/ }),
-/* 31 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(2);
-class AudioGroup {
-    static volume(group, value) {
-        if (value !== undefined && AudioGroup.volumes[group] !== value) {
-            AudioGroup.volumes[group] = value;
-            for (const sound of _1.Sound.active)
-                if (sound.ingroup(group))
-                    sound.volume = sound.volume;
-        }
-        if (AudioGroup.volumes[group] !== undefined)
-            return AudioGroup.volumes[group];
-        return 1;
-    }
-    static muted(group, value) {
-        if (value !== undefined && AudioGroup.mutes[group] !== value) {
-            AudioGroup.mutes[group] = value;
-            for (const sound of _1.Sound.active)
-                if (sound.ingroup(group))
-                    sound.muted = sound.muted;
-        }
-        if (AudioGroup.mutes[group] !== undefined)
-            return AudioGroup.mutes[group];
-        return false;
-    }
-}
-AudioGroup.volumes = {};
-AudioGroup.mutes = {};
-exports.AudioGroup = AudioGroup;
-
-
-/***/ }),
-/* 32 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2629,214 +3238,7 @@ exports.AudioSource = AudioSource;
 
 
 /***/ }),
-/* 33 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(2);
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-class Sound {
-    /**
-     * Creates a new sound of the given handle
-     */
-    constructor(handle, groups) {
-        this.sound = null;
-        this.started = false;
-        this.groups = [];
-        this.fadePercent = 1;
-        this.fadeDuration = 1;
-        this._loop = false;
-        this._paused = false;
-        this._muted = false;
-        this._volume = 1;
-        this.source = _1.Assets.sounds[handle];
-        if (groups && groups.length > 0)
-            for (const group in groups)
-                this.group(group);
-    }
-    /**
-     * Gets if the sound is currently playing
-     */
-    get playing() { return this.started && !this._paused; }
-    /**
-     * Gets or sets whether the sound is looping
-     */
-    get loop() { return this._loop; }
-    set loop(v) {
-        this._loop = v;
-        if (this.started)
-            this.sound.loop = this._loop;
-    }
-    /**
-     * Gets if the sound is paused
-     */
-    get paused() { return this._paused; }
-    /**
-     * Gets or sets whether the current sound is muted
-     */
-    get muted() { return this._muted; }
-    set muted(m) {
-        this._muted = m;
-        this.internalUpdateMuted();
-    }
-    /**
-     * Gets or sets the volume of this sound
-     */
-    get volume() { return this._volume; }
-    set volume(n) {
-        this._volume = n;
-        this.internalUpdateVolume();
-    }
-    /**
-     * Plays the sound
-     */
-    play(loop) {
-        // should this sound loop?
-        this.loop = loop;
-        // reset current sound if we're playing something already
-        if (this.sound != null && this.started) {
-            this.sound.currentTime = 0;
-            if (this._paused)
-                this.resume();
-        }
-        else {
-            this.sound = this.source.requestSound();
-            if (this.sound != null) {
-                if (this.sound.readyState < 3) {
-                    const self = this;
-                    self.loadedEvent = () => {
-                        if (self.sound != null)
-                            self.internalPlay();
-                        self.sound.removeEventListener("loadeddata", self.loadedEvent);
-                        self.loadedEvent = null;
-                    };
-                    this.sound.addEventListener("loadeddata", self.loadedEvent);
-                }
-                else
-                    this.internalPlay();
-            }
-        }
-        return this;
-    }
-    /**
-     * Resumes if the sound was paused
-     */
-    resume() {
-        if (this.started && this._paused)
-            this.sound.play();
-        this._paused = false;
-        return this;
-    }
-    /**
-     * Pauses a sound
-     */
-    pause() {
-        if (this.started && !this._paused)
-            this.sound.pause();
-        this._paused = true;
-        return this;
-    }
-    /**
-     * Completely stops a sound
-     */
-    stop() {
-        if (this.sound != null) {
-            this.source.returnSound(this.sound);
-            if (this.started) {
-                this.sound.pause();
-                this.sound.currentTime = 0;
-                this.sound.volume = 1;
-                this.sound.muted = false;
-                this.sound.removeEventListener("ended", this.endEvent);
-                if (this.loadedEvent != null)
-                    this.sound.removeEventListener("loadeddata", this.loadedEvent);
-            }
-            this.sound = null;
-            this.started = false;
-            this._paused = false;
-            this.fadePercent = 1;
-            const i = Sound.active.indexOf(this);
-            if (i >= 0)
-                Sound.active.splice(i, 1);
-        }
-        return this;
-    }
-    group(group) {
-        this.groups.push(group);
-        this.internalUpdateVolume();
-        this.internalUpdateMuted();
-        return this;
-    }
-    ungroup(group) {
-        const index = this.groups.indexOf(group);
-        if (index >= 0) {
-            this.groups.splice(index, 1);
-            this.internalUpdateVolume();
-            this.internalUpdateMuted();
-        }
-        return this;
-    }
-    ungroupAll() {
-        this.groups = [];
-        this.internalUpdateVolume();
-        this.internalUpdateMuted();
-        return this;
-    }
-    ingroup(group) {
-        return this.groups.indexOf(group) >= 0;
-    }
-    internalPlay() {
-        this.started = true;
-        Sound.active.push(this);
-        const self = this;
-        this.endEvent = () => { self.stop(); };
-        this.sound.addEventListener("ended", this.endEvent);
-        this.sound.loop = this.loop;
-        this.internalUpdateVolume();
-        this.internalUpdateMuted();
-        if (!this._paused)
-            this.sound.play();
-    }
-    internalUpdateVolume() {
-        if (this.started) {
-            let groupVolume = 1;
-            for (const group of this.groups)
-                groupVolume *= _1.AudioGroup.volume(group);
-            this.sound.volume = this._volume * groupVolume * core_1.Engine.volume;
-        }
-    }
-    internalUpdateMuted() {
-        if (this.started) {
-            let groupMuted = false;
-            for (let i = 0; i < this.groups.length && !groupMuted; i++)
-                groupMuted = groupMuted || _1.AudioGroup.muted(this.groups[i]);
-            this.sound.muted = core_1.Engine.muted || this._muted || groupMuted;
-        }
-    }
-    update() {
-        if (this.fadePercent < 1) {
-            this.fadePercent = util_1.Calc.approach(this.fadePercent, 1, core_1.Engine.delta / this.fadeDuration);
-            this.volume = this.fadeFrom + (this.fadeTo - this.fadeFrom) * this.fadeEase(this.fadePercent);
-        }
-    }
-    fade(volume, duration, ease) {
-        this.fadeFrom = this.volume;
-        this.fadeTo = volume;
-        this.fadeDuration = Math.max(0.001, duration);
-        this.fadeEase = (ease !== undefined ? ease : (n) => n);
-        this.fadePercent = 0;
-        return this;
-    }
-}
-Sound.active = [];
-exports.Sound = Sound;
-
-
-/***/ }),
-/* 34 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2845,21 +3247,21 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(35));
-__export(__webpack_require__(36));
-__export(__webpack_require__(37));
-__export(__webpack_require__(38));
+__export(__webpack_require__(39));
+__export(__webpack_require__(9));
+__export(__webpack_require__(40));
+__export(__webpack_require__(19));
 
 
 /***/ }),
-/* 35 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(2);
-const util_1 = __webpack_require__(1);
+const texture_1 = __webpack_require__(19);
+const util_1 = __webpack_require__(0);
 /**
  * A single Texture which contains subtextures by name
  */
@@ -2938,10 +3340,10 @@ class AtlasReaders {
             if (obj.trimmed) {
                 const source = obj.spriteSourceSize;
                 const size = obj.sourceSize;
-                tex = new _1.Texture(into.texture.texture, new util_1.Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new util_1.Rectangle(-source.x, -source.y, size.w, size.h));
+                tex = new texture_1.Texture(into.texture.texture, new util_1.Rectangle(bounds.x, bounds.y, bounds.w, bounds.h), new util_1.Rectangle(-source.x, -source.y, size.w, size.h));
             }
             else {
-                tex = new _1.Texture(into.texture.texture, new util_1.Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
+                tex = new texture_1.Texture(into.texture.texture, new util_1.Rectangle(bounds.x, bounds.y, bounds.w, bounds.h));
             }
             if (obj.duration !== undefined)
                 tex.metadata.duration = parseInt(obj.duration, 10);
@@ -2953,47 +3355,14 @@ exports.AtlasReaders = AtlasReaders;
 
 
 /***/ }),
-/* 36 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-/**
- * Internal Texture used for Foster during Rendering
- */
-class FosterWebGLTexture {
-    constructor(texture, width, height) {
-        this.disposed = false;
-        this.webGLTexture = texture;
-        this.width = width;
-        this.height = height;
-    }
-    dispose() {
-        if (!this.disposed) {
-            const gl = core_1.Engine.graphics.gl;
-            gl.deleteTexture(this.webGLTexture);
-            this.path = "";
-            this.webGLTexture = null;
-            this.width = 1;
-            this.height = 1;
-            this.disposed = true;
-        }
-    }
-}
-exports.FosterWebGLTexture = FosterWebGLTexture;
-
-
-/***/ }),
-/* 37 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(2);
-const core_1 = __webpack_require__(0);
+const fosterWebGLTexture_1 = __webpack_require__(9);
+const engine_1 = __webpack_require__(1);
 /**
  * The Render Target is used for rendering graphics to
  */
@@ -3022,7 +3391,7 @@ class RenderTarget {
     dispose() {
         this.texture.dispose();
         this.texture = null;
-        const gl = core_1.Engine.graphics.gl;
+        const gl = engine_1.Engine.graphics.gl;
         gl.deleteFramebuffer(this.frameBuffer);
         gl.deleteBuffer(this.vertexBuffer);
         gl.deleteBuffer(this.texcoordBuffer);
@@ -3036,7 +3405,7 @@ class RenderTarget {
      * Creates a new Render Target of the given width and height
      */
     static create(width, height) {
-        const gl = core_1.Engine.graphics.gl;
+        const gl = engine_1.Engine.graphics.gl;
         const frameBuffer = gl.createFramebuffer();
         const tex = gl.createTexture();
         gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
@@ -3053,184 +3422,21 @@ class RenderTarget {
         const colorBuffer = gl.createBuffer();
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        return new RenderTarget(frameBuffer, new _1.FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
+        return new RenderTarget(frameBuffer, new fosterWebGLTexture_1.FosterWebGLTexture(tex, width, height), vertexBuffer, colorBuffer, uvBuffer);
     }
 }
 exports.RenderTarget = RenderTarget;
 
 
 /***/ }),
-/* 38 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(2);
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-/**
- * A Texture used for Rendering
- */
-class Texture {
-    /**
-     * Creates a new Texture from the WebGL Texture
-     */
-    constructor(texture, bounds, frame) {
-        /**
-         * The cropped Bounds of the Texture within its WebGL Texture
-         */
-        this.bounds = null;
-        /**
-         * The Frame adds padding around the existing Bounds when rendered
-         */
-        this.frame = null;
-        /**
-         * A reference to the full WebGL Texture
-         */
-        this.texture = null;
-        /**
-         * Metadata attached to this texture
-         */
-        this.metadata = {};
-        this.texture = texture;
-        this.bounds = bounds || new util_1.Rectangle(0, 0, texture.width, texture.height);
-        this.frame = frame || new util_1.Rectangle(0, 0, this.bounds.width, this.bounds.height);
-        this.center = new util_1.Vector(this.frame.width / 2, this.frame.height / 2);
-    }
-    /**
-     * The width of the Texture when rendered (frame.width)
-     */
-    get width() { return this.frame.width; }
-    /**
-     * The height of the Texture when rendered (frame.height)
-     */
-    get height() { return this.frame.height; }
-    /**
-     * The clipped width of the Texture (bounds.width)
-     */
-    get clippedWidth() { return this.bounds.width; }
-    /**
-     * The clipped height of the Texture (bounds.height)
-     */
-    get clippedHeight() { return this.bounds.height; }
-    /**
-     * Creates a Subtexture from this texture
-     */
-    getSubtexture(clip, sub) {
-        if (sub === undefined)
-            sub = new Texture(this.texture);
-        else
-            sub.texture = this.texture;
-        sub.bounds.x = this.bounds.x + Math.max(0, Math.min(this.bounds.width, clip.x + this.frame.x));
-        sub.bounds.y = this.bounds.y + Math.max(0, Math.min(this.bounds.height, clip.y + this.frame.y));
-        sub.bounds.width = Math.max(0, this.bounds.x + Math.min(this.bounds.width, clip.x + this.frame.x + clip.width) - sub.bounds.x);
-        sub.bounds.height = Math.max(0, this.bounds.y + Math.min(this.bounds.height, clip.y + this.frame.y + clip.height) - sub.bounds.y);
-        sub.frame.x = Math.min(0, this.frame.x + clip.x);
-        sub.frame.y = Math.min(0, this.frame.y + clip.y);
-        sub.frame.width = clip.width;
-        sub.frame.height = clip.height;
-        sub.center = new util_1.Vector(sub.frame.width / 2, sub.frame.height / 2);
-        return sub;
-    }
-    /**
-     * Creates a clone of this texture
-     */
-    clone() {
-        return new Texture(this.texture, this.bounds.clone(), this.frame.clone());
-    }
-    toString() {
-        return (this.texture.path +
-            ":[" + this.bounds.x + ", " + this.bounds.y + ", " + this.bounds.width + ", " + this.bounds.height + "]" +
-            "frame[" + this.frame.x + ", " + this.frame.y + ", " + this.frame.width + ", " + this.frame.height + "]");
-    }
-    /**
-     * Draws this texture
-     */
-    draw(position, origin, scale, rotation, color, flipX, flipY) {
-        core_1.Engine.graphics.texture(this, position.x, position.y, null, color, origin, scale, rotation, flipX, flipY);
-    }
-    /**
-     * Draws a cropped version of this texture
-     */
-    drawCropped(position, crop, origin, scale, rotation, color, flipX, flipY) {
-        core_1.Engine.graphics.texture(this, position.x, position.y, crop, color, origin, scale, rotation, flipX, flipY);
-    }
-    /**
-     * Draws this texture, center aligned
-     */
-    drawCenter(position, scale, rotation, color, flipX, flipY) {
-        core_1.Engine.graphics.texture(this, position.x, position.y, null, color, this.center, scale, rotation, flipX, flipY);
-    }
-    /**
-     * Draws a cropped version of this texture, center aligned
-     */
-    drawCenterCropped(position, crop, scale, rotation, color, flipX, flipY) {
-        core_1.Engine.graphics.texture(this, position.x, position.y, crop, color, new util_1.Vector(crop.width / 2, crop.height / 2), scale, rotation, flipX, flipY);
-    }
-    /**
-     * Draws this texture, justified
-     */
-    drawJustify(position, justify, scale, rotation, color, flipX, flipY) {
-        core_1.Engine.graphics.texture(this, position.x, position.y, null, color, new util_1.Vector(this.width * justify.x, this.height * justify.y), scale, rotation, flipX, flipY);
-    }
-    /**
-     * Draws a cropped version of this texture, justified
-     */
-    drawJustifyCropped(position, crop, justify, scale, rotation, color, flipX, flipY) {
-        core_1.Engine.graphics.texture(this, position.x, position.y, crop, color, new util_1.Vector(crop.width * justify.x, crop.height * justify.y), scale, rotation, flipX, flipY);
-    }
-    /**
-     * Disposes this texture and its WebGL Texture
-     */
-    dispose() {
-        this.texture.dispose();
-        this.texture = null;
-    }
-    /**
-     * Creats a new Texture from an HTML Image Element
-     */
-    static create(image) {
-        const gl = core_1.Engine.graphics.gl;
-        const tex = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        return new Texture(new _1.FosterWebGLTexture(tex, image.width, image.height));
-    }
-    /**
-     * Creates a new Texture from the given RGBA array
-     */
-    static createFromData(data, width, height) {
-        const gl = core_1.Engine.graphics.gl;
-        const tex = gl.createTexture();
-        const input = [];
-        for (let i = 0; i < data.length; i++)
-            input[i] = Math.floor(data[i] * 255);
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(data));
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        return new Texture(new _1.FosterWebGLTexture(tex, width, height));
-    }
-}
-exports.Texture = Texture;
-
-
-/***/ }),
-/* 39 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(2);
-const core_1 = __webpack_require__(0);
+const _1 = __webpack_require__(4);
+const core_1 = __webpack_require__(3);
 /**
  * Loads a set of assets
  */
@@ -3447,45 +3653,7 @@ exports.AssetLoader = AssetLoader;
 
 
 /***/ }),
-/* 40 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * A static reference to all the Assets currently loaded in the game
- */
-class Assets {
-    /**
-     * Unloads all the assets in the entire game
-     */
-    static unload() {
-        // most of these can just lose reference
-        Assets.json = {};
-        Assets.xml = {};
-        Assets.text = {};
-        Assets.atlases = {};
-        // textures actually need to be unloaded
-        for (const path in Assets.textures)
-            Assets.textures[path].dispose();
-        Assets.textures = {};
-        for (const path in Assets.sounds)
-            Assets.sounds[path].dispose();
-        Assets.sounds = {};
-    }
-}
-Assets.textures = {};
-Assets.json = {};
-Assets.xml = {};
-Assets.text = {};
-Assets.sounds = {};
-Assets.atlases = {};
-exports.Assets = Assets;
-
-
-/***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -3675,14 +3843,14 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 42 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
+const engine_1 = __webpack_require__(1);
+const util_1 = __webpack_require__(0);
 class Entity {
     constructor() {
         /**
@@ -3785,7 +3953,7 @@ class Entity {
      * Called via the Debug Renderer
      */
     debugRender(camera) {
-        _1.Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, util_1.Color.white);
+        engine_1.Engine.graphics.hollowRect(this.x - 5, this.y - 5, 10, 10, 1, util_1.Color.white);
         this.components.each((c) => {
             if (c.visible)
                 c.debugRender(camera);
@@ -3873,22 +4041,22 @@ exports.Entity = Entity;
 
 
 /***/ }),
-/* 43 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(0);
-const input_1 = __webpack_require__(3);
-const util_1 = __webpack_require__(1);
+const engine_1 = __webpack_require__(1);
+const input_1 = __webpack_require__(6);
+const util_1 = __webpack_require__(0);
 /**
  * Handels the Game Window and the differences between Browser / Desktop mode
  */
 class GameWindow {
     constructor() {
-        if (_1.Engine.client === _1.Client.Electron) {
-            const remote = __webpack_require__(10).remote;
+        if (engine_1.Engine.client === engine_1.Client.Electron) {
+            const remote = __webpack_require__(20).remote;
             GameWindow.browserWindow = remote.getCurrentWindow();
             GameWindow.screen = remote.screen;
         }
@@ -3901,7 +4069,7 @@ class GameWindow {
     }
     static set title(val) {
         GameWindow.titleName = val;
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             GameWindow.browserWindow.setTitle(val);
         else
             document.title = val;
@@ -3910,10 +4078,10 @@ class GameWindow {
      * Toggles Fullscreen Mode if running on the Desktop
      */
     static get fullscreen() {
-        return _1.Engine.client === _1.Client.Electron && GameWindow.browserWindow.isFullScreen();
+        return engine_1.Engine.client === engine_1.Client.Electron && GameWindow.browserWindow.isFullScreen();
     }
     static set fullscreen(val) {
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             GameWindow.browserWindow.setFullScreen(val);
         else
             console.warn("Can only set Fullscreen in Client.Desktop mode");
@@ -3922,64 +4090,64 @@ class GameWindow {
      * Returns the left position of the screen
      */
     static get screenLeft() {
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             return GameWindow.browserWindow.getPosition()[0];
         else
-            return _1.Engine.graphics.canvas.getBoundingClientRect().left;
+            return engine_1.Engine.graphics.canvas.getBoundingClientRect().left;
     }
     /**
      * Returns the Top position of the screen
      */
     static get screenTop() {
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             return GameWindow.browserWindow.getPosition()[1];
         else
-            return _1.Engine.graphics.canvas.getBoundingClientRect().top;
+            return engine_1.Engine.graphics.canvas.getBoundingClientRect().top;
     }
     /**
      * Returns the Width of the screen
      */
     static get screenWidth() {
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             return GameWindow.browserWindow.getContentSize()[0];
         else
-            return _1.Engine.graphics.canvas.getBoundingClientRect().width;
+            return engine_1.Engine.graphics.canvas.getBoundingClientRect().width;
     }
     /**
      * Returns the Height of the screen
      */
     static get screenHeight() {
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             return GameWindow.browserWindow.getContentSize()[1];
         else
-            return _1.Engine.graphics.canvas.getBoundingClientRect().height;
+            return engine_1.Engine.graphics.canvas.getBoundingClientRect().height;
     }
     /**
      * Resizes the Window if running in Desktop mode
      */
     static resize(width, height) {
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             GameWindow.browserWindow.setContentSize(width, height);
     }
     /**
      * Centers the Window if running in Desktop mode
      */
     static center() {
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             GameWindow.browserWindow.center();
     }
     /**
      * Toggles Developer tools if running in Desktop mode
      */
     static toggleDevTools() {
-        if (_1.Engine.client === _1.Client.Electron)
+        if (engine_1.Engine.client === engine_1.Client.Electron)
             GameWindow.browserWindow.toggleDevTools();
     }
     /**
      * Gets the absolute mouse position in the screen
      */
     static get screenMouse() {
-        if (_1.Engine.client === _1.Client.Electron) {
+        if (engine_1.Engine.client === engine_1.Client.Electron) {
             const pos = GameWindow.screen.getCursorScreenPoint();
             return new util_1.Vector(pos.x, pos.y);
         }
@@ -3990,15 +4158,15 @@ exports.GameWindow = GameWindow;
 
 
 /***/ }),
-/* 44 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(0);
-const assets_1 = __webpack_require__(2);
-const util_1 = __webpack_require__(1);
+const engine_1 = __webpack_require__(1);
+const assets_1 = __webpack_require__(4);
+const util_1 = __webpack_require__(0);
 var ResolutionStyle;
 (function (ResolutionStyle) {
     /** Renders the buffer at the Center of the Screen with no scaling */
@@ -4063,7 +4231,7 @@ class Graphics {
             alpha: false,
             antialias: false,
         });
-        _1.Engine.root.appendChild(this.canvas);
+        engine_1.Engine.root.appendChild(this.canvas);
         this.gl.enable(this.gl.BLEND);
         this.gl.disable(this.gl.DEPTH_TEST);
         this.gl.disable(this.gl.CULL_FACE);
@@ -4140,7 +4308,7 @@ class Graphics {
         // buffer
         if (this.buffer != null)
             this.buffer.dispose();
-        this.buffer = assets_1.RenderTarget.create(_1.Engine.width, _1.Engine.height);
+        this.buffer = assets_1.RenderTarget.create(engine_1.Engine.width, engine_1.Engine.height);
         // orthographic matrix
         this.orthographic
             .identity()
@@ -4152,9 +4320,9 @@ class Graphics {
      */
     update() {
         // resizing
-        if (this.canvas.width !== _1.Engine.root.clientWidth || this.canvas.height !== _1.Engine.root.clientHeight) {
-            this.canvas.width = _1.Engine.root.clientWidth;
-            this.canvas.height = _1.Engine.root.clientHeight;
+        if (this.canvas.width !== engine_1.Engine.root.clientWidth || this.canvas.height !== engine_1.Engine.root.clientHeight) {
+            this.canvas.width = engine_1.Engine.root.clientWidth;
+            this.canvas.height = engine_1.Engine.root.clientHeight;
         }
     }
     /**
@@ -4224,7 +4392,7 @@ class Graphics {
      * Sets the current texture on the shader (if the shader has a sampler2d uniform)
      */
     setShaderTexture(tex) {
-        if (_1.Engine.assert(this.shader.sampler2d != null, "This shader has no Sampler2D to set the texture to"))
+        if (engine_1.Engine.assert(this.shader.sampler2d != null, "This shader has no Sampler2D to set the texture to"))
             this.shader.sampler2d.value = tex.texture.webGLTexture;
     }
     /**
@@ -4557,16 +4725,16 @@ exports.Graphics = Graphics;
 
 
 /***/ }),
-/* 45 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(0);
-const components_1 = __webpack_require__(12);
-const renderers_1 = __webpack_require__(16);
-const util_1 = __webpack_require__(1);
+const engine_1 = __webpack_require__(1);
+const collider_1 = __webpack_require__(5);
+const spriteRenderer_1 = __webpack_require__(22);
+const util_1 = __webpack_require__(0);
 /**
  * The Scene contains a list of Entities and Renderers that in turn handle Gameplay. There can only be one active Scene at a time
  */
@@ -4591,7 +4759,7 @@ class Scene {
         this.colliders = {};
         this.cache = {};
         this.camera = new util_1.Camera();
-        this.addRenderer(new renderers_1.SpriteRenderer());
+        this.addRenderer(new spriteRenderer_1.SpriteRenderer());
     }
     /**
      * Called when this Scene begins (after Engine.scene has been set)
@@ -4663,10 +4831,10 @@ class Scene {
                 r.postRender();
         });
         // debug render
-        if (_1.Engine.debugMode) {
-            _1.Engine.graphics.setRenderTarget(_1.Engine.graphics.buffer);
-            _1.Engine.graphics.shader = util_1.Shaders.primitive;
-            _1.Engine.graphics.shader.set("matrix", this.camera.matrix);
+        if (engine_1.Engine.debugMode) {
+            engine_1.Engine.graphics.setRenderTarget(engine_1.Engine.graphics.buffer);
+            engine_1.Engine.graphics.shader = util_1.Shaders.primitive;
+            engine_1.Engine.graphics.shader.set("matrix", this.camera.matrix);
             this.entities.each((e) => {
                 if (e.active)
                     e.debugRender(this.camera);
@@ -4846,7 +5014,7 @@ class Scene {
     _trackComponent(component) {
         if (component.entity == null || component.entity.scene !== this)
             throw new Error("Component must be added through an existing entity");
-        if (component instanceof components_1.Collider) {
+        if (component instanceof collider_1.Collider) {
             for (const tag of component.tags)
                 this._trackCollider(component, tag);
         }
@@ -4855,7 +5023,7 @@ class Scene {
     }
     _untrackComponent(component) {
         component.removedFromScene();
-        if (component instanceof components_1.Collider) {
+        if (component instanceof collider_1.Collider) {
             for (const tag of component.tags)
                 this._untrackCollider(component, tag);
         }
@@ -4881,15 +5049,130 @@ exports.Scene = Scene;
 
 
 /***/ }),
-/* 46 */
+/* 47 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(__dirname) {
+Object.defineProperty(exports, "__esModule", { value: true });
+const engine_1 = __webpack_require__(1);
+/**
+ * Handles File IO stuff and the differences between Browser / Desktop mode
+ */
+class IO {
+    /**
+     * Called internally by Engine
+     */
+    static init() {
+        if (IO.fs == null && engine_1.Engine.client === engine_1.Client.Electron) {
+            IO.fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
+            IO.path = __webpack_require__(21);
+        }
+    }
+    /**
+     * Reads the contents of a file, using fs.readFile if in Electron, or http request otherwise
+     * @param path Path to file
+     * @param callback Callback with the contents of the file
+     */
+    static read(path, callback) {
+        if (engine_1.Engine.client === engine_1.Client.Electron) {
+            IO.fs.readFile(IO.path.join(__dirname, path), "utf8", (err, data) => {
+                if (err)
+                    throw err;
+                callback(data);
+            });
+        }
+        else {
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.onreadystatechange = (e) => {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200)
+                        callback(httpRequest.responseText);
+                    else
+                        throw new Error("Unable to read file " + path);
+                }
+            };
+            httpRequest.open("GET", path);
+            httpRequest.send();
+        }
+    }
+    /**
+     * Combines parts of a path into a single string
+     * @param paths the paths to join
+     */
+    static join(...paths) {
+        if (paths.length <= 0)
+            return ".";
+        if (engine_1.Engine.client === engine_1.Client.Electron) {
+            let result = paths[0];
+            for (let i = 1; i < paths.length; i++)
+                result = IO.path.join(result, paths[i]);
+            return result;
+        }
+        else {
+            const result = [];
+            for (const part of paths) {
+                const sub = part.split("/");
+                for (const s of sub)
+                    result.push(s);
+            }
+            return result.length > 0 ? result.join("/") : ".";
+        }
+    }
+    /**
+     * Returns the file extension of the given path
+     * @param path
+     */
+    static extension(path) {
+        let ext = "";
+        const parts = (/(?:\.([^.]+))?$/).exec(path);
+        if (parts.length > 1)
+            ext = parts[1];
+        return ext;
+    }
+}
+IO.fs = null;
+IO.path = null;
+exports.IO = IO;
+
+/* WEBPACK VAR INJECTION */}.call(exports, "/"))
+
+/***/ }),
+/* 48 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(__webpack_require__(23));
+__export(__webpack_require__(51));
+var particleSystem_1 = __webpack_require__(55);
+exports.ParticleSystem = particleSystem_1.ParticleSystem;
+var particleTemplate_1 = __webpack_require__(25);
+exports.ParticleTemplate = particleTemplate_1.ParticleTemplate;
+var alarm_1 = __webpack_require__(57);
+exports.Alarm = alarm_1.Alarm;
+var coroutine_1 = __webpack_require__(58);
+exports.Coroutine = coroutine_1.Coroutine;
+var physics_1 = __webpack_require__(59);
+exports.Physics = physics_1.Physics;
+var tween_1 = __webpack_require__(60);
+exports.Tween = tween_1.Tween;
+
+
+/***/ }),
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-const collider_1 = __webpack_require__(4);
+const engine_1 = __webpack_require__(1);
+const util_1 = __webpack_require__(0);
+const collider_1 = __webpack_require__(5);
 class Hitbox extends collider_1.Collider {
     get sceneLeft() { return this.scenePosition.x + this.left; }
     get sceneRight() { return this.scenePosition.x + this.left + this.width; }
@@ -4908,22 +5191,22 @@ class Hitbox extends collider_1.Collider {
                 this.tag(tag);
     }
     debugRender() {
-        core_1.Engine.graphics.hollowRect(this.sceneLeft, this.sceneTop, this.width, this.height, 1, util_1.Color.red);
+        engine_1.Engine.graphics.hollowRect(this.sceneLeft, this.sceneTop, this.width, this.height, 1, util_1.Color.red);
     }
 }
 exports.Hitbox = Hitbox;
 
 
 /***/ }),
-/* 47 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-const collider_1 = __webpack_require__(4);
+const engine_1 = __webpack_require__(1);
+const util_1 = __webpack_require__(0);
+const collider_1 = __webpack_require__(5);
 class Hitgrid extends collider_1.Collider {
     constructor(tileWidth, tileHeight, tags) {
         super();
@@ -4974,10 +5257,10 @@ class Hitgrid extends collider_1.Collider {
                     const d = this.has(tx, ty + 1);
                     const px = pos.x + tx * this.tileWidth;
                     const py = pos.y + ty * this.tileHeight;
-                    core_1.Engine.graphics.rect(px, py, 1, this.tileHeight, l ? util_1.Color.red : this.debugSub);
-                    core_1.Engine.graphics.rect(px, py, this.tileWidth, 1, u ? util_1.Color.red : this.debugSub);
-                    core_1.Engine.graphics.rect(px + this.tileWidth - 1, py, 1, this.tileHeight, r ? util_1.Color.red : this.debugSub);
-                    core_1.Engine.graphics.rect(px, py + this.tileHeight - 1, this.tileWidth, 1, d ? util_1.Color.red : this.debugSub);
+                    engine_1.Engine.graphics.rect(px, py, 1, this.tileHeight, l ? util_1.Color.red : this.debugSub);
+                    engine_1.Engine.graphics.rect(px, py, this.tileWidth, 1, u ? util_1.Color.red : this.debugSub);
+                    engine_1.Engine.graphics.rect(px + this.tileWidth - 1, py, 1, this.tileHeight, r ? util_1.Color.red : this.debugSub);
+                    engine_1.Engine.graphics.rect(px, py + this.tileHeight - 1, this.tileWidth, 1, d ? util_1.Color.red : this.debugSub);
                 }
             }
         }
@@ -4987,32 +5270,33 @@ exports.Hitgrid = Hitgrid;
 
 
 /***/ }),
-/* 48 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var graphic_1 = __webpack_require__(14);
+var graphic_1 = __webpack_require__(24);
 exports.Graphic = graphic_1.Graphic;
-var rectsprite_1 = __webpack_require__(49);
+var rectsprite_1 = __webpack_require__(52);
 exports.Rectsprite = rectsprite_1.Rectsprite;
-var sprite_1 = __webpack_require__(50);
+var sprite_1 = __webpack_require__(53);
 exports.Sprite = sprite_1.Sprite;
-var tilemap_1 = __webpack_require__(51);
+var tilemap_1 = __webpack_require__(54);
 exports.Tilemap = tilemap_1.Tilemap;
 
 
 /***/ }),
-/* 49 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-class Rectsprite extends core_1.Component {
+const engine_1 = __webpack_require__(1);
+const component_1 = __webpack_require__(2);
+const util_1 = __webpack_require__(0);
+class Rectsprite extends component_1.Component {
     constructor(width, height, color) {
         super();
         this.size = new util_1.Vector(0, 0);
@@ -5031,11 +5315,11 @@ class Rectsprite extends core_1.Component {
     set height(val) { this.size.y = val; }
     render() {
         // draw with a pixel texture (shader is using textures)
-        if (core_1.Engine.graphics.shader.sampler2d != null) {
-            core_1.Engine.graphics.texture(core_1.Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, util_1.Color.temp.copy(this.color).mult(this.alpha), util_1.Vector.temp0.copy(this.origin).div(this.size), util_1.Vector.temp1.copy(this.size).mult(this.scale), this.rotation);
+        if (engine_1.Engine.graphics.shader.sampler2d != null) {
+            engine_1.Engine.graphics.texture(engine_1.Engine.graphics.pixel, this.scenePosition.x, this.scenePosition.y, null, util_1.Color.temp.copy(this.color).mult(this.alpha), util_1.Vector.temp0.copy(this.origin).div(this.size), util_1.Vector.temp1.copy(this.size).mult(this.scale), this.rotation);
         }
         else {
-            core_1.Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, util_1.Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation);
+            engine_1.Engine.graphics.quad(this.scenePosition.x, this.scenePosition.y, this.size.x, this.size.y, util_1.Color.temp.copy(this.color).mult(this.alpha), this.origin, this.scale, this.rotation);
         }
     }
 }
@@ -5043,16 +5327,16 @@ exports.Rectsprite = Rectsprite;
 
 
 /***/ }),
-/* 50 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const graphic_1 = __webpack_require__(14);
-const assets_1 = __webpack_require__(2);
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
+const graphic_1 = __webpack_require__(24);
+const assets_1 = __webpack_require__(4);
+const engine_1 = __webpack_require__(1);
+const util_1 = __webpack_require__(0);
 class Sprite extends graphic_1.Graphic {
     constructor(animation) {
         super(null);
@@ -5060,7 +5344,7 @@ class Sprite extends graphic_1.Graphic {
         this._playing = null;
         this._frame = 0;
         this.rate = 1;
-        core_1.Engine.assert(assets_1.SpriteBank.has(animation), "Missing animation '" + animation + "'!");
+        engine_1.Engine.assert(assets_1.SpriteBank.has(animation), "Missing animation '" + animation + "'!");
         this._animation = assets_1.SpriteBank.get(animation);
         this.texture = this._animation.first.frames[0];
     }
@@ -5091,7 +5375,7 @@ class Sprite extends graphic_1.Graphic {
     }
     update() {
         if (this.playing != null) {
-            this._frame += this.playing.speed * this.rate * core_1.Engine.delta;
+            this._frame += this.playing.speed * this.rate * engine_1.Engine.delta;
             if (this.frame >= this.playing.frames.length || this.frame < 0) {
                 // loop this animation
                 if (this.playing.loops) {
@@ -5125,15 +5409,16 @@ exports.Sprite = Sprite;
 
 
 /***/ }),
-/* 51 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-class Tilemap extends core_1.Component {
+const engine_1 = __webpack_require__(1);
+const component_1 = __webpack_require__(2);
+const util_1 = __webpack_require__(0);
+class Tilemap extends component_1.Component {
     constructor(texture, tileWidth, tileHeight) {
         super();
         this.color = util_1.Color.white.clone();
@@ -5192,7 +5477,7 @@ class Tilemap extends core_1.Component {
                 if (index !== undefined) {
                     this.crop.x = (index % this.tileColumns) * this.tileWidth;
                     this.crop.y = Math.floor(index / this.tileColumns) * this.tileHeight;
-                    core_1.Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop, util_1.Color.temp.copy(this.color).mult(this.alpha));
+                    engine_1.Engine.graphics.texture(this.texture, pos.x + tx * this.tileWidth, pos.y + ty * this.tileHeight, this.crop, util_1.Color.temp.copy(this.color).mult(this.alpha));
                 }
             }
         }
@@ -5202,17 +5487,18 @@ exports.Tilemap = Tilemap;
 
 
 /***/ }),
-/* 52 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-const particle_1 = __webpack_require__(53);
-const particleTemplate_1 = __webpack_require__(15);
-class ParticleSystem extends core_1.Component {
+const engine_1 = __webpack_require__(1);
+const component_1 = __webpack_require__(2);
+const util_1 = __webpack_require__(0);
+const particle_1 = __webpack_require__(56);
+const particleTemplate_1 = __webpack_require__(25);
+class ParticleSystem extends component_1.Component {
     constructor(template) {
         super();
         this.renderRelativeToEntity = false;
@@ -5220,7 +5506,7 @@ class ParticleSystem extends core_1.Component {
         this.template = particleTemplate_1.ParticleTemplate.templates[template];
     }
     update() {
-        const dt = core_1.Engine.delta;
+        const dt = engine_1.Engine.delta;
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
             if (p.percent >= 1) {
@@ -5240,7 +5526,7 @@ class ParticleSystem extends core_1.Component {
     render(camera) {
         let tex = this.template.texture;
         if (tex == null)
-            tex = core_1.Engine.graphics.pixel;
+            tex = engine_1.Engine.graphics.pixel;
         if (tex == null)
             throw new Error("Particle requires a Texture");
         let pos = this.position;
@@ -5256,7 +5542,7 @@ class ParticleSystem extends core_1.Component {
             const rotation = p.rotationFrom + (p.rotationTo - p.rotationFrom) * t.rotationEaser(lerp);
             const alpha = p.alphaFrom + (p.alphaTo - p.alphaFrom) * t.alphaEaser(lerp);
             const color = ParticleSystem.color.lerp(p.colorFrom, p.colorTo, t.colorEaser(lerp)).mult(alpha);
-            core_1.Engine.graphics.texture(tex, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
+            engine_1.Engine.graphics.texture(tex, x, y, null, color, ParticleSystem.origin, ParticleSystem.scale.set(scaleX, scaleY), rotation);
         }
     }
     burst(x, y, direction, rangeX, rangeY, count) {
@@ -5315,7 +5601,7 @@ exports.ParticleSystem = ParticleSystem;
 
 
 /***/ }),
-/* 53 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5327,14 +5613,15 @@ exports.Particle = Particle;
 
 
 /***/ }),
-/* 54 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-class Alarm extends core_1.Component {
+const engine_1 = __webpack_require__(1);
+const component_1 = __webpack_require__(2);
+class Alarm extends component_1.Component {
     constructor() {
         super();
         this._percent = 0;
@@ -5388,7 +5675,7 @@ class Alarm extends core_1.Component {
      */
     update() {
         if (this.percent < 1 && this.duration > 0) {
-            this._percent += core_1.Engine.delta / this.duration;
+            this._percent += engine_1.Engine.delta / this.duration;
             if (this.percent >= 1) {
                 this._percent = 1;
                 this.active = false;
@@ -5411,18 +5698,19 @@ exports.Alarm = Alarm;
 
 
 /***/ }),
-/* 55 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
+const engine_1 = __webpack_require__(1);
+const component_1 = __webpack_require__(2);
 /**
  * Coroutine Class. This uses generator functions which are only supported in ES6 and is missing in many browsers.
  * More information:https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*
  */
-class Coroutine extends core_1.Component {
+class Coroutine extends component_1.Component {
     /**
      * @param call? 	if set, immediately starts he Coroutine with the given Iterator
      */
@@ -5469,7 +5757,7 @@ class Coroutine extends core_1.Component {
      * Updates the Coroutine (automatically called its Entity's update)
      */
     update() {
-        this.wait -= core_1.Engine.delta;
+        this.wait -= engine_1.Engine.delta;
         if (this.wait > 0)
             return;
         this.step();
@@ -5503,15 +5791,15 @@ exports.Coroutine = Coroutine;
 
 
 /***/ }),
-/* 56 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const colliders_1 = __webpack_require__(13);
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
+const colliders_1 = __webpack_require__(23);
+const core_1 = __webpack_require__(3);
+const util_1 = __webpack_require__(0);
 class Physics extends colliders_1.Hitbox {
     constructor(left, top, width, height, tags, solids) {
         super(left, top, width, height, tags);
@@ -5627,14 +5915,15 @@ exports.Physics = Physics;
 
 
 /***/ }),
-/* 57 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-class Tween extends core_1.Component {
+const engine_1 = __webpack_require__(1);
+const component_1 = __webpack_require__(2);
+class Tween extends component_1.Component {
     constructor() {
         super();
         this._percent = 0;
@@ -5710,7 +5999,7 @@ class Tween extends core_1.Component {
      */
     update() {
         if (this.percent < 1 && this.duration > 0) {
-            this._percent += core_1.Engine.delta / this.duration;
+            this._percent += engine_1.Engine.delta / this.duration;
             if (this.percent >= 1) {
                 this._percent = 1;
                 this.step(this.to);
@@ -5735,18 +6024,31 @@ exports.Tween = Tween;
 
 
 /***/ }),
-/* 58 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const util_1 = __webpack_require__(1);
-const core_1 = __webpack_require__(0);
+var primitiveRenderer_1 = __webpack_require__(62);
+exports.PrimitiveRenderer = primitiveRenderer_1.PrimitiveRenderer;
+var spriteRenderer_1 = __webpack_require__(22);
+exports.SpriteRenderer = spriteRenderer_1.SpriteRenderer;
+
+
+/***/ }),
+/* 62 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const util_1 = __webpack_require__(0);
+const renderer_1 = __webpack_require__(10);
 /**
  * Uses the Primitive Shader when rendering
  */
-class PrimitiveRenderer extends core_1.Renderer {
+class PrimitiveRenderer extends renderer_1.Renderer {
     constructor() {
         super();
         this.shader = util_1.Shaders.primitive;
@@ -5755,299 +6057,6 @@ class PrimitiveRenderer extends core_1.Renderer {
 }
 exports.PrimitiveRenderer = PrimitiveRenderer;
 
-
-/***/ }),
-/* 59 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const util_1 = __webpack_require__(1);
-const core_1 = __webpack_require__(0);
-/**
- * Uses the Texture Shader when rendering
- */
-class SpriteRenderer extends core_1.Renderer {
-    constructor() {
-        super();
-        this.shader = util_1.Shaders.texture;
-        this.shaderCameraUniformName = "matrix";
-    }
-}
-exports.SpriteRenderer = SpriteRenderer;
-
-
-/***/ }),
-/* 60 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const util_1 = __webpack_require__(1);
-class Component {
-    constructor() {
-        this._entity = null;
-        /**
-         * The Scene containing this Component
-         */
-        this.scene = null;
-        /**
-         * Whether this Component should be updated
-         */
-        this.active = true;
-        /**
-         * Whether this Component should be rendered
-         */
-        this.visible = true;
-        /**
-         * The Local position of the Component, relative to the Entity
-         */
-        this.position = new util_1.Vector(0, 0);
-        /**
-         * The position of the Component in the Scene (position + Entity.position)
-         */
-        this._scenePosition = new util_1.Vector();
-    }
-    /**
-     * The Entity this Component is a child of
-     */
-    get entity() { return this._entity; }
-    set entity(val) {
-        if (this._entity != null && val != null)
-            throw new Error("This Component is already attached to an Entity");
-        this._entity = val;
-    }
-    /**
-     * The Local X position of the Component, relative to the Entity
-     */
-    get x() { return this.position.x; }
-    set x(val) { this.position.x = val; }
-    /**
-     * The Local Y position of the Component, relative to the Entity
-     */
-    get y() { return this.position.y; }
-    set y(val) { this.position.y = val; }
-    get scenePosition() {
-        return this._scenePosition.set(this._entity ? this._entity.x : 0, this._entity ? this._entity.y : 0).add(this.position);
-    }
-    /**
-     * Called when the Component was Added to the Entity
-     */
-    addedToEntity() { }
-    /**
-     * Called when the Component was Added to the Scene
-     */
-    addedToScene() { }
-    /**
-     * Called when the Component was Removed from the Entity
-     */
-    removedFromEntity() { }
-    /**
-     * Called when the Component was Removed from the Scene
-     */
-    removedFromScene() { }
-    /**
-     * Called when the Component is Updated from its Entity
-     */
-    update() { }
-    /**
-     * Called when the component is Rendered from its Entity
-     */
-    render(camera) { }
-    /**
-     * Called when the Engine is in Debug mode, at the end of the Scene Render from its Entity
-     */
-    debugRender(camera) { }
-}
-exports.Component = Component;
-
-
-/***/ }),
-/* 61 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __webpack_require__(0);
-const util_1 = __webpack_require__(1);
-/**
- * Used by the Scene to render. A Scene can have multiple renderers that essentially act as separate layers / draw calls
- */
-class Renderer {
-    constructor() {
-        /**
-         * If this renderer is visible
-         */
-        this.visible = true;
-        /**
-         * Current Render Target. null means it will draw to the screen
-         */
-        this.target = null;
-        /**
-         * Clear color when drawing (defaults to transparent)
-         */
-        this.clearTargetColor = new util_1.Color(0, 0, 0, 0);
-        /**
-         * The scene we're in
-         */
-        this.scene = null;
-        /**
-         * Only draws entities of the given mask, if set (otherwise draws all entities)
-         */
-        this.groupsMask = [];
-    }
-    /**
-     * Called during Scene.update
-     */
-    update() { }
-    /**
-     * Called before Render
-     */
-    preRender() { }
-    /**
-     * Renders the Renderer. Calls drawBegin and then drawEntities
-     */
-    render() {
-        this.drawBegin();
-        this.drawEntities();
-    }
-    /**
-     * Sets up the current render target and shader
-     */
-    drawBegin() {
-        // set target
-        if (this.target != null) {
-            core_1.Engine.graphics.setRenderTarget(this.target);
-            core_1.Engine.graphics.clear(this.clearTargetColor);
-        }
-        else
-            core_1.Engine.graphics.setRenderTarget(core_1.Engine.graphics.buffer);
-        // set to our shader, and set main Matrix to the camera with fallback to Scene camera
-        core_1.Engine.graphics.shader = this.shader;
-        core_1.Engine.graphics.shader.set(this.shaderCameraUniformName, this.getActiveCamera().matrix);
-    }
-    /**
-     * Draws all the entities
-     */
-    drawEntities() {
-        const camera = this.getActiveCamera();
-        // draw each entity
-        const list = (this.groupsMask.length > 0 ? this.scene.allInGroups(this.groupsMask) : this.scene.entities);
-        list.each((e) => {
-            if (e.visible)
-                e.render(camera);
-        });
-    }
-    getActiveCamera() {
-        return (this.camera || this.scene.camera);
-    }
-    /**
-     * Called after Render
-     */
-    postRender() { }
-    /**
-     * Called when the Scene is disposed (cleans up our Target, if we have one)
-     */
-    dispose() {
-        if (this.target != null)
-            this.target.dispose();
-        this.target = null;
-    }
-}
-exports.Renderer = Renderer;
-
-
-/***/ }),
-/* 62 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(__dirname) {
-Object.defineProperty(exports, "__esModule", { value: true });
-const _1 = __webpack_require__(0);
-/**
- * Handles File IO stuff and the differences between Browser / Desktop mode
- */
-class IO {
-    /**
-     * Called internally by Engine
-     */
-    static init() {
-        if (IO.fs == null && _1.Engine.client === _1.Client.Electron) {
-            IO.fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
-            IO.path = __webpack_require__(11);
-        }
-    }
-    /**
-     * Reads the contents of a file, using fs.readFile if in Electron, or http request otherwise
-     * @param path Path to file
-     * @param callback Callback with the contents of the file
-     */
-    static read(path, callback) {
-        if (_1.Engine.client === _1.Client.Electron) {
-            IO.fs.readFile(IO.path.join(__dirname, path), "utf8", (err, data) => {
-                if (err)
-                    throw err;
-                callback(data);
-            });
-        }
-        else {
-            const httpRequest = new XMLHttpRequest();
-            httpRequest.onreadystatechange = (e) => {
-                if (httpRequest.readyState === XMLHttpRequest.DONE) {
-                    if (httpRequest.status === 200)
-                        callback(httpRequest.responseText);
-                    else
-                        throw new Error("Unable to read file " + path);
-                }
-            };
-            httpRequest.open("GET", path);
-            httpRequest.send();
-        }
-    }
-    /**
-     * Combines parts of a path into a single string
-     * @param paths the paths to join
-     */
-    static join(...paths) {
-        if (paths.length <= 0)
-            return ".";
-        if (_1.Engine.client === _1.Client.Electron) {
-            let result = paths[0];
-            for (let i = 1; i < paths.length; i++)
-                result = IO.path.join(result, paths[i]);
-            return result;
-        }
-        else {
-            const result = [];
-            for (const part of paths) {
-                const sub = part.split("/");
-                for (const s of sub)
-                    result.push(s);
-            }
-            return result.length > 0 ? result.join("/") : ".";
-        }
-    }
-    /**
-     * Returns the file extension of the given path
-     * @param path
-     */
-    static extension(path) {
-        let ext = "";
-        const parts = (/(?:\.([^.]+))?$/).exec(path);
-        if (parts.length > 1)
-            ext = parts[1];
-        return ext;
-    }
-}
-IO.fs = null;
-IO.path = null;
-exports.IO = IO;
-
-/* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ })
 /******/ ]);
