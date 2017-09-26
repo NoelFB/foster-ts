@@ -1,6 +1,6 @@
 {
   "name": "foster-engine",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A simple WebGL + TypeScript Game framework with an Scene/Entity/Component model",
   "homepage": "https://github.com/NoelFB/foster",
   "license": "MIT",

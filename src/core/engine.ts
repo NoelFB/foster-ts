@@ -110,8 +110,9 @@ export class Engine
 	 * @param height 	Game Height
 	 * @param scale 	Scales the Window (on Desktop) to width * scale and height * scale
 	 * @param ready 	Callback when the Engine is ready
+	 * @param rootElementId		Optional Root Element ID to add the Canvas to. Defaults to <body> Element
 	 */
-	public static start(title:string, width:number, height:number, scale:number, ready:() => void):void
+	public static start(title:string, width:number, height:number, scale:number, ready:() => void, rootElementId?:string):void
 	{
 		// instantiate
 		Engine.started = true;
@@ -128,7 +129,12 @@ export class Engine
 		{
 			const c = String.fromCharCode(0x25cf);
 			console.log("%c " + c + " ENGINE START " + c + " ", "background:#222; color:#ff44aa;");
-			Engine.instance.root = document.getElementsByTagName("body")[0];
+
+			// get root element
+			if (rootElementId != null && rootElementId !== undefined && rootElementId.length > 0)
+				Engine.instance.root = document.getElementById(rootElementId);
+			if (Engine.instance.root == null || Engine.instance.root === undefined)
+				Engine.instance.root = document.getElementsByTagName("body")[0];
 
 			// init
 			DefaultOverlapTests();
@@ -207,7 +213,7 @@ export class Engine
 	private elapsed:number;
 	private startTime:number;
 	private lastTime:number;
-	private root:HTMLElement;
+	private root:HTMLElement = null;
 	private graphics:Graphics;
 	private debuggerEnabled:boolean;
 

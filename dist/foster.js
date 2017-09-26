@@ -125,6 +125,7 @@ class Engine {
     constructor() {
         this.scene = null;
         this.nextScene = null;
+        this.root = null;
         if (Engine.instance != null)
             throw "Engine has already been instantiated";
         if (!Engine.started)
@@ -202,8 +203,9 @@ class Engine {
      * @param height 	Game Height
      * @param scale 	Scales the Window (on Desktop) to width * scale and height * scale
      * @param ready 	Callback when the Engine is ready
+     * @param rootElementId		Optional Root Element ID to add the Canvas to. Defaults to <body> Element
      */
-    static start(title, width, height, scale, ready) {
+    static start(title, width, height, scale, ready, rootElementId) {
         // instantiate
         Engine.started = true;
         new Engine();
@@ -216,7 +218,11 @@ class Engine {
         window.onload = () => {
             const c = String.fromCharCode(0x25cf);
             console.log("%c " + c + " ENGINE START " + c + " ", "background:#222; color:#ff44aa;");
-            Engine.instance.root = document.getElementsByTagName("body")[0];
+            // get root element
+            if (rootElementId != null && rootElementId !== undefined && rootElementId.length > 0)
+                Engine.instance.root = document.getElementById(rootElementId);
+            if (Engine.instance.root == null || Engine.instance.root === undefined)
+                Engine.instance.root = document.getElementsByTagName("body")[0];
             // init
             collider_1.DefaultOverlapTests();
             _1.IO.init();
