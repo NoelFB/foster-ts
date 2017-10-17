@@ -3,7 +3,7 @@
 	{
 		"target": "es2015",
 		"sourceMap": false,
-		"module": "commonjs",
+		"module": "umd",
 		"moduleResolution": "node",
 		"outDir": "lib",
 		"declaration": true,

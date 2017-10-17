@@ -1,9 +1,10 @@
 node_modules/
 src/
-dist/
+build/
 .vscode/
+.rpt2_cache/
 tsconfig.json
 tslint.json
-webpack.config.js
+rollup.config.js
 .gitattributes
 .gitignore

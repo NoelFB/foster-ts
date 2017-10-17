@@ -1,12 +1,12 @@
 {
   "name": "foster-engine",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A simple WebGL + TypeScript Game framework with an Scene/Entity/Component model",
   "homepage": "https://github.com/NoelFB/foster",
   "license": "MIT",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "scripts":{
+  "scripts": {
     "prepublish": "tsc"
   },
   "author": {
@@ -21,7 +21,8 @@
   "devDependencies": {
     "@types/electron": "^1.6.10",
     "@types/node": "^8.0.24",
-    "typescript": "^2.5.0-dev.20170628",
-    "webpack": "^3.6.0"
+    "rollup": "^0.50.0",
+    "rollup-plugin-typescript2": "^0.7.0",
+    "typescript": "^2.5.0-dev.20170628"
   }
 }
