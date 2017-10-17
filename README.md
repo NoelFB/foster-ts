@@ -20,7 +20,8 @@
  - `npm install foster-engine`
  - or clone the repo and use the source typescript yourself
 
-#### Web Build
- - [foster.js](dist/foster.js) : compiled JS file
+#### JS Builds
+ - [foster.js](build/foster.js) : compiled UMD JS file
+ - [foster.module.js](build/foster.module.js) : compiled module JS file
 
 #### [MIT License](license.md)
