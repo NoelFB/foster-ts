@@ -6,8 +6,7 @@
 #### Goals
  - Lightweight framework to be easily used for GameJam games
  - Foster should run in the Browser and in Electron without any changes on the game-side
- - ES6 all the way. No interest in being ES5 / backwards compatible.
- - Scene -> Entity -> Component structure
+ - ES6 all the way. Not worrying about being backwards compatible.
  - Frame-based animation, with atlas loading (Aseprite, Texture Packer, etc)
  - AABB Collision system, with simple Physics component to handle motion
  
@@ -16,11 +15,12 @@
  - Comment everything (and generate Docs somehow?)
  - Add lots of helper / usability methods (ex. Audio fade in/out, built in screen transitions, more atlas loaders, etc)
  
-#### Use it yourself
+#### How to use
  - `npm install foster-engine`
- - or clone the repo and use the source typescript yourself
+ - Import it in your own project, ex. `import * as Foster from "foster-engine";`
+ - Make sure your compiled project has the Foster code (either include the node_module, or use one of the pre-compiled JS builds)
 
-#### JS Builds
+#### Javascript Builds
  - [foster.js](build/foster.js) : compiled UMD JS file
  - [foster.module.js](build/foster.module.js) : compiled module JS file
 
